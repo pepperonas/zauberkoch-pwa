@@ -1,18 +1,17 @@
 ---
 paths:
-  - "src/**"
-  - "public/**"
-  - "index.html"
-description: Frontend-Regeln (PWA, MD3 Expressive, Vanilla JS)
+  - "frontend/**"
+description: Frontend-Regeln (React 19, M3 Expressive handgebaut, TS strict)
 ---
 
 # Frontend-Regeln
 
-- **Material Design 3 Expressive**: Design-Tokens aus `/Users/martin/claude/_md3-expressive/md3-expressive.css` als Referenz; tonale Surfaces, XL-Corners (28 px), vollrunde Buttons, MD3-Switches/-Slider.
-- **`prefers-reduced-motion`-Guard ist auf JEDER Animation Pflicht** (Media-Query-Guard oder JS-Check) — keine Ausnahme.
-- **Vanilla JS, ES-Module** — kein React/Vue/Framework im Frontend. Vite ist nur Build-Tool.
-- **Service Worker**: versionierter Cache `zauberkoch-vN`. Bei JEDER Änderung an App-Shell-Dateien (index.html, src/*, CSS) die Cache-Version in `public/sw.js` bumpen UND die aktuelle Version in `CLAUDE.md` nachführen. HTML-Shell network-first cachen (Lehre aus yamaha-controller: cache-first ohne Invalidierung erreicht installierte PWAs nie).
-- **UI-Texte Deutsch**, Code/Kommentare Englisch.
-- **Keine externen Requests** zu CDNs/Fonts — Assets selbst bundlen.
-- Responsive: Touch-Targets ≥ 40 px, `env(safe-area-inset-*)` für PWA-Installs beachten.
-- Nutzer-Content immer HTML-escapen, bevor er ins DOM geht.
+- **TypeScript strict** — kein `any`, keine `@ts-ignore` ohne Begründung im Code.
+- **M3 Expressive handgebaut**: Farben/Shapes/Typo NUR über CSS Custom Properties aus `src/styles/tokens.css`. Kein MUI/Ant/Bootstrap. Neue Komponenten nutzen bestehende Token, erfinden keine Hex-Werte inline.
+- **Zwei Farbschemata** (Kochen=Safran-Orange, Cocktail=Violett) × Light/Dark — Umschaltung ausschließlich über Token-Werte (`data-mode`/`data-theme` am Root), damit Morphs animierbar bleiben.
+- **UI-Strings NUR über `src/i18n/de.ts`** (`t('key')`) — kein hartcodierter Text in Komponenten, auch keine aria-Labels.
+- **Server-State über TanStack Query**, kein eigener Fetch-Cache. Auth-Status via `/api/v1/me`; niemals Tokens in localStorage.
+- SSE-Konsum über den zentralen Hook (`useRecipeStream`) — Events sind semantisch (`meta`/`zutat`/`schritt`/`tipp`/`done`/`error`).
+- Nutzer-/KI-Content nie via `dangerouslySetInnerHTML` rendern.
+- Touch-Targets ≥ 48 px; interaktive Elemente mit sichtbarem `:focus-visible`.
+- PWA: bei App-Shell-Änderungen SW-Cache `zauberkoch-vN` bumpen + in CLAUDE.md nachführen.

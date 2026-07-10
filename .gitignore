@@ -1,11 +1,19 @@
-# Dependencies & Build
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node / Build
 node_modules/
-dist/
+frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
 *.log
 
 # Runtime-Daten
-data/
-server/data/
+backend/data/
 *.db
 *.db-wal
 *.db-shm
@@ -13,7 +21,8 @@ server/data/
 # Secrets & private Konfiguration
 .env
 .env.*
-server/.env
+!.env.example
+backend/.env
 CLAUDE.local.md
 .claude/settings.local.json
 

@@ -3,14 +3,17 @@
 Vor dem Deploy:
 
 - [ ] `git status` sauber bzw. nur beabsichtigte Änderungen
-- [ ] `npm test` (Root) grün
-- [ ] `cd server && npm test` grün (bei Backend-Deploy)
-- [ ] App-Shell geändert? → SW-Cache-Version `zauberkoch-vN` in `public/sw.js` gebumpt UND in `CLAUDE.md` nachgeführt
-- [ ] Keine Secrets im Diff (`git diff` auf .env-Werte, Tokens, Passwörter prüfen)
-- [ ] `CLAUDE.md` aktuell (neue Befehle/Endpoints/Konventionen dokumentiert)
+- [ ] `cd backend && pytest` grün
+- [ ] `cd frontend && npm test` grün
+- [ ] Neue Alembic-Migration vorhanden, falls Modelle geändert? (`alembic upgrade head` läuft auf dem VPS im deploy.sh)
+- [ ] App-Shell geändert? → SW-Cache `zauberkoch-vN` gebumpt UND in CLAUDE.md nachgeführt
+- [ ] Neue env-Variablen? → `.env.example` aktualisiert UND auf dem VPS in `/opt/zauberkoch-api/.env` ergänzt
+- [ ] Keine Secrets im Diff (Keys, Tokens, Passwörter)
+- [ ] Prompt geändert? → neue Version in `app/prompts/`, nicht alte überschrieben
 
 Nach dem Deploy:
 
-- [ ] `systemctl is-active zauberkoch-api` = active (Backend)
-- [ ] Smoke-Test der Live-URL
+- [ ] `systemctl is-active zauberkoch-api` = active
+- [ ] `curl -sf https://zauberkoch.de/api/v1/health` OK
+- [ ] Live-Smoke: Landing lädt, Login funktioniert, eine Generierung streamt
 - [ ] Änderungen committet & gepusht

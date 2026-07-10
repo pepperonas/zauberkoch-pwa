@@ -2,73 +2,93 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Projekt: Zauberkoch 🧑‍🍳
+## Projekt: Zauberkoch 🧑‍🍳🍸 — KI-Rezept- & Cocktail-Generator
 
-**Rezept-/Koch-Web-App als PWA.** Vanilla JS + Vite Frontend (Material Design 3 Expressive), Express + better-sqlite3 Backend. Öffentliches Deployment auf dem VPS unter `zauberkoch.celox.io` (nginx + systemd `zauberkoch-api`). Repo: `pepperonas/zauberkoch-pwa` (privat). **Nicht verwechseln:** `pepperonas/zauberkoch` (ohne `-pwa`) ist die alte, eigenständige Spring-Boot/Vaadin-App (Stand Sep 2025) — bleibt unangetastet und ist NICHT dieses Projekt.
+Mobile-first Web-App unter **https://zauberkoch.de**: Nutzer wählt Modus (Kochen/Cocktail), Länderküche, Geschmacksrichtungen und Constraints in einem 3-Schritt-Wizard — die Claude-API generiert ein vollständiges Rezept, das sich **live per SSE-Streaming aufbaut** (Titel → Zutaten → Schritte). Repo: `pepperonas/zauberkoch-pwa` (privat). Geschlossene Beta: `OPEN_SIGNUP=false` + Allowlist.
 
-**Status:** Projekt-Gerüst steht (Framework-Struktur, noch kein App-Code). Beim Anlegen von App-Code diese Datei aktualisieren — sie ist die einzige Quelle für Build-/Test-/Deploy-Wissen dieses Projekts.
+## Tech-Stack
 
-## Architektur (Soll-Zustand)
+| Layer | Technologie |
+|---|---|
+| Backend | Python 3.12, FastAPI, SQLite (WAL), SQLAlchemy 2, Pydantic v2, Alembic |
+| KI | Anthropic API, Modell via env `ANTHROPIC_MODEL` (Default `claude-sonnet-5`), Streaming → semantische SSE-Events |
+| Frontend | React 19, Vite, TypeScript strict, TanStack Query |
+| Styling | Material 3 Expressive — **handgebaut** (Design-Tokens als CSS Custom Properties, KEIN MUI/Ant) |
+| Animation | Motion (framer-motion-Nachfolger), echte Spring-Physik |
+| Auth | Google OAuth 2.0 (Auth Code + PKCE, server-seitig), Sessions als httpOnly-Cookies, CSRF-Schutz |
+| Deployment | VPS 69.62.121.168: systemd `zauberkoch-api` (Port **8742** loopback) + statischer Build in `/var/www/zauberkoch.de/`, vHost im zentralen nginx, certbot. **KEIN Docker.** |
+
+## Struktur
 
 ```
-zauberkoch/
-├── index.html          # App-Shell (Vite-Entry)
-├── src/                # Frontend-Module (Vanilla JS, ES-Module)
-├── public/             # Statische Assets, manifest.webmanifest, sw.js
-├── server/             # Express-Backend (eigenes package.json, eigene Tests)
-│   ├── server.js       # Entry, Port 4251 (loopback, nginx-Proxy /api/)
-│   ├── db.js           # better-sqlite3, Daten in server/data/ (gitignored)
-│   └── tests/
-├── tests/              # Frontend-/Unit-Tests (node --test bzw. vitest)
-└── docs/               # Ergänzende Doku (Deploy-Details, API-Vertrag)
+backend/          # FastAPI-App (eigenes venv: backend/.venv)
+  app/api/v1/     # Router (auth, recipes, favorites, shopping, me, health)
+  app/core/       # config (pydantic-settings), security, logging
+  app/models/     # SQLAlchemy: users, sessions, recipes, favorites,
+                  #   shopping_list_items, generation_cache, allowlist, rate_limits
+  app/schemas/    # Pydantic (u.a. Recipe — das Rezept-JSON-Schema)
+  app/services/   # ai (Anthropic-Streaming + inkrementeller JSON-Parser),
+                  #   cache, ratelimit, aggregation (Einkaufsliste)
+  app/prompts/    # Rezept-System-Prompts, VERSIONIERT (recipe_v1.py, …) — Kernstück!
+  alembic/        # Migrationen (von Anfang an; nie Schema ohne Migration ändern)
+  scripts/        # Admin-CLI: python -m scripts.allowlist add <email>
+  tests/          # pytest (Temp-DB, keine echten API-Calls)
+frontend/         # React-App
+  src/styles/     # tokens.css (M3-Schemata: Safran-Orange=Kochen, Violett=Cocktail, je Light+Dark)
+  src/i18n/       # de.ts + t() — ALLE UI-Strings hier, nie hartcodiert in Komponenten
+  src/motion/     # Spring-Presets/Transitions
+  src/features/   # wizard, recipe, cook-mode, favorites, shopping, auth, landing
+deploy/           # zauberkoch-api.service, nginx-vhost.conf, deploy.sh, backup-timer
+docs/             # DEPLOY.md (Erst-Einrichtung), GOOGLE-OAUTH.md
 ```
-
-- **Scoring/Logik mit Sicherheitsrelevanz nur server-seitig** (Muster wie xword/audit-platform).
-- Secrets ausschließlich in `/opt/zauberkoch-api/.env` auf dem VPS (mode 640) bzw. lokal in `server/.env` — nie committen.
-
-## Konventionen
-
-- **UI:** Material Design 3 Expressive. Token-Referenz: `/Users/martin/claude/_md3-expressive/md3-expressive.css`. `prefers-reduced-motion`-Guard ist auf jeder Animation Pflicht.
-- **Sprache:** UI-Texte und READMEs Deutsch, Code/Kommentare/Commits Englisch.
-- **PWA:** Service-Worker mit versioniertem Cache `zauberkoch-vN` — **bei jedem App-Shell-Change die Version bumpen** (aktuelle Version hier in CLAUDE.md nachführen).
-- **Kein Framework-Ballast:** Vanilla JS, keine React/Vue-Dependencies im Frontend.
 
 ## Befehle
 
 ```bash
-npm run dev        # Vite-Dev-Server (Frontend) — Proxy auf server/ per vite.config
-npm run build      # Production-Build nach dist/
-npm test           # Frontend-/Unit-Tests
-cd server && npm test   # Backend-Tests — Pflicht vor jedem Backend-Deploy
+# Backend (aus backend/)
+source .venv/bin/activate
+uvicorn app.main:app --reload --port 8742     # Dev-Server
+alembic upgrade head                          # Migrationen
+pytest                                        # Tests — Pflicht vor Deploy
+python -m scripts.allowlist add <email>       # Allowlist verwalten
+
+# Frontend (aus frontend/)
+npm run dev          # Vite-Dev-Server (Proxy /api → localhost:8742)
+npm run build        # Production-Build
+npm test             # Vitest — Pflicht vor Deploy
+npx playwright test  # E2E-Smoke (lokal)
+
+# Deploy (vom Mac)
+./deploy/deploy.sh              # Tests → Build → rsync → restart → healthcheck
 ```
 
-## Deploy (VPS 69.62.121.168)
+## Konventionen (verbindlich)
+
+- **UI-Texte Deutsch**, Code/Kommentare/Commits Englisch. Strings NUR über `src/i18n/de.ts` (i18n-ready).
+- **M3 Expressive handgebaut**: alle Farben/Shapes/Typo über Tokens in `tokens.css`. Moduswechsel Kochen↔Cocktail = Token-Morph (animiert), kein Neu-Rendern.
+- **Motion**: echte Springs (stiffness/damping) via Motion-Library — **keine linearen `ease-in-out`-CSS-Transitions als Animations-Ersatz**. Nur `transform`/`opacity` animieren, `will-change` gezielt. `prefers-reduced-motion` → schnelle Fades, Pflicht auf jeder Animation.
+- **Security**: `ANTHROPIC_API_KEY` nur server-seitig. Auth-Tokens NIE in localStorage (httpOnly-Cookies). CSRF-Schutz auf state-changing Requests. Scoring/Limits/Validierung server-seitig. CORS strikt auf zauberkoch.de.
+- **Rate-Limits**: `DAILY_LIMIT_PER_USER` (20) + `DAILY_LIMIT_GLOBAL` (Kostenschutz), beide env; 429 mit klarem UI-Feedback.
+- **Rezept-System-Prompt** ist ein iterierbares Kernstück: Versionen in `app/prompts/`, Prompt-Version wird am Rezept gespeichert. Keine generischen Rezepte; metrische Mengen; Cocktails mit cl + Technik (shaken/stirred/built).
+- **Keine KI-Bilder** — kuratierte SVG-Motive pro Länderküche.
+- **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
+- **Tests vor Deploy**: `pytest` + `npm test` müssen grün sein; `deploy.sh` erzwingt das.
+- Touch-Targets ≥ 48 px, Lighthouse Accessibility ≥ 95. Footer überall: `© 2026 Martin Pfeffer | celox.io`.
+
+## Env-Variablen
+
+Alle in `.env.example` dokumentiert. Secrets lokal in `backend/.env`, auf dem VPS in `/opt/zauberkoch-api/.env` (mode 640) — nie committen. Google-OAuth-Creds = **bestehender Client** (wie xword, `/opt/xword-api/.env`); Redirect-URIs für zauberkoch.de müssen in der Google Console ergänzt sein (docs/GOOGLE-OAUTH.md).
+
+## Deploy-Kurzform (Details: docs/DEPLOY.md)
 
 ```bash
-# Frontend: build + rsync (vorher npm test!)
-npm test && npm run build
-rsync -avz --delete dist/ root@69.62.121.168:/var/www/zauberkoch.celox.io/
-
-# Backend: sync + deps + restart (vorher cd server && npm test!)
-rsync -avz --exclude node_modules --exclude data --exclude .env \
-  server/ root@69.62.121.168:/opt/zauberkoch-api/
-ssh root@69.62.121.168 'cd /opt/zauberkoch-api && npm install --omit=dev && systemctl restart zauberkoch-api && systemctl is-active zauberkoch-api'
+./deploy/deploy.sh                    # kompletter Deploy
+ssh root@69.62.121.168 'systemctl status zauberkoch-api'
+ssh root@69.62.121.168 'journalctl -u zauberkoch-api -f'
 ```
 
-Details und Erst-Einrichtung (nginx-Block, systemd-Unit, Certbot, Backup-Timer): `docs/DEPLOY.md`. Infrastruktur-Gesamtdoku: `/Users/martin/CLAUDE.md`.
+nginx-vHost: `/` → `/var/www/zauberkoch.de/` (SPA-Fallback), `/api/` → 127.0.0.1:8742, **SSE-Endpoint mit `proxy_buffering off`** + langen Timeouts. `www` → 301 Apex. Backup: `zauberkoch-backup.timer` nächtlich → `/var/backups/zauberkoch/`. Infrastruktur-Gesamtdoku: `/Users/martin/CLAUDE.md`.
 
-## KI-Framework-Struktur (dieses Repo)
+## KI-Framework-Pflege
 
-Dieses Projekt folgt der vollen Claude-Code-Projektstruktur. **Diese Dateien aktiv pflegen** — bei jeder relevanten Änderung am Projekt prüfen, ob sie ein Update brauchen:
-
-| Datei/Ordner | Zweck | Pflege-Regel |
-|---|---|---|
-| `CLAUDE.md` | Team-Kontext, Befehle, Konventionen | Bei jeder Änderung an Stack, Befehlen, Deploy, SW-Cache-Version aktualisieren |
-| `CLAUDE.local.md` | Private Notizen (gitignored) | Nur lokal |
-| `.mcp.json` | Team-geteilte MCP-Server | Erweitern, wenn ein MCP-Server projektrelevant wird |
-| `.worktreeinclude` | Gitignorte Dateien für neue Worktrees | Ergänzen, wenn neue gitignorte Configs dazukommen (z.B. `.env`) |
-| `.claude/settings.json` | Permissions/Hooks (committet) | Neue häufige, sichere Befehle in die Allowlist aufnehmen |
-| `.claude/rules/` | Pfad-gebundene Themen-Regeln | Neue Regel-Datei pro neuem Themenbereich; Globs an Struktur anpassen |
-| `.claude/skills/` | Projekt-Skills (deploy, release-check) | Checklisten bei Prozess-Änderungen nachziehen |
-| `.claude/agents/` | Projekt-Subagenten | Review-Kriterien aktuell halten |
-| `.claude/workflows/` | Deterministische Multi-Agent-Scripts | Bei Bedarf erweitern |
+Dieses Repo folgt der vollen Claude-Code-Struktur. Bei jeder relevanten Änderung prüfen, ob Updates nötig sind: `CLAUDE.md` (Stack/Befehle/SW-Cache-Version), `.claude/rules/*` (Globs & Regeln), `.claude/skills/*` (Deploy-/Release-Checklisten), `.env.example` (neue Variablen), `docs/*`.

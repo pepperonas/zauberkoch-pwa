@@ -1,19 +1,39 @@
-# Zauberkoch 🧑‍🍳
+# Zauberkoch 🧑‍🍳🍸
 
-Rezept- und Koch-Web-App als PWA — Vanilla JS + Vite, Material Design 3 Expressive, Express + SQLite-Backend.
+KI-Rezept- & Cocktail-Generator — **https://zauberkoch.de**
 
-**Status:** Projekt-Gerüst (Claude-Code-Framework-Struktur), App-Code folgt.
+Der Nutzer wählt Geschmacksrichtung, Länderküche und Rahmenbedingungen; die Claude-API liefert ein vollständiges, hochwertiges Rezept mit exakten Mengen — live gestreamt, das Rezept baut sich vor den Augen des Nutzers auf.
 
-## Entwicklung
+**Stack:** FastAPI + SQLite + SQLAlchemy 2 · Anthropic API (Streaming/SSE) · React 19 + Vite + TS strict · Material 3 Expressive (handgebaut) + Motion-Spring-Physik · Google OAuth (PKCE, httpOnly-Sessions) · systemd + nginx auf VPS.
+
+## Lokales Setup
 
 ```bash
-npm run dev        # Frontend-Dev-Server
-npm test           # Tests
-cd server && npm test
+# Backend
+cd backend
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp ../.env.example .env        # Werte eintragen (Anthropic-Key, Google-Creds, SESSION_SECRET)
+alembic upgrade head
+uvicorn app.main:app --reload --port 8742
+
+# Frontend (zweites Terminal)
+cd frontend
+npm install
+npm run dev                    # http://localhost:5173, /api → Proxy auf :8742
 ```
 
-Build-, Deploy- und Architektur-Details: siehe `CLAUDE.md` und `docs/DEPLOY.md`.
+Google-OAuth-Einrichtung (Redirect-URIs für localhost + Prod): `docs/GOOGLE-OAUTH.md`.
+Deployment (systemd, nginx-vHost, certbot, Backups): `docs/DEPLOY.md` und `deploy/`.
+
+## Tests
+
+```bash
+cd backend && pytest           # Auth, Rate-Limiting, Cache, Aggregation, SSE-Parser
+cd frontend && npm test        # Mengen-Skalierung, Einheiten-Normalisierung
+cd frontend && npx playwright test   # E2E-Smoke
+```
 
 ## Lizenz
 
-MIT © Martin Pfeffer
+© 2026 Martin Pfeffer | celox.io

@@ -1,6 +1,6 @@
 export const meta = {
   name: 'zauberkoch-review',
-  description: 'Review changed files across correctness/security/UX dimensions, adversarially verify each finding',
+  description: 'Review changed files across correctness/security/conventions dimensions, adversarially verify each finding',
   whenToUse: 'Before a deploy or PR: thorough multi-agent review of the current diff',
   phases: [
     { title: 'Review', detail: 'one reviewer per dimension' },
@@ -35,9 +35,9 @@ const VERDICT = {
 }
 
 const DIMENSIONS = [
-  { key: 'correctness', prompt: 'Review the uncommitted diff (git diff HEAD) in this repo for correctness bugs: logic errors, unhandled edge cases, broken control flow. Report only defects with a concrete failure scenario.' },
-  { key: 'security', prompt: 'Review the uncommitted diff (git diff HEAD) for security issues: injection, missing server-side validation, secrets in code, auth/session flaws. Scoring/authorization logic must live server-side.' },
-  { key: 'pwa-ux', prompt: 'Review the uncommitted diff (git diff HEAD) for PWA/frontend regressions: service-worker cache version not bumped on app-shell changes, missing prefers-reduced-motion guards, broken offline behavior, MD3-token violations.' },
+  { key: 'correctness', prompt: 'Review the uncommitted diff (git diff HEAD) in this repo for correctness bugs: logic errors, unhandled edge cases (SSE aborts, cache races, day-boundary rate limits), broken Alembic migration paths. Report only defects with a concrete failure scenario.' },
+  { key: 'security', prompt: 'Review the uncommitted diff (git diff HEAD) for security issues: ANTHROPIC_API_KEY or secrets leaking client-side, missing server-side validation or rate limiting, session/CSRF flaws, tokens in localStorage, unescaped AI/user content in the DOM.' },
+  { key: 'conventions', prompt: 'Review the uncommitted diff (git diff HEAD) against the project rules in .claude/rules/: linear CSS transitions instead of springs, missing prefers-reduced-motion guards, inline hex colors instead of tokens.css, hardcoded UI strings instead of i18n/de.ts, Anthropic calls outside services/ai.py, prompt files edited in place instead of versioned, schema changes without migration, service-worker cache not bumped.' },
 ]
 
 const results = await pipeline(

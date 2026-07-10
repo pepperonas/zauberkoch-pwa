@@ -1,31 +1,36 @@
-# Deploy — zauberkoch.celox.io
+# Deploy — zauberkoch.de
 
-**Status: noch nicht eingerichtet.** Diese Datei beschreibt die geplante Erst-Einrichtung; nach dem Setup hier die tatsächlichen Werte dokumentieren (Muster: xword/xchange).
+**Status: noch nicht eingerichtet.** Diese Datei beschreibt die Erst-Einrichtung; nach dem Setup hier die tatsächlichen Werte nachführen.
 
-## Ziel-Setup (VPS 69.62.121.168)
+## Ziel-Setup (VPS 69.62.121.168, systemd + zentraler nginx — KEIN Docker)
 
 | Komponente | Wert |
 |---|---|
-| Frontend-Webroot | `/var/www/zauberkoch.celox.io/` |
-| Backend | `/opt/zauberkoch-api/` (systemd `zauberkoch-api`, Port **4251** loopback) |
-| Daten | `/opt/zauberkoch-api/data/` (SQLite, von Backup-Timer erfasst) |
-| Secrets | `/opt/zauberkoch-api/.env` (mode 640, nie committen) |
-| nginx | eigener Server-Block, `/api/` → `127.0.0.1:4251`, SPA-Fallback `try_files` |
-| TLS | Let's Encrypt via Certbot |
-| DNS | A-Record `zauberkoch.celox.io → 69.62.121.168` (Hostinger) |
+| Frontend-Webroot | `/var/www/zauberkoch.de/` (statischer Vite-Build, SPA-Fallback) |
+| Backend | `/opt/zauberkoch-api/` — venv + Code, systemd `zauberkoch-api`, Port **8742** loopback |
+| Daten | `/opt/zauberkoch-api/data/zauberkoch.db` (SQLite WAL) |
+| Secrets | `/opt/zauberkoch-api/.env` (mode 640, root:www-data) — Vorlage: `.env.example` |
+| nginx | eigener vHost `zauberkoch.de` + `www` (301 → Apex); `/api/` → 127.0.0.1:8742; **`/api/v1/recipes/generate` mit `proxy_buffering off` + `proxy_read_timeout 300s`** (SSE); Security-Header (CSP, HSTS) |
+| TLS | `certbot --nginx -d zauberkoch.de -d www.zauberkoch.de` |
+| Backup | `zauberkoch-backup.timer` nächtlich 03:45 → `/var/backups/zauberkoch/` (sqlite3 `.backup`, gzip, 14 Tage Rotation) |
 
-Port 4251 ist der nächste freie im 424x/425x-Schema (4250 = pkmn-battle).
+Port 8742 vor der Einrichtung auf Kollision prüfen: `ssh root@69.62.121.168 'ss -tlnp | grep 8742'`.
 
 ## Erst-Einrichtung (Checkliste)
 
-1. DNS-A-Record bei Hostinger anlegen
-2. Webroot + `/opt/zauberkoch-api/` anlegen, `.env` erzeugen (mode 640)
-3. systemd-Unit `zauberkoch-api.service` installieren (liegt nach Erstellung im Repo unter `server/`)
-4. nginx-Block anlegen, `nginx -t && systemctl reload nginx`
-5. Certbot: `certbot --nginx -d zauberkoch.celox.io`
-6. Backup-Timer für die SQLite-DB einrichten (Muster: `xword-backup.timer` → `/var/backups/zauberkoch/`)
-7. Deploy-Befehle aus `CLAUDE.md` ausführen und verifizieren
+1. **DNS** beim Registrar: A-Records `zauberkoch.de` und `www.zauberkoch.de` → `69.62.121.168`; verifizieren mit `dig +short zauberkoch.de`
+2. Verzeichnisse anlegen: `/var/www/zauberkoch.de/`, `/opt/zauberkoch-api/{data}/`
+3. Python-3.12-venv auf dem VPS: `python3.12 -m venv /opt/zauberkoch-api/.venv`
+4. `.env` anlegen (mode 640): Werte aus `.env.example`; `GOOGLE_CLIENT_ID/SECRET` aus dem bestehenden Client (siehe `/opt/xword-api/.env`), `SESSION_SECRET` neu (`openssl rand -hex 32`), `ZK_ENV=prod`, `ZK_BASE_URL=https://zauberkoch.de`
+5. **Google Console:** Redirect-URI `https://zauberkoch.de/api/v1/auth/callback` beim bestehenden OAuth-Client ergänzen (docs/GOOGLE-OAUTH.md)
+6. `deploy/zauberkoch-api.service` nach `/etc/systemd/system/` + `daemon-reload` + `enable`
+7. nginx-vHost aus `deploy/nginx-vhost.conf` nach `/etc/nginx/sites-available/` + Symlink + `nginx -t && systemctl reload nginx`
+8. Certbot (Schritt 1 muss propagiert sein)
+9. Backup-Timer aus `deploy/` installieren + `systemctl enable --now zauberkoch-backup.timer`
+10. Erster Deploy: `./deploy/deploy.sh` (führt auch `alembic upgrade head` auf dem VPS aus)
+11. Allowlist befüllen: `ssh root@69.62.121.168 'cd /opt/zauberkoch-api && .venv/bin/python -m scripts.allowlist add martinpaush@gmail.com'` (+ martin.pfeffer@celox.io)
+12. Live-Smoke: Login → Generierung streamt → Favorit
 
 ## Regel-Deploy
 
-Siehe `CLAUDE.md` → Abschnitt „Deploy". Vor jedem Deploy: Tests grün, bei App-Shell-Änderungen SW-Cache-Version bumpen.
+`./deploy/deploy.sh [backend|frontend|all]` — erzwingt vorher `pytest` + `npm test`. Details in `deploy/deploy.sh` und `.claude/skills/deploy/`.

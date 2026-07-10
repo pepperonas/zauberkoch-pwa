@@ -1,11 +1,16 @@
 {
   "permissions": {
     "allow": [
+      "Bash(pytest:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(alembic:*)",
+      "Bash(pip install:*)",
       "Bash(npm test:*)",
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
-      "Bash(npm run lint:*)",
-      "Bash(node --test:*)",
+      "Bash(npm install:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(npx tsc:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -16,9 +21,9 @@
       "Bash(mkdir:*)"
     ],
     "deny": [
+      "Read(backend/.env)",
       "Read(.env)",
-      "Read(.env.*)",
-      "Read(server/.env)"
+      "Read(.env.*)"
     ]
   }
 }

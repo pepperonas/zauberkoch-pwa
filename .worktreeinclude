@@ -1,6 +1,4 @@
 # Gitignorte Dateien, die in neue Worktrees kopiert werden sollen
-.env
-.env.*
-server/.env
+backend/.env
 CLAUDE.local.md
 .claude/settings.local.json
