@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.core.security import get_current_user, require_csrf
 from app.db import get_db
-from app.models import Favorite, Recipe, User
+from app.models import Favorite, Generation, Recipe, User
 from app.schemas.recipe import GenerateParams
 from app.services import ai, cache, ratelimit
 from app.services.json_stream import Event, replay_events
@@ -59,11 +59,26 @@ async def generate(
         # Real generation: consume the daily budget up front (cache hits are free)
         ratelimit.consume_generation(db, user.id)
 
+    def _log_generation(*, cached_hit: bool, status: str, usage: dict | None, prompt_version: str, model: str) -> None:
+        db.add(
+            Generation(
+                user_id=user.id,
+                mode=params.modus,
+                prompt_version=prompt_version,
+                model=model,
+                cached=cached_hit,
+                status=status,
+                **(usage or {}),
+            )
+        )
+        db.commit()
+
     async def event_stream() -> AsyncGenerator[str, None]:
         if cached is not None:
             recipe = json.loads(cached.recipe_json)
             cache.register_hit(db, cached)
             row = _persist_recipe(db, user, params, recipe, cached.prompt_version, cached.model)
+            _log_generation(cached_hit=True, status="ok", usage=None, prompt_version=cached.prompt_version, model=cached.model)
             for name, data in replay_events(recipe):
                 yield _sse(name, data)
             yield _sse("saved", {"recipe_id": row.id, "cached": True, **ratelimit.get_usage(db, user.id)})
@@ -71,15 +86,27 @@ async def generate(
 
         model = ai.get_settings_model()
         final: dict | None = None
+        usage: dict | None = None
+        failed = False
         async for name, data in ai.generate_recipe_events(params):
-            yield _sse(name, data)
+            if name == "usage":
+                usage = data  # internal event — never forwarded to the client
+                continue
+            if name == "error":
+                failed = True
             if name == "done":
                 final = data
-        if final is not None:
-            recipe_json = json.dumps(final, ensure_ascii=False)
-            cache.store(db, h, recipe_json, ai.prompt_version(), model)
-            row = _persist_recipe(db, user, params, final, ai.prompt_version(), model)
-            yield _sse("saved", {"recipe_id": row.id, "cached": False, **ratelimit.get_usage(db, user.id)})
+            yield _sse(name, data)
+
+        if failed or final is None:
+            _log_generation(cached_hit=False, status="error", usage=usage, prompt_version=ai.prompt_version(), model=model)
+            return
+
+        recipe_json = json.dumps(final, ensure_ascii=False)
+        cache.store(db, h, recipe_json, ai.prompt_version(), model)
+        row = _persist_recipe(db, user, params, final, ai.prompt_version(), model)
+        _log_generation(cached_hit=False, status="ok", usage=usage, prompt_version=ai.prompt_version(), model=model)
+        yield _sse("saved", {"recipe_id": row.id, "cached": False, **ratelimit.get_usage(db, user.id)})
 
     return StreamingResponse(
         event_stream(),

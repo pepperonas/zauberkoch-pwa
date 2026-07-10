@@ -31,6 +31,12 @@ async def main() -> int:
             print(f"ERROR  {data}")
         elif name == "done":
             print(f"DONE   schwierigkeit={data.get('schwierigkeit')} naehrwerte={'ja' if data.get('naehrwerte') else 'nein'}")
+        elif name == "usage":
+            print(
+                f"USAGE  in={data['input_tokens']} out={data['output_tokens']} "
+                f"cache_read={data['cache_read_tokens']} cache_write={data['cache_write_tokens']} "
+                f"dauer={data['duration_ms']/1000:.1f}s"
+            )
 
     ok = counts["done"] == 1 and counts["error"] == 0 and counts["zutat"] >= 3 and counts["schritt"] >= 2
     print(f"\n{'✔ SMOKE OK' if ok else '✘ SMOKE FAILED'}  {counts}")

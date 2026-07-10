@@ -43,6 +43,28 @@ class Recipe(BaseModel):
     garnitur: str | None = None  # cocktail only
 
 
+def recipe_llm_schema() -> dict:
+    """JSON schema for structured outputs: additionalProperties=false and
+    all keys required on every object (the model must emit every field)."""
+
+    def harden(node: dict) -> None:
+        if node.get("type") == "object" and "properties" in node:
+            node["additionalProperties"] = False
+            node["required"] = list(node["properties"].keys())
+        for child in node.get("properties", {}).values():
+            harden(child)
+        for child in node.get("$defs", {}).values():
+            harden(child)
+        if "items" in node and isinstance(node["items"], dict):
+            harden(node["items"])
+        for variant in node.get("anyOf", []):
+            harden(variant)
+
+    schema = Recipe.model_json_schema()
+    harden(schema)
+    return schema
+
+
 GESCHMACK = ["scharf", "umami", "süß", "sauer", "rauchig", "frisch", "herzhaft", "cremig"]
 
 

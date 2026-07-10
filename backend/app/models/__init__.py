@@ -1,6 +1,7 @@
 from app.models.models import (
     AllowlistEntry,
     Favorite,
+    Generation,
     GenerationCache,
     RateLimit,
     Recipe,
@@ -12,6 +13,7 @@ from app.models.models import (
 __all__ = [
     "AllowlistEntry",
     "Favorite",
+    "Generation",
     "GenerationCache",
     "RateLimit",
     "Recipe",

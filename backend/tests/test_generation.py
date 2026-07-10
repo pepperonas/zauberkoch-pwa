@@ -42,6 +42,10 @@ def mock_ai(monkeypatch):
             recipe = {**RECIPE, "titel": "Variante: " + RECIPE["titel"]}
         for ev in replay_events(recipe):
             yield ev
+        yield (
+            "usage",
+            {"input_tokens": 3000, "output_tokens": 900, "cache_read_tokens": 2500, "cache_write_tokens": 0, "duration_ms": 4200},
+        )
 
     monkeypatch.setattr(recipes_module.ai, "generate_recipe_events", fake_events)
     return calls
@@ -70,6 +74,7 @@ def test_generate_streams_semantic_events(client, logged_in, mock_ai):
     names = [n for n, _ in events]
     assert names[0] == "meta"
     assert "done" in names
+    assert "usage" not in names  # internal event must never reach the client
     assert names[-1] == "saved"
     saved = events[-1][1]
     assert saved["cached"] is False
@@ -153,6 +158,19 @@ def test_history_and_detail(client, logged_in, mock_ai):
     detail = client.get(f"/api/v1/recipes/{recipe_id}").json()
     assert detail["recipe"]["titel"] == RECIPE["titel"]
     assert detail["is_favorite"] is False
+
+
+def test_generation_usage_is_logged(client, db_session, logged_in, mock_ai):
+    from app.models import Generation
+
+    generate(client, logged_in)          # live call
+    generate(client, logged_in)          # identical params -> cache hit
+    rows = db_session.query(Generation).order_by(Generation.id).all()
+    assert len(rows) == 2
+    live, hit = rows
+    assert live.cached is False and live.input_tokens == 3000 and live.cache_read_tokens == 2500
+    assert live.duration_ms == 4200 and live.status == "ok"
+    assert hit.cached is True and hit.input_tokens == 0
 
 
 def test_recipe_of_other_user_is_hidden(client, db_session, logged_in, mock_ai):

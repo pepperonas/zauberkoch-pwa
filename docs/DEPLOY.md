@@ -31,6 +31,18 @@ Port 8742 vor der Einrichtung auf Kollision prüfen: `ssh root@69.62.121.168 'ss
 11. Allowlist befüllen: `ssh root@69.62.121.168 'cd /opt/zauberkoch-api && .venv/bin/python -m scripts.allowlist add martinpaush@gmail.com'` (+ martin.pfeffer@celox.io)
 12. Live-Smoke: Login → Generierung streamt → Favorit
 
+## Monitoring & Off-VPS-Backup (seit 2026-07-11)
+
+| Was | Wo | Wann |
+|---|---|---|
+| Healthcheck → ntfy bei Ausfall (30-min-Cooldown, Recovery-Meldung) | raspi3 cron `/home/pi/bin/zauberkoch-healthcheck.sh` | alle 5 min |
+| Fehler-Digest (journalctl ERROR/CRITICAL 24 h) → ntfy | VPS cron `/usr/local/bin/zauberkoch-error-digest.sh` | täglich 06:30 |
+| Off-VPS-Backup-Pull (neuester Dump → raspi3, 14 Tage Rotation) | raspi3 cron `/home/pi/bin/zauberkoch-backup-pull.sh` → `/home/pi/zauberkoch-backup/` | täglich 05:00 |
+
+**ntfy-Topic: `zauberkoch-alerts-7afe2f13`** — in der ntfy-App (iOS/Android) oder unter https://ntfy.sh/zauberkoch-alerts-7afe2f13 abonnieren. Topic liegt auf raspi3 (`~/.zauberkoch-ntfy-topic`) und VPS (`/opt/zauberkoch-api/.ntfy-topic`). SSH: dedizierter Key `raspi3:~/.ssh/id_zauberkoch_backup` → VPS. Restore-Probe zuletzt: 2026-07-11 ✓ (users/recipes aus Dump gelesen).
+
+**Usage-/Kosten-Report:** `ssh root@69.62.121.168 'cd /opt/zauberkoch-api && .venv/bin/python -m scripts.stats 30'`
+
 ## Regel-Deploy
 
 `./deploy/deploy.sh [backend|frontend|all]` — erzwingt vorher `pytest` + `npm test`. Details in `deploy/deploy.sh` und `.claude/skills/deploy/`.

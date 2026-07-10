@@ -37,5 +37,12 @@ if [[ "$TARGET" == "frontend" || "$TARGET" == "all" ]]; then
 fi
 
 log "Healthcheck"
-sleep 1
-curl -sf https://zauberkoch.de/api/v1/health && printf '\n\033[1;32m✔ Deploy OK\033[0m\n'
+for i in 1 2 3 4 5 6; do
+  if curl -sf https://zauberkoch.de/api/v1/health; then
+    printf '\n\033[1;32m✔ Deploy OK\033[0m\n'
+    exit 0
+  fi
+  sleep 2
+done
+printf '\n\033[1;31m✘ Healthcheck fehlgeschlagen\033[0m\n'
+exit 1
