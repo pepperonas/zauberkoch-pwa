@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
+import { SnackbarProvider } from './components/ui/Snackbar';
 import { AppProvider } from './state/app';
 import './styles/tokens.css';
 import './styles/base.css';
@@ -23,7 +24,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AppProvider>
-          <App />
+          <SnackbarProvider>
+            <App />
+          </SnackbarProvider>
         </AppProvider>
       </BrowserRouter>
     </QueryClientProvider>

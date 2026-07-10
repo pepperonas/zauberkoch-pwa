@@ -182,3 +182,30 @@
   translate: 0 -50%;
 }
 .switch[aria-checked='true'] .switch__thumb { background: var(--c-on-primary); width: 24px; height: 24px; }
+
+/* ---------- Snackbar ---------- */
+.snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  translate: -50% 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: min(92vw, 480px);
+  background: var(--c-on-surface);
+  color: var(--c-surface);
+  border-radius: var(--shape-md);
+  padding: var(--space-3) var(--space-5);
+  box-shadow: var(--elev-3);
+  font: var(--type-body);
+}
+.snackbar__msg { flex: 1; }
+.snackbar__action {
+  color: var(--c-primary-container);
+  font: var(--type-label-lg);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}

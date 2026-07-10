@@ -71,14 +71,14 @@ npx playwright test  # E2E-Smoke (lokal)
 - **Rate-Limits**: `DAILY_LIMIT_PER_USER` (20) + `DAILY_LIMIT_GLOBAL` (Kostenschutz), beide env; 429 mit klarem UI-Feedback.
 - **Rezept-System-Prompt** ist ein iterierbares Kernstück: Versionen in `app/prompts/`, Prompt-Version wird am Rezept gespeichert. Keine generischen Rezepte; metrische Mengen; Cocktails mit cl + Technik (shaken/stirred/built).
 - **Keine KI-Bilder** — kuratierte SVG-Motive pro Länderküche.
-- **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` (aktuell **v2**) — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
+- **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` (aktuell **v3**) — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
 - **CSP beachtet**: `script-src 'self'` — KEINE Inline-Scripts in index.html (Theme-Init liegt extern in `public/theme-init.js`).
 - **Tests vor Deploy**: `pytest` + `npm test` müssen grün sein; `deploy.sh` erzwingt das.
 - Touch-Targets ≥ 48 px, Lighthouse Accessibility ≥ 95. Footer überall: `© 2026 Martin Pfeffer | celox.io`.
 
 ## Env-Variablen
 
-Alle in `.env.example` dokumentiert. Secrets lokal in `backend/.env`, auf dem VPS in `/opt/zauberkoch-api/.env` (mode 640) — nie committen. Google-OAuth-Creds = **bestehender Client** (wie xword, `/opt/xword-api/.env`); Redirect-URIs für zauberkoch.de müssen in der Google Console ergänzt sein (docs/GOOGLE-OAUTH.md).
+Alle in `.env.example` dokumentiert. Secrets lokal in `backend/.env`, auf dem VPS in `/opt/zauberkoch-api/.env` (mode 640) — nie committen. Google-OAuth = **eigener Client** für Zauberkoch (Redirect-URIs registriert, docs/GOOGLE-OAUTH.md).
 
 ## Deploy-Kurzform (Details: docs/DEPLOY.md)
 

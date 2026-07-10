@@ -1,6 +1,6 @@
 /** Typed API client. Session lives in an httpOnly cookie; CSRF via header. */
 
-import type { ApiError, Me, RecipeDetail, RecipeListItem, ShoppingItem } from './types';
+import type { ApiError, Me, Modus, Recipe, RecipeDetail, RecipeListItem, ShoppingItem } from './types';
 
 let csrfToken = '';
 
@@ -60,6 +60,15 @@ export const api = {
   favorite: (id: number, on: boolean) =>
     request<{ is_favorite: boolean }>(`/recipes/${id}/favorite`, { method: on ? 'PUT' : 'DELETE' }),
 
+  shareCreate: (id: number) =>
+    request<{ share_token: string; share_url: string }>(`/recipes/${id}/share`, { method: 'POST' }),
+  shareRevoke: (id: number) =>
+    request<{ share_token: null }>(`/recipes/${id}/share`, { method: 'DELETE' }),
+  sharedGet: (token: string) =>
+    request<{ mode: Modus; recipe: Recipe; share_token: string }>(`/share/${token}`),
+  shareAdopt: (token: string) =>
+    request<{ recipe_id: number }>(`/share/${token}/adopt`, { method: 'POST' }),
+
   shopping: () => request<{ items: ShoppingItem[] }>('/shopping'),
   shoppingFromRecipe: (recipe_id: number, portionen?: number) =>
     request<{ items: ShoppingItem[] }>('/shopping/from-recipe', {
@@ -75,4 +84,10 @@ export const api = {
     request<{ items: ShoppingItem[] }>('/shopping/reorder', { method: 'POST', body: JSON.stringify({ ids }) }),
   shoppingClearChecked: () =>
     request<{ items: ShoppingItem[] }>('/shopping/checked', { method: 'DELETE' }),
+  shoppingClearAll: () => request<{ items: ShoppingItem[] }>('/shopping', { method: 'DELETE' }),
+  shoppingReplace: (items: Pick<ShoppingItem, 'name' | 'menge' | 'einheit' | 'checked'>[]) =>
+    request<{ items: ShoppingItem[] }>('/shopping/replace', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    }),
 };

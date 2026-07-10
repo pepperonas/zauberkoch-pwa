@@ -7,11 +7,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { CookMode } from '../components/recipe/CookMode';
 import { RecipeView } from '../components/recipe/RecipeView';
+import { ShareDialog } from '../components/recipe/ShareDialog';
 import { Button } from '../components/ui';
+import { useSnackbar } from '../components/ui/Snackbar';
 import { t } from '../i18n';
 import { api } from '../lib/api';
 import { recipeToText } from '../lib/units';
 import { spring } from '../motion/springs';
+import { useShoppingUndo } from '../state/useShoppingUndo';
 
 export function RecipeDetailPage() {
   const { id } = useParams();
@@ -19,7 +22,10 @@ export function RecipeDetailPage() {
   const navigate = useNavigate();
   const reduced = useReducedMotion();
   const queryClient = useQueryClient();
+  const { show } = useSnackbar();
+  const { withUndo } = useShoppingUndo();
   const [cookOpen, setCookOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [portionen, setPortionen] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('');
 
@@ -48,29 +54,25 @@ export function RecipeDetailPage() {
     window.setTimeout(() => setFeedback(''), 2200);
   };
 
-  const share = async () => {
-    const text = recipeToText(recipe, factor);
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: recipe.titel, text });
-      } catch {
-        /* user cancelled */
-      }
-    } else {
-      await navigator.clipboard.writeText(text);
-      flash(t('recipe.copied'));
-    }
-  };
-
   const copy = async () => {
     await navigator.clipboard.writeText(recipeToText(recipe, factor));
     flash(t('recipe.copied'));
   };
 
-  const toShopping = async () => {
-    await api.shoppingFromRecipe(recipeId, portionen ?? undefined);
-    void queryClient.invalidateQueries({ queryKey: ['shopping'] });
-    flash(t('recipe.addedToList'));
+  const toShopping = () =>
+    withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(recipeId, portionen ?? undefined));
+
+  const toggleFavorite = () => {
+    const next = !isFav;
+    favorite.mutate(next);
+    if (!next) {
+      show(t('recipe.favoriteRemoved'), {
+        actionLabel: t('undo'),
+        onAction: async () => {
+          favorite.mutate(true);
+        },
+      });
+    }
   };
 
   return (
@@ -106,15 +108,11 @@ export function RecipeDetailPage() {
         onPortionenChange={setPortionen}
         actions={
           <>
-            <Button
-              variant={isFav ? 'tonal' : 'outlined'}
-              onClick={() => favorite.mutate(!isFav)}
-              aria-pressed={isFav}
-            >
+            <Button variant={isFav ? 'tonal' : 'outlined'} onClick={toggleFavorite} aria-pressed={isFav}>
               {isFav ? '⭐' : '☆'} {t('recipe.favorite')}
             </Button>
             <Button variant="outlined" onClick={() => void toShopping()}>🛒 {t('recipe.toShoppingList')}</Button>
-            <Button variant="outlined" onClick={() => void share()}>📤 {t('recipe.share')}</Button>
+            <Button variant="outlined" onClick={() => setShareOpen(true)}>📤 {t('recipe.share')}</Button>
             <Button variant="outlined" onClick={() => void copy()}>📋 {t('recipe.copy')}</Button>
             {recipe.schritte.length > 0 && (
               <Button onClick={() => setCookOpen(true)}>👨‍🍳 {t('recipe.cookMode')}</Button>
@@ -123,6 +121,7 @@ export function RecipeDetailPage() {
         }
       />
 
+      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={recipe.titel} />
       <AnimatePresence>
         {cookOpen && <CookMode schritte={recipe.schritte} mode={mode} onClose={() => setCookOpen(false)} />}
       </AnimatePresence>

@@ -4,11 +4,12 @@ import { AnimatePresence, motion, useReducedMotion, Reorder } from 'motion/react
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { Button } from '../components/ui';
+import { Button, IconButton } from '../components/ui';
 import { t } from '../i18n';
 import { api } from '../lib/api';
 import type { ShoppingItem } from '../lib/types';
 import { spring, springBouncy } from '../motion/springs';
+import { useShoppingUndo } from '../state/useShoppingUndo';
 
 function itemLabel(item: ShoppingItem): string {
   const menge = item.menge != null ? `${new Intl.NumberFormat('de-DE').format(item.menge)} ${item.einheit}`.trim() : '';
@@ -29,13 +30,18 @@ export function ShoppingPage() {
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['shopping'] });
 
+  const { withUndo } = useShoppingUndo();
+
   const check = useMutation({
     mutationFn: ({ id, checked }: { id: number; checked: boolean }) => api.shoppingCheck(id, checked),
     onSuccess: invalidate,
   });
   const add = useMutation({ mutationFn: (name: string) => api.shoppingAdd(name), onSuccess: invalidate });
-  const clearChecked = useMutation({ mutationFn: () => api.shoppingClearChecked(), onSuccess: invalidate });
   const reorder = useMutation({ mutationFn: (ids: number[]) => api.shoppingReorder(ids) });
+
+  const deleteItem = (item: ShoppingItem) => void withUndo(t('shopping.itemDeleted'), () => api.shoppingDelete(item.id));
+  const clearChecked = () => void withUndo(t('shopping.checkedCleared'), () => api.shoppingClearChecked());
+  const clearAll = () => void withUndo(t('shopping.listCleared'), () => api.shoppingClearAll());
 
   const submit = () => {
     const name = input.trim();
@@ -132,6 +138,9 @@ export function ShoppingPage() {
                         />
                       )}
                     </span>
+                    <IconButton label={t('common.delete')} onClick={() => deleteItem(item)}>
+                      ✕
+                    </IconButton>
                     <span className="muted" aria-hidden style={{ cursor: 'grab' }}>⋮⋮</span>
                   </div>
                 </Reorder.Item>
@@ -144,10 +153,13 @@ export function ShoppingPage() {
           <div className="actions" style={{ marginTop: 0 }}>
             <Button variant="outlined" onClick={() => void exportList()}>📤 {t('shopping.export')}</Button>
             {anyChecked && (
-              <Button variant="danger" onClick={() => clearChecked.mutate()}>
+              <Button variant="tonal" onClick={clearChecked}>
                 🧹 {t('shopping.clearChecked')}
               </Button>
             )}
+            <Button variant="danger" onClick={clearAll}>
+              🗑 {t('shopping.clearAll')}
+            </Button>
           </div>
         )}
       </div>

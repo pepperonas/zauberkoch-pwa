@@ -188,3 +188,47 @@ def clear_checked(user: User = Depends(get_current_user), db: DbSession = Depend
             db.delete(item)
     db.commit()
     return {"items": [_serialize(i) for i in _items(db, user)]}
+
+
+@router.delete("", dependencies=[Depends(require_csrf)])
+def clear_all(user: User = Depends(get_current_user), db: DbSession = Depends(get_db)) -> dict:
+    for item in _items(db, user):
+        db.delete(item)
+    db.commit()
+    return {"items": []}
+
+
+class ReplaceItem(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    menge: float | None = Field(default=None, ge=0)
+    einheit: str = Field(default="", max_length=32)
+    checked: bool = False
+
+
+class ReplaceBody(BaseModel):
+    items: list[ReplaceItem] = Field(max_length=MAX_ITEMS)
+
+
+@router.post("/replace", dependencies=[Depends(require_csrf)])
+def replace_all(
+    body: ReplaceBody,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    """Replace the whole list — generic undo-restore for destructive operations."""
+    for item in _items(db, user):
+        db.delete(item)
+    for position, entry in enumerate(body.items):
+        norm = normalize(entry.name, entry.menge, entry.einheit)  # kg->g etc., keeps merges consistent
+        db.add(
+            ShoppingListItem(
+                user_id=user.id,
+                name=norm.name,
+                menge=norm.menge,
+                einheit=norm.einheit,
+                checked=entry.checked,
+                position=position,
+            )
+        )
+    db.commit()
+    return {"items": [_serialize(i) for i in _items(db, user)]}

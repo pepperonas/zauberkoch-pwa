@@ -10,6 +10,7 @@ import { GeneratePage } from './pages/GeneratePage';
 import { HistoryPage } from './pages/HistoryPage';
 import { LandingPage } from './pages/LandingPage';
 import { RecipeDetailPage } from './pages/RecipeDetailPage';
+import { SharePage } from './pages/SharePage';
 import { ShoppingPage } from './pages/ShoppingPage';
 import { useApp } from './state/app';
 import './App.css';
@@ -61,10 +62,14 @@ export default function App() {
             <Route path="/favoriten" element={<FavoritesPage />} />
             <Route path="/verlauf" element={<HistoryPage />} />
             <Route path="/einkauf" element={<ShoppingPage />} />
+            <Route path="/r/:token" element={<SharePage />} />
             <Route path="*" element={<GeneratePage />} />
           </Routes>
         ) : (
-          <LandingPage />
+          <Routes>
+            <Route path="/r/:token" element={<SharePage />} />
+            <Route path="*" element={<LandingPage />} />
+          </Routes>
         )}
       </main>
 

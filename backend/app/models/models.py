@@ -60,6 +60,7 @@ class Recipe(Base):
     kueche: Mapped[str] = mapped_column(String(64), default="", index=True)
     prompt_version: Mapped[str] = mapped_column(String(32))
     model: Mapped[str] = mapped_column(String(64))
+    share_token: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
 
 

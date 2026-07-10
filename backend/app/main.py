@@ -36,6 +36,11 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router, prefix="/api/v1")
 
+    # Crawler-facing share pages (/r/{token}) — proxied by nginx, no /api prefix
+    from app.api.v1.share import html_router
+
+    app.include_router(html_router)
+
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         detail = exc.detail if isinstance(exc.detail, dict) else {"code": "http_error", "message": str(exc.detail)}

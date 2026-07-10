@@ -6,9 +6,12 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { CookMode } from '../components/recipe/CookMode';
 import { RecipeView, type RecipeViewData } from '../components/recipe/RecipeView';
+import { ShareDialog } from '../components/recipe/ShareDialog';
 import { Button, Chip, Segmented, Switch } from '../components/ui';
 import { Dialog } from '../components/ui/Dialog';
 import { Sheet } from '../components/ui/Sheet';
+import { useSnackbar } from '../components/ui/Snackbar';
+import { useShoppingUndo } from '../state/useShoppingUndo';
 import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 import { streamRecipe } from '../lib/sse';
@@ -52,7 +55,10 @@ export function GeneratePage() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [streamError, setStreamError] = useState<ApiError | null>(null);
   const [cookOpen, setCookOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [adultOpen, setAdultOpen] = useState(false);
+  const { show } = useSnackbar();
+  const { withUndo } = useShoppingUndo();
   const abortRef = useRef<(() => void) | null>(null);
   const lastParams = useRef<GenerateParams | null>(null);
 
@@ -146,6 +152,16 @@ export function GeneratePage() {
     setIsFavorite(next);
     await api.favorite(recipeId, next);
     void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+    if (!next) {
+      show(t('recipe.favoriteRemoved'), {
+        actionLabel: t('undo'),
+        onAction: async () => {
+          setIsFavorite(true);
+          await api.favorite(recipeId, true);
+          void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+        },
+      });
+    }
   };
 
   const addFridgeItem = () => {
@@ -205,9 +221,14 @@ export function GeneratePage() {
                 {recipeId != null && (
                   <Button
                     variant="outlined"
-                    onClick={() => void api.shoppingFromRecipe(recipeId).then(() => queryClient.invalidateQueries({ queryKey: ['shopping'] }))}
+                    onClick={() => void withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(recipeId))}
                   >
                     🛒 {t('recipe.toShoppingList')}
+                  </Button>
+                )}
+                {recipeId != null && (
+                  <Button variant="outlined" onClick={() => setShareOpen(true)}>
+                    📤 {t('recipe.share')}
                   </Button>
                 )}
                 {data.schritte.length > 0 && (
@@ -221,6 +242,9 @@ export function GeneratePage() {
           }
         />
 
+        {recipeId != null && data.meta && (
+          <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={data.meta.titel} />
+        )}
         <AnimatePresence>
           {cookOpen && <CookMode schritte={data.schritte} mode={mode} onClose={() => setCookOpen(false)} />}
         </AnimatePresence>
