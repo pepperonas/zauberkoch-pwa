@@ -22,7 +22,7 @@ Mobile-first Web-App unter **https://zauberkoch.de**: Nutzer wählt Modus (Koche
 
 ```
 backend/          # FastAPI-App (eigenes venv: backend/.venv)
-  app/api/v1/     # Router (auth, recipes, favorites, shopping, me, health)
+  app/api/v1/     # Router (auth, recipes, favorites, shopping, share, me, health)
   app/core/       # config (pydantic-settings), security, logging
   app/models/     # SQLAlchemy: users, sessions, recipes, favorites,
                   #   shopping_list_items, generation_cache, allowlist, rate_limits
