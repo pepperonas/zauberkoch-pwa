@@ -1,0 +1,37 @@
+"""Generation cache: identical normalized params -> cached recipe."""
+
+import hashlib
+import json
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session as DbSession
+
+from app.models import GenerationCache
+from app.schemas.recipe import GenerateParams
+
+
+def params_hash(params: GenerateParams) -> str:
+    canonical = json.dumps(params.cache_relevant(), sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def get_cached(db: DbSession, h: str) -> GenerationCache | None:
+    return db.execute(select(GenerationCache).where(GenerationCache.params_hash == h)).scalar_one_or_none()
+
+
+def store(db: DbSession, h: str, recipe_json: str, prompt_version: str, model: str) -> None:
+    """Insert or replace the cache entry for this params hash (regenerate replaces)."""
+    entry = get_cached(db, h)
+    if entry is None:
+        entry = GenerationCache(params_hash=h, recipe_json=recipe_json, prompt_version=prompt_version, model=model)
+        db.add(entry)
+    else:
+        entry.recipe_json = recipe_json
+        entry.prompt_version = prompt_version
+        entry.model = model
+    db.commit()
+
+
+def register_hit(db: DbSession, entry: GenerationCache) -> None:
+    entry.hit_count += 1
+    db.commit()
