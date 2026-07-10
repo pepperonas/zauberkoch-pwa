@@ -1,9 +1,9 @@
 /* Zauberkoch Service Worker.
  * Cache version — BUMP on every app-shell change (+ update CLAUDE.md).
  */
-const CACHE = 'zauberkoch-v1';
+const CACHE = 'zauberkoch-v2';
 const API_CACHE = 'zauberkoch-api-v1';
-const SHELL = ['/', '/icon.svg', '/manifest.webmanifest'];
+const SHELL = ['/', '/icon.svg', '/manifest.webmanifest', '/theme-init.js'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));

@@ -8,19 +8,8 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Zauberkoch — KI-Rezepte & Cocktails</title>
-    <script>
-      // Pre-paint theme/mode init — no FOUC
-      (function () {
-        var root = document.documentElement;
-        var theme = localStorage.getItem('zk-theme');
-        if (theme !== 'light' && theme !== 'dark') {
-          theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        root.setAttribute('data-theme', theme);
-        var mode = localStorage.getItem('zk-mode');
-        root.setAttribute('data-mode', mode === 'cocktail' ? 'cocktail' : 'kochen');
-      })();
-    </script>
+    <!-- Pre-paint theme init: external file (CSP script-src 'self'), sync = no FOUC -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>
