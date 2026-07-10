@@ -82,8 +82,7 @@ def render_og(recipe: dict, mode: str) -> Image.Image:
     y = 96
 
     kueche_font = _font("Inter.ttf", 34, 650)
-    kueche = (recipe.get("kueche") or "").upper()
-    label = f"{'🍸 ' if mode == 'cocktail' else ''}{kueche}".strip()
+    label = (recipe.get("kueche") or "").upper()  # no emoji — fonts have no color glyphs
     draw.text((margin, y), label, font=kueche_font, fill=pal["primary"])
     y += 72
 
