@@ -1,0 +1,6 @@
+[Unit]
+Description=Zauberkoch SQLite backup
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'mkdir -p /var/backups/zauberkoch && sqlite3 /opt/zauberkoch-api/data/zauberkoch.db ".backup /var/backups/zauberkoch/zauberkoch-$(date +%%F).db" && gzip -f /var/backups/zauberkoch/zauberkoch-$(date +%%F).db && find /var/backups/zauberkoch -name "*.gz" -mtime +14 -delete'

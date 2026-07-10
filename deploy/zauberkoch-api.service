@@ -1,0 +1,23 @@
+[Unit]
+Description=Zauberkoch API (FastAPI/uvicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/zauberkoch-api
+EnvironmentFile=/opt/zauberkoch-api/.env
+ExecStart=/opt/zauberkoch-api/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8742
+Restart=on-failure
+RestartSec=3
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/zauberkoch-api/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

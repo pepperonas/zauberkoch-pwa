@@ -1,0 +1,9 @@
+[Unit]
+Description=Nightly Zauberkoch DB backup
+
+[Timer]
+OnCalendar=*-*-* 03:45:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
