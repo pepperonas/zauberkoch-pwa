@@ -151,7 +151,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
                       )}
                     </span>
                     <span className="zutat__label">
-                      <span className="zutat__menge">{formatZutatMenge(zutat, factor)}</span>
+                      <span className="zutat__menge">{formatZutatMenge(zutat, factor)}</span>{' '}
                       {zutat.name}
                       {isChecked && !reduced && (
                         <motion.span
