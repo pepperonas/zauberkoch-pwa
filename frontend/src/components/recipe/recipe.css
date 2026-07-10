@@ -1,0 +1,132 @@
+/* Recipe view, hero, cook mode */
+
+.hero {
+  position: relative;
+  border-radius: var(--shape-xl);
+  overflow: hidden;
+  padding: var(--space-6) var(--space-5);
+  background:
+    radial-gradient(120% 90% at 85% -10%, color-mix(in srgb, var(--c-hero-glow) 55%, transparent), transparent 60%),
+    var(--c-surface-container);
+}
+.hero__svg { position: absolute; right: -12px; bottom: -18px; width: 150px; opacity: 0.9; pointer-events: none; }
+.hero__kueche { font: var(--type-label); color: var(--c-primary); text-transform: uppercase; letter-spacing: 0.08em; }
+.hero__title { margin: var(--space-2) 0; }
+.hero__teaser { color: var(--c-on-surface-variant); max-width: 46ch; }
+.hero__stats { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--c-surface-container-highest);
+  color: var(--c-on-surface);
+  border-radius: var(--shape-sm);
+  padding: var(--space-2) var(--space-3);
+  font: var(--type-label);
+}
+
+.section { margin-top: var(--space-6); }
+.section__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); }
+
+/* Portion stepper with rolling digits */
+.stepper { display: inline-flex; align-items: center; gap: var(--space-2); }
+.stepper__btn {
+  width: 40px; height: 40px;
+  border-radius: var(--shape-full);
+  background: var(--c-secondary-container);
+  color: var(--c-on-secondary-container);
+  font: var(--type-title);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.stepper__value {
+  min-width: 2.2ch;
+  text-align: center;
+  font: var(--type-title-lg);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  height: 1.6em;
+  display: inline-flex; flex-direction: column; align-items: center;
+}
+
+/* Ingredients */
+.zutat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--shape-md);
+  width: 100%;
+  text-align: left;
+  color: var(--c-on-surface);
+}
+.zutat__check {
+  width: 26px; height: 26px;
+  flex-shrink: 0;
+  border-radius: var(--shape-xs);
+  border: 2px solid var(--c-outline-variant);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--c-surface-container-lowest);
+}
+.zutat--checked .zutat__check { background: var(--c-primary); border-color: var(--c-primary); }
+.zutat__label { position: relative; flex: 1; }
+.zutat__menge { font: var(--type-label-lg); color: var(--c-primary); margin-right: var(--space-2); font-variant-numeric: tabular-nums; }
+.zutat--checked .zutat__label { color: var(--c-on-surface-variant); }
+.zutat__strike {
+  position: absolute; left: -2px; right: auto; top: 50%;
+  height: 2px; width: 100%;
+  background: var(--c-on-surface-variant);
+  transform-origin: left center;
+}
+.zutat__gruppe { font: var(--type-label); color: var(--c-secondary); margin: var(--space-4) 0 var(--space-1); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* Steps */
+.schritt { display: flex; gap: var(--space-4); padding: var(--space-3) 0; }
+.schritt__nr {
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: var(--shape-full);
+  background: var(--c-primary-container);
+  color: var(--c-on-primary-container);
+  font: var(--type-label-lg);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.schritt__titel { font: var(--type-title); margin-bottom: 2px; }
+.schritt__text { color: var(--c-on-surface-variant); }
+.schritt__timer { font: var(--type-label); color: var(--c-primary); margin-top: var(--space-1); display: inline-block; }
+
+.tipp { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--c-surface-container); border-radius: var(--shape-md); margin-bottom: var(--space-2); }
+
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-6); }
+
+/* Streaming shimmer indicator */
+.writing { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--c-on-surface-variant); font: var(--type-label-lg); }
+.writing__dot { width: 8px; height: 8px; border-radius: 99px; background: var(--c-primary); }
+
+/* Nutrition */
+.nutri { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--space-2); }
+.nutri__cell { background: var(--c-surface-container); border-radius: var(--shape-md); padding: var(--space-3); text-align: center; }
+.nutri__value { font: var(--type-title-lg); font-variant-numeric: tabular-nums; }
+.nutri__label { font: var(--type-label-sm); color: var(--c-on-surface-variant); }
+
+/* Cook mode */
+.cook {
+  position: fixed; inset: 0; z-index: 60;
+  background: var(--c-surface);
+  display: flex; flex-direction: column;
+  padding: calc(var(--space-4) + env(safe-area-inset-top)) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+  touch-action: pan-y;
+}
+.cook__head { display: flex; justify-content: space-between; align-items: center; }
+.cook__progress { font: var(--type-label-lg); color: var(--c-on-surface-variant); }
+.cook__body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--space-5); max-width: 620px; margin: 0 auto; width: 100%; }
+.cook__titel { font: var(--type-display-md); }
+.cook__text { font: 400 clamp(1.25rem, 4.5vw, 1.7rem) / 1.5 var(--font-body); color: var(--c-on-surface-variant); }
+.cook__timer {
+  font: 700 clamp(2.6rem, 12vw, 4rem) / 1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-primary);
+}
+.cook__dots { display: flex; gap: 6px; justify-content: center; }
+.cook__dot { width: 8px; height: 8px; border-radius: 99px; background: var(--c-outline-variant); }
+.cook__dot--active { background: var(--c-primary); }
+.cook__nav { display: flex; gap: var(--space-3); justify-content: center; }

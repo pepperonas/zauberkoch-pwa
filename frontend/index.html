@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Zauberkoch — dein KI-Koch für Rezepte & Cocktails. Küche wählen, Geschmack wählen, Rezept auf Kochbuch-Niveau erhalten." />
+    <meta name="theme-color" content="#fff8f4" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Zauberkoch — KI-Rezepte & Cocktails</title>
+    <script>
+      // Pre-paint theme/mode init — no FOUC
+      (function () {
+        var root = document.documentElement;
+        var theme = localStorage.getItem('zk-theme');
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        root.setAttribute('data-theme', theme);
+        var mode = localStorage.getItem('zk-mode');
+        root.setAttribute('data-mode', mode === 'cocktail' ? 'cocktail' : 'kochen');
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

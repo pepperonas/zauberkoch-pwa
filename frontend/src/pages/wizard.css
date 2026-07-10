@@ -1,0 +1,16 @@
+/* Wizard */
+.wiz__mode { display: flex; justify-content: center; margin: var(--space-4) 0 var(--space-6); }
+.wiz__step-title { margin-bottom: var(--space-4); }
+.wiz__progress { display: flex; gap: var(--space-2); margin-bottom: var(--space-5); }
+.wiz__bar { flex: 1; height: 4px; border-radius: 99px; background: var(--c-surface-container-highest); overflow: hidden; }
+.wiz__bar-fill { height: 100%; background: var(--c-primary); border-radius: 99px; }
+.wiz__nav { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-top: var(--space-8); }
+.wiz__surprise { margin-top: var(--space-6); text-align: center; }
+.wiz__row { display: flex; align-items: center; justify-content: space-between; min-height: var(--touch-target); gap: var(--space-3); }
+.wiz__row-label { font: var(--type-body-lg); }
+.wiz__fridge-list { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.wiz__free { margin-top: var(--space-5); }
+.wiz__free label { display: block; font: var(--type-label); color: var(--c-on-surface-variant); margin-bottom: var(--space-2); }
+.stream__toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.limitbox { text-align: center; padding: var(--space-10) var(--space-5); }
+.limitbox__emoji { font-size: 3.5rem; margin-bottom: var(--space-4); }

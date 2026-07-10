@@ -1,0 +1,184 @@
+/* Handmade M3 Expressive base components — all colors via tokens. */
+
+/* ---------- Button ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-6);
+  border-radius: var(--shape-full);
+  font: var(--type-label-lg);
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn--filled { background: var(--c-primary); color: var(--c-on-primary); box-shadow: var(--elev-1); }
+.btn--tonal { background: var(--c-secondary-container); color: var(--c-on-secondary-container); }
+.btn--outlined { background: transparent; color: var(--c-primary); box-shadow: inset 0 0 0 1.5px var(--c-outline-variant); }
+.btn--text { background: transparent; color: var(--c-primary); padding: 0 var(--space-4); }
+.btn--danger { background: var(--c-error-container); color: var(--c-on-error-container); }
+.btn--big { min-height: 56px; padding: 0 var(--space-8); font-size: 1.05rem; }
+
+/* State layer (hover on fine pointers) */
+@media (hover: hover) and (pointer: fine) {
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 120ms linear;
+  }
+  .btn:hover::after { opacity: 0.08; }
+}
+
+/* ---------- Icon button ---------- */
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--shape-full);
+  color: var(--c-on-surface-variant);
+  font-size: 1.35rem;
+}
+.iconbtn--active { color: var(--c-primary); background: var(--c-primary-container); }
+
+/* ---------- Chip ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--shape-sm);
+  font: var(--type-label-lg);
+  background: var(--c-surface-container-high);
+  color: var(--c-on-surface-variant);
+  box-shadow: inset 0 0 0 1px var(--c-outline-variant);
+}
+.chip[aria-pressed='true'] {
+  background: var(--c-primary-container);
+  color: var(--c-on-primary-container);
+  box-shadow: none;
+}
+
+/* ---------- Segmented button ---------- */
+.seg {
+  display: inline-flex;
+  position: relative;
+  background: var(--c-surface-container-high);
+  border-radius: var(--shape-full);
+  padding: 4px;
+  gap: 2px;
+}
+.seg__option {
+  position: relative;
+  z-index: 1;
+  min-height: 44px;
+  padding: 0 var(--space-5);
+  border-radius: var(--shape-full);
+  font: var(--type-label-lg);
+  color: var(--c-on-surface-variant);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.seg__option[aria-pressed='true'] { color: var(--c-on-primary-container); }
+.seg__thumb {
+  position: absolute;
+  inset: 4px auto 4px 0;
+  background: var(--c-primary-container);
+  border-radius: var(--shape-full);
+  z-index: 0;
+}
+
+/* ---------- Card ---------- */
+.card {
+  background: var(--c-surface-container-low);
+  border-radius: var(--shape-xl);
+  padding: var(--space-5);
+}
+.card--elevated { box-shadow: var(--elev-2); }
+.card--outlined { box-shadow: inset 0 0 0 1px var(--c-outline-variant); }
+
+/* ---------- Dialog / Sheet scrim ---------- */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--c-scrim);
+  z-index: 50;
+}
+.dialog {
+  position: fixed;
+  z-index: 51;
+  left: 50%;
+  top: 50%;
+  width: min(92vw, 420px);
+  background: var(--c-surface-container-high);
+  border-radius: var(--shape-xl);
+  padding: var(--space-6);
+  box-shadow: var(--elev-3);
+}
+.sheet {
+  position: fixed;
+  z-index: 51;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 88dvh;
+  background: var(--c-surface-container);
+  border-radius: var(--shape-xl) var(--shape-xl) 0 0;
+  padding: var(--space-3) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+  box-shadow: var(--elev-3);
+  overflow-y: auto;
+  touch-action: none;
+}
+.sheet__handle {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--shape-full);
+  background: var(--c-outline-variant);
+  margin: var(--space-2) auto var(--space-4);
+}
+
+/* ---------- Text input ---------- */
+.input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border-radius: var(--shape-md);
+  border: 1.5px solid var(--c-outline-variant);
+  background: var(--c-surface-container-lowest);
+  color: var(--c-on-surface);
+  font: var(--type-body-lg);
+}
+.input:focus { border-color: var(--c-primary); outline: none; }
+.input::placeholder { color: var(--c-on-surface-variant); opacity: 0.7; }
+
+/* ---------- Switch (M3) ---------- */
+.switch {
+  position: relative;
+  width: 52px;
+  height: 32px;
+  border-radius: var(--shape-full);
+  background: var(--c-surface-container-highest);
+  box-shadow: inset 0 0 0 2px var(--c-outline-variant);
+  flex-shrink: 0;
+}
+.switch[aria-checked='true'] { background: var(--c-primary); box-shadow: none; }
+.switch__thumb {
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--shape-full);
+  background: var(--c-on-surface-variant);
+  translate: 0 -50%;
+}
+.switch[aria-checked='true'] .switch__thumb { background: var(--c-on-primary); width: 24px; height: 24px; }
