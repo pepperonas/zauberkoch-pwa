@@ -1,6 +1,6 @@
 # Google OAuth — Einrichtung
 
-Zauberkoch nutzt den **bestehenden Google-OAuth-Client** (derselbe wie xword; Client-ID/Secret liegen auf dem VPS in `/opt/xword-api/.env`).
+Zauberkoch nutzt einen **eigenen Google-OAuth-Client** (`575245359999-2jprjsmgmuqas7dnvs45hslil5hs617a.apps.googleusercontent.com`). Secret liegt in `/opt/zauberkoch-api/.env` (prod) bzw. `backend/.env` (dev) — nie committen.
 
 ## Flow
 

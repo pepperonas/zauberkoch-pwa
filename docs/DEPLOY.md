@@ -1,8 +1,6 @@
 # Deploy — zauberkoch.de
 
-**Status: ✅ LIVE seit 2026-07-10.** Erst-Einrichtung abgeschlossen: DNS ✓, systemd `zauberkoch-api` (Port 8742) ✓, nginx-vHost + Let's-Encrypt-Cert ✓, Backup-Timer (03:45) ✓, Allowlist (martinpaush@gmail.com, martin.pfeffer@celox.io) ✓. Google-Creds = geteilter Client mit xword.
-
-**⚠️ Offener manueller Schritt:** Redirect-URI `https://zauberkoch.de/api/v1/auth/callback` in der Google Console beim bestehenden OAuth-Client eintragen — bis dahin endet der Login mit `redirect_uri_mismatch`.
+**Status: ✅ LIVE seit 2026-07-10.** Erst-Einrichtung abgeschlossen: DNS ✓, systemd `zauberkoch-api` (Port 8742) ✓, nginx-vHost + Let's-Encrypt-Cert ✓, Backup-Timer (03:45) ✓, Allowlist (martinpaush@gmail.com, martin.pfeffer@celox.io) ✓. **Eigener Google-OAuth-Client** (`575245359999-…`, Redirect-URI registriert & verifiziert); Creds in `/opt/zauberkoch-api/.env`.
 
 ## Ziel-Setup (VPS 69.62.121.168, systemd + zentraler nginx — KEIN Docker)
 
