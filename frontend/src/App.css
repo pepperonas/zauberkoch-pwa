@@ -96,6 +96,33 @@
   background: var(--c-primary-container);
 }
 
+/* Generation progress bar (docked at the header's bottom edge) */
+.genbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--c-primary) 22%, transparent);
+  overflow: hidden;
+}
+.genbar__runner {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: 99px;
+  background: var(--c-primary);
+  animation: genbar-run 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes genbar-run {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(280%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .genbar__runner { width: 100%; opacity: 0.6; }
+}
+
 /* Floating generation pill (above the bottom nav) */
 .genpill {
   position: fixed;

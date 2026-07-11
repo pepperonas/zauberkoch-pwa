@@ -1,5 +1,7 @@
-/** Floating pill: a generation is running (or finished unseen) while the user
- * is on another page. Tapping it jumps back to the generation view. */
+/** Global generation indicators, shown while the user is on another page:
+ * - GenerationBar: slim indeterminate progress bar docked under the header
+ * - GenerationPill: floating pill above the nav, taps back to the recipe
+ * Both live in one lazy chunk to keep motion-dom out of the entry bundle. */
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -7,6 +9,35 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { strings, t } from '../i18n';
 import { spring } from '../motion/springs';
 import { useGeneration } from '../state/generation';
+
+/** Indeterminate progress bar at the header's bottom edge while a generation
+ * streams in the background. Springs in from the left (transform-only);
+ * the runner loop is a CSS ambient animation. */
+export function GenerationBar() {
+  const gen = useGeneration();
+  const location = useLocation();
+  const reduced = useReducedMotion();
+  const visible = gen.phase === 'streaming' && location.pathname !== '/';
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          className="genbar"
+          role="progressbar"
+          aria-label={t('stream.pillBrewing')}
+          initial={reduced ? { opacity: 0 } : { opacity: 0, scaleX: 0 }}
+          animate={reduced ? { opacity: 1 } : { opacity: 1, scaleX: 1 }}
+          exit={{ opacity: 0 }}
+          transition={spring}
+          style={{ transformOrigin: 'left' }}
+        >
+          <span className="genbar__runner" aria-hidden />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 export function GenerationPill() {
   const gen = useGeneration();

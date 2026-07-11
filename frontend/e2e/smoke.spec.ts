@@ -115,7 +115,8 @@ test('generation survives navigation and is reachable via the pill', async ({ pa
   await expect(page.getByText('Der Zauberkoch schwingt den Stab …')).toBeVisible();
   await page.getByRole('link', { name: /Favoriten/ }).click();
 
-  // Floating pill: first brewing, then ready — generation kept running
+  // Progress bar under the header + floating pill: generation kept running
+  await expect(page.getByRole('progressbar', { name: /Rezept wird gezaubert/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Rezept wird gezaubert/ })).toBeVisible();
   await page.getByRole('button', { name: /Dein Rezept ist fertig/ }).click();
   await expect(page.getByRole('heading', { name: 'Pasta al Limone' })).toBeVisible();

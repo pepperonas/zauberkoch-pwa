@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { lazy, Suspense, useState } from 'react';
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
 import { ProfileSheet } from './components/ProfileSheet';
 import { IconButton } from './components/ui';
@@ -24,6 +24,9 @@ const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default:
 const GenerationPill = lazy(() =>
   import('./components/GenerationPill').then((m) => ({ default: m.GenerationPill })),
 );
+const GenerationBar = lazy(() =>
+  import('./components/GenerationPill').then((m) => ({ default: m.GenerationBar })),
+);
 
 const NAV_ITEMS = [
   { to: '/', icon: '✨', label: strings.nav.generate },
@@ -45,9 +48,10 @@ export default function App() {
   return (
     <div className="shell">
       <header className="shell__header">
-        <a href="/" className="shell__logo">
+        {/* SPA link — a real <a href> would hard-reload and kill a running generation */}
+        <Link to="/" className="shell__logo">
           <span aria-hidden>🧑‍🍳</span> <span className="shell__logo-text">{t('app.name')}</span>
-        </a>
+        </Link>
         <div className="row shell__actions">
           <IconButton
             label={t('common.themeToggle')}
@@ -78,6 +82,11 @@ export default function App() {
             </>
           )}
         </div>
+        {me && (
+          <Suspense fallback={null}>
+            <GenerationBar />
+          </Suspense>
+        )}
       </header>
 
       <main className="shell__main">
