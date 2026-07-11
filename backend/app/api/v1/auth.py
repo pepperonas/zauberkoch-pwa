@@ -110,6 +110,27 @@ def callback(
     return response
 
 
+@router.get("/dev-login")
+def dev_login(request: Request, db: DbSession = Depends(get_db)) -> Response:
+    """Local development only: instant login without a Google client.
+    Hard-refused unless ZK_DEV_LOGIN=true AND not running in prod."""
+    settings = get_settings()
+    if settings.is_prod or not settings.zk_dev_login:
+        return Response(status_code=404)
+    check_ip_limit(request, scope="auth", limit=20, window_s=60)
+    email = "dev@zauberkoch.local"
+    user = db.execute(select(User).where(User.google_sub == "dev-local")).scalar_one_or_none()
+    if user is None:
+        user = User(google_sub="dev-local", email=email, name="Dev-Koch")
+        db.add(user)
+        db.commit()
+    session = create_session(db, user)
+    response = RedirectResponse(_frontend_url("/"), status_code=303)
+    set_session_cookie(response, session)
+    logger.warning("DEV LOGIN used (ZK_DEV_LOGIN=true)")
+    return response
+
+
 @router.post("/logout", dependencies=[Depends(require_csrf)])
 def logout(
     session: SessionModel = Depends(get_current_session),

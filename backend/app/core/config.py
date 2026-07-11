@@ -39,6 +39,7 @@ class Settings(BaseSettings):
 
     # Access & limits
     open_signup: bool = False
+    zk_dev_login: bool = False  # dev-only fake login (hard-refused in prod)
     daily_limit_per_user: int = 20
     daily_limit_global: int = 200
 

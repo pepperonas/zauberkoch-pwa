@@ -3,7 +3,7 @@
  */
 
 import { motion, useReducedMotion } from 'motion/react';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 
 import { t } from '../../i18n';
 import type { Modus, Naehrwerte, RecipeMeta, Schritt, Zutat } from '../../lib/types';
@@ -60,13 +60,16 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
     return groups;
   }, [data.zutaten]);
 
-  const toggleChecked = (index: number) =>
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
+  const toggleChecked = useCallback(
+    (index: number) =>
+      setChecked((prev) => {
+        const next = new Set(prev);
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
+        return next;
+      }),
+    [],
+  );
 
   return (
     <div>
@@ -115,56 +118,17 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
           {grouped.map((group) => (
             <Fragment key={group.gruppe || 'default'}>
               {group.gruppe && <div className="zutat__gruppe">{group.gruppe}</div>}
-              {group.items.map(({ zutat, index }) => {
-                const isChecked = checked.has(index);
-                return (
-                  <motion.button
-                    key={index}
-                    className={`zutat ${isChecked ? 'zutat--checked' : ''}`}
-                    onClick={() => toggleChecked(index)}
-                    aria-pressed={isChecked}
-                    {...(reduced || !streaming ? {} : riseIn)}
-                    transition={stagger(0)}
-                    layout={!reduced}
-                  >
-                    <span className="zutat__check" aria-hidden>
-                      {isChecked && (
-                        <motion.svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 16 16"
-                          initial={reduced ? undefined : { pathLength: 0 }}
-                          animate={{ pathLength: 1 }}
-                          transition={springBouncy}
-                        >
-                          <motion.path
-                            d="M3 8.5 L6.5 12 L13 4.5"
-                            stroke="var(--c-on-primary)"
-                            strokeWidth="2.4"
-                            strokeLinecap="round"
-                            fill="none"
-                            initial={reduced ? undefined : { pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
-                            transition={{ duration: 0.28, ease: 'easeOut' }}
-                          />
-                        </motion.svg>
-                      )}
-                    </span>
-                    <span className="zutat__label">
-                      <span className="zutat__menge">{formatZutatMenge(zutat, factor)}</span>{' '}
-                      {zutat.name}
-                      {isChecked && !reduced && (
-                        <motion.span
-                          className="zutat__strike"
-                          initial={{ scaleX: 0 }}
-                          animate={{ scaleX: 1 }}
-                          transition={spring}
-                        />
-                      )}
-                    </span>
-                  </motion.button>
-                );
-              })}
+              {group.items.map(({ zutat, index }) => (
+                <ZutatRow
+                  key={index}
+                  zutat={zutat}
+                  index={index}
+                  isChecked={checked.has(index)}
+                  factor={factor}
+                  streaming={streaming}
+                  onToggle={toggleChecked}
+                />
+              ))}
             </Fragment>
           ))}
         </section>
@@ -174,21 +138,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
         <section className="section">
           <h2>{t('recipe.steps')}</h2>
           {data.schritte.map((schritt, i) => (
-            <motion.div
-              key={schritt.nr ?? i}
-              className="schritt"
-              {...(reduced || !streaming ? {} : riseIn)}
-              transition={stagger(0)}
-            >
-              <span className="schritt__nr">{schritt.nr}</span>
-              <div>
-                <div className="schritt__titel">{schritt.titel}</div>
-                <p className="schritt__text">{schritt.text}</p>
-                {schritt.dauer_sek != null && schritt.dauer_sek > 0 && (
-                  <span className="schritt__timer">⏲ {Math.round(schritt.dauer_sek / 60)} {t('wizard.minutes')}</span>
-                )}
-              </div>
-            </motion.div>
+            <SchrittRow key={schritt.nr ?? i} schritt={schritt} streaming={streaming} />
           ))}
         </section>
       )}
@@ -262,3 +212,75 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
 }
 
 export { fmtMin };
+
+
+/** Memoized ingredient row: new streaming events must not re-render
+ * every existing row (spring entrances on mid-range Android). */
+const ZutatRow = memo(function ZutatRow({
+  zutat,
+  index,
+  isChecked,
+  factor,
+  streaming,
+  onToggle,
+}: {
+  zutat: Zutat;
+  index: number;
+  isChecked: boolean;
+  factor: number;
+  streaming: boolean;
+  onToggle: (index: number) => void;
+}) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.button
+      className={`zutat ${isChecked ? 'zutat--checked' : ''}`}
+      onClick={() => onToggle(index)}
+      aria-pressed={isChecked}
+      {...(reduced || !streaming ? {} : riseIn)}
+      transition={stagger(0)}
+      layout={!reduced}
+    >
+      <span className="zutat__check" aria-hidden>
+        {isChecked && (
+          <motion.svg width="16" height="16" viewBox="0 0 16 16">
+            <motion.path
+              d="M3 8.5 L6.5 12 L13 4.5"
+              stroke="var(--c-on-primary)"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              fill="none"
+              initial={reduced ? undefined : { pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}
+            />
+          </motion.svg>
+        )}
+      </span>
+      <span className="zutat__label">
+        <span className="zutat__menge">{formatZutatMenge(zutat, factor)}</span>{' '}
+        {zutat.name}
+        {isChecked && !reduced && (
+          <motion.span className="zutat__strike" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={spring} />
+        )}
+      </span>
+    </motion.button>
+  );
+});
+
+
+const SchrittRow = memo(function SchrittRow({ schritt, streaming }: { schritt: Schritt; streaming: boolean }) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.div className="schritt" {...(reduced || !streaming ? {} : riseIn)} transition={stagger(0)}>
+      <span className="schritt__nr">{schritt.nr}</span>
+      <div>
+        <div className="schritt__titel">{schritt.titel}</div>
+        <p className="schritt__text">{schritt.text}</p>
+        {schritt.dauer_sek != null && schritt.dauer_sek > 0 && (
+          <span className="schritt__timer">⏲ {Math.round(schritt.dauer_sek / 60)} {t('wizard.minutes')}</span>
+        )}
+      </div>
+    </motion.div>
+  );
+});

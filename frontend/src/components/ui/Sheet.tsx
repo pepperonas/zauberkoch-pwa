@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/
 import { useEffect, type ReactNode } from 'react';
 
 import { spring } from '../../motion/springs';
+import { useFocusTrap } from '../../state/useFocusTrap';
 import './ui.css';
 
 interface SheetProps {
@@ -15,6 +16,7 @@ interface SheetProps {
 
 export function Sheet({ open, onClose, children, label }: SheetProps) {
   const reduced = useReducedMotion();
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -43,6 +45,7 @@ export function Sheet({ open, onClose, children, label }: SheetProps) {
             onClick={onClose}
           />
           <motion.div
+            ref={trapRef}
             className="sheet"
             role="dialog"
             aria-modal="true"

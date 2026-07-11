@@ -13,6 +13,7 @@ export const de = {
   },
   auth: {
     login: 'Mit Google anmelden',
+    devLogin: 'Dev-Login (lokal)',
     logout: 'Abmelden',
     loginRequired: 'Bitte melde dich an, um Rezepte zu zaubern.',
     notAllowed: 'Dein Konto ist noch nicht freigeschaltet. Melde dich beim Betreiber, um Zugang zu erhalten.',

@@ -71,7 +71,7 @@ npx playwright test  # E2E-Smoke (lokal)
 - **Rate-Limits**: `DAILY_LIMIT_PER_USER` (20) + `DAILY_LIMIT_GLOBAL` (Kostenschutz), beide env; 429 mit klarem UI-Feedback.
 - **Rezept-System-Prompt** ist ein iterierbares Kernstück: Versionen in `app/prompts/`, Prompt-Version wird am Rezept gespeichert. Keine generischen Rezepte; metrische Mengen; Cocktails mit cl + Technik (shaken/stirred/built).
 - **Keine KI-Bilder** — kuratierte SVG-Motive pro Länderküche.
-- **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` (aktuell **v3**) — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
+- **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` (aktuell **v4**) — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
 - **CSP beachtet**: `script-src 'self'` — KEINE Inline-Scripts in index.html (Theme-Init liegt extern in `public/theme-init.js`).
 - **Tests vor Deploy**: `pytest` + `npm test` müssen grün sein; `deploy.sh` erzwingt das.
 - Touch-Targets ≥ 48 px, Lighthouse Accessibility ≥ 95. Footer überall: `© 2026 Martin Pfeffer | celox.io`.

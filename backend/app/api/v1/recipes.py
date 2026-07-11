@@ -1,5 +1,6 @@
 """Recipe generation (SSE) and history."""
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncGenerator
@@ -14,7 +15,7 @@ from app.db import get_db
 from app.models import Favorite, Generation, Recipe, User
 from app.schemas.recipe import GenerateParams
 from app.services import ai, cache, ratelimit
-from app.services.json_stream import Event, replay_events
+from app.services.json_stream import replay_events
 
 logger = logging.getLogger("zauberkoch.recipes")
 router = APIRouter(prefix="/recipes")
@@ -24,11 +25,24 @@ def _sse(event: str, data) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-def _persist_recipe(db: DbSession, user: User, params: GenerateParams, recipe: dict, prompt_version: str, model: str) -> Recipe:
+def _persist_recipe(db: DbSession, user_id: int, params: GenerateParams, recipe: dict, prompt_version: str, model: str) -> Recipe:
+    """Store the recipe in the user's history — reusing an existing row for
+    identical params + prompt version (cache hits must not pile up duplicates)."""
+    params_json = json.dumps(params.cache_relevant(), ensure_ascii=False, sort_keys=True)
+    existing = db.execute(
+        select(Recipe).where(
+            Recipe.user_id == user_id,
+            Recipe.params_json == params_json,
+            Recipe.prompt_version == prompt_version,
+            Recipe.titel == recipe.get("titel", ""),
+        )
+    ).scalars().first()
+    if existing is not None:
+        return existing
     row = Recipe(
-        user_id=user.id,
+        user_id=user_id,
         mode=params.modus,
-        params_json=json.dumps(params.cache_relevant(), ensure_ascii=False, sort_keys=True),
+        params_json=params_json,
         recipe_json=json.dumps(recipe, ensure_ascii=False),
         titel=recipe.get("titel", ""),
         kueche=recipe.get("kueche", ""),
@@ -38,6 +52,11 @@ def _persist_recipe(db: DbSession, user: User, params: GenerateParams, recipe: d
     db.add(row)
     db.commit()
     return row
+
+
+# Live generations keep running after a client disconnect so the paid result
+# is persisted + cached; hold task references to protect them from GC.
+_live_tasks: set[asyncio.Task] = set()
 
 
 @router.post("/generate", dependencies=[Depends(require_csrf)])
@@ -53,22 +72,52 @@ async def generate(
         )
 
     h = cache.params_hash(params)
-    cached = None if params.regenerate else cache.get_cached(db, h)
+    current_version = ai.prompt_version()
+    cached = None if params.regenerate else cache.get_cached(db, h, current_version)
 
     if cached is None:
         # Real generation: consume the daily budget up front (cache hits are free)
         ratelimit.consume_generation(db, user.id)
 
-    def _log_generation(*, cached_hit: bool, status: str, usage: dict | None, prompt_version: str, model: str) -> None:
+    user_id = user.id
+
+    def _finalize_live(final: dict | None, usage: dict | None, model: str) -> dict | None:
+        """Persist result + usage log with a FRESH session in a worker thread —
+        must work even after the request (and its db session) is gone."""
+        from app.db import SessionLocal
+
+        session = SessionLocal()
+        try:
+            status = "ok" if final is not None else "error"
+            session.add(
+                Generation(
+                    user_id=user_id,
+                    mode=params.modus,
+                    prompt_version=current_version,
+                    model=model,
+                    cached=False,
+                    status=status,
+                    **(usage or {}),
+                )
+            )
+            session.commit()
+            if final is None:
+                return None
+            cache.store(session, h, json.dumps(final, ensure_ascii=False), current_version, model)
+            row = _persist_recipe(session, user_id, params, final, current_version, model)
+            return {"recipe_id": row.id, "cached": False, **ratelimit.get_usage(session, user_id)}
+        finally:
+            session.close()
+
+    def _log_cache_hit(prompt_version: str, model: str) -> None:
         db.add(
             Generation(
-                user_id=user.id,
+                user_id=user_id,
                 mode=params.modus,
                 prompt_version=prompt_version,
                 model=model,
-                cached=cached_hit,
-                status=status,
-                **(usage or {}),
+                cached=True,
+                status="ok",
             )
         )
         db.commit()
@@ -77,36 +126,52 @@ async def generate(
         if cached is not None:
             recipe = json.loads(cached.recipe_json)
             cache.register_hit(db, cached)
-            row = _persist_recipe(db, user, params, recipe, cached.prompt_version, cached.model)
-            _log_generation(cached_hit=True, status="ok", usage=None, prompt_version=cached.prompt_version, model=cached.model)
+            row = _persist_recipe(db, user_id, params, recipe, cached.prompt_version, cached.model)
+            _log_cache_hit(cached.prompt_version, cached.model)
             for name, data in replay_events(recipe):
                 yield _sse(name, data)
-            yield _sse("saved", {"recipe_id": row.id, "cached": True, **ratelimit.get_usage(db, user.id)})
+            yield _sse("saved", {"recipe_id": row.id, "cached": True, **ratelimit.get_usage(db, user_id)})
             return
 
+        # Live path: producer task survives client disconnects, so the paid
+        # generation is always persisted + cached (the retry becomes a hit).
         model = ai.get_settings_model()
-        final: dict | None = None
-        usage: dict | None = None
-        failed = False
-        async for name, data in ai.generate_recipe_events(params):
-            if name == "usage":
-                usage = data  # internal event — never forwarded to the client
-                continue
-            if name == "error":
-                failed = True
-            if name == "done":
-                final = data
-            yield _sse(name, data)
+        queue: asyncio.Queue[tuple[str, object] | None] = asyncio.Queue()
 
-        if failed or final is None:
-            _log_generation(cached_hit=False, status="error", usage=usage, prompt_version=ai.prompt_version(), model=model)
-            return
+        async def produce() -> None:
+            final: dict | None = None
+            usage: dict | None = None
+            failed = False
+            try:
+                async for name, data in ai.generate_recipe_events(params):
+                    if name == "usage":
+                        usage = data  # internal — never forwarded to the client
+                        continue
+                    if name == "error":
+                        failed = True
+                    if name == "done":
+                        final = data
+                    await queue.put((name, data))
+                saved = await asyncio.to_thread(
+                    _finalize_live, None if failed else final, usage, model
+                )
+                if saved is not None:
+                    await queue.put(("saved", saved))
+            except Exception:
+                logger.exception("generation task failed")
+                await queue.put(("error", {"code": "generation_failed", "message": "Generierung fehlgeschlagen."}))
+            finally:
+                await queue.put(None)
 
-        recipe_json = json.dumps(final, ensure_ascii=False)
-        cache.store(db, h, recipe_json, ai.prompt_version(), model)
-        row = _persist_recipe(db, user, params, final, ai.prompt_version(), model)
-        _log_generation(cached_hit=False, status="ok", usage=usage, prompt_version=ai.prompt_version(), model=model)
-        yield _sse("saved", {"recipe_id": row.id, "cached": False, **ratelimit.get_usage(db, user.id)})
+        task = asyncio.create_task(produce())
+        _live_tasks.add(task)
+        task.add_done_callback(_live_tasks.discard)
+
+        while True:
+            item = await queue.get()
+            if item is None:
+                break
+            yield _sse(item[0], item[1])
 
     return StreamingResponse(
         event_stream(),

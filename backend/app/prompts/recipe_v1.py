@@ -58,6 +58,12 @@ VARIATION_HINT = (
 )
 
 
+def _clean(value: str) -> str:
+    """Sanitize free-text user input before it enters the prompt:
+    collapse all whitespace/newlines so input can't fake prompt structure."""
+    return " ".join(value.split())
+
+
 def build_user_prompt(params: GenerateParams) -> str:
     p = params
     lines: list[str] = []
@@ -67,17 +73,17 @@ def build_user_prompt(params: GenerateParams) -> str:
         if p.alkoholfrei:
             lines.append("Alkoholfrei (Mocktail) — zwingend.")
         elif p.basis_spirituose:
-            lines.append(f"Basis-Spirituose: {p.basis_spirituose}.")
+            lines.append(f"Basis-Spirituose: „{_clean(p.basis_spirituose)}“.")
         if p.glas_vorgabe:
-            lines.append(f"Glas-Vorgabe: {p.glas_vorgabe}.")
+            lines.append(f"Glas-Vorgabe: „{_clean(p.glas_vorgabe)}“.")
         lines.append(f"Anzahl Drinks: {p.personen}.")
     else:
         lines.append("Erstelle ein Kochrezept.")
         lines.append(f"Personenzahl: {p.personen}.")
 
-    kueche = p.kueche_freitext or p.kueche
+    kueche = _clean(p.kueche_freitext or p.kueche)
     if kueche:
-        lines.append(f"Länderküche/Stil: {kueche}.")
+        lines.append(f"Länderküche/Stil: „{kueche}“.")
     if p.geschmack:
         lines.append(f"Gewünschte Geschmacksrichtungen: {', '.join(p.geschmack)}.")
 
@@ -100,7 +106,7 @@ def build_user_prompt(params: GenerateParams) -> str:
     if p.vorhandene_zutaten:
         lines.append(
             "Diese Zutaten sind vorhanden und sollen sinnvoll verwendet werden: "
-            + ", ".join(p.vorhandene_zutaten)
+            + ", ".join(f"„{_clean(z)}“" for z in p.vorhandene_zutaten)
             + "."
         )
     if p.ueberrasch_mich:

@@ -7,6 +7,8 @@
 [![Claude API](https://img.shields.io/badge/KI-Claude%20Sonnet-D97757)](https://www.anthropic.com)
 [![PayPal](https://img.shields.io/badge/PayPal-Spenden%20%E2%98%95-00457C?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=martin.pfeffer%40celox.io&currency_code=EUR)
 
+*English version: [README.en.md](README.en.md)*
+
 **KI-Rezept- & Cocktail-Generator** — live unter **[zauberkoch.de](https://zauberkoch.de)**
 
 Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch schreibt ein Rezept auf Kochbuch-Niveau mit exakten Mengen. Das Rezept **baut sich live vor deinen Augen auf** (SSE-Streaming, kein Spinner-Gefängnis): erst Titel und Teaser, dann Zutat für Zutat, dann die Schritte.
@@ -48,6 +50,16 @@ Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch s
 
 ## Lokales Setup
 
+**Schnellster Weg (Docker, ohne Google-Client):**
+
+```bash
+cp .env.example backend/.env      # ANTHROPIC_API_KEY eintragen, ZK_DEV_LOGIN=true
+docker compose -f docker-compose.dev.yml up
+# → http://localhost:5173 → „Dev-Login (lokal)"
+```
+
+**Nativ:**
+
 ```bash
 # Backend
 cd backend
@@ -75,6 +87,10 @@ cd frontend && npx playwright test   # E2E-Smoke (lokal)
 ```
 
 Alle Suiten laufen bei jedem Push als [GitHub Action](.github/workflows/ci.yml).
+
+## Mitmachen
+
+Beiträge willkommen — siehe [CONTRIBUTING.md](CONTRIBUTING.md). Sicherheitslücken bitte via [SECURITY.md](SECURITY.md) melden.
 
 ## Unterstützen
 

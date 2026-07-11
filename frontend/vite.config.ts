@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': { target: 'http://localhost:8742', changeOrigin: false },
+      // ZK_API_PROXY: override for docker-compose (http://backend:8742)
+      '/api': { target: process.env.ZK_API_PROXY ?? 'http://localhost:8742', changeOrigin: false },
     },
   },
   test: {

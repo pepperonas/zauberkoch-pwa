@@ -1,5 +1,6 @@
 """Zauberkoch API — FastAPI application factory."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -19,7 +20,11 @@ logger = logging.getLogger("zauberkoch")
 async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("zauberkoch api starting")
+    from app.services.maintenance import run_periodic
+
+    cleanup_task = asyncio.create_task(run_periodic())
     yield
+    cleanup_task.cancel()
     logger.info("zauberkoch api stopped")
 
 

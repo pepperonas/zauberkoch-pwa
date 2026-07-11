@@ -1,0 +1,40 @@
+# Development-only compose — production runs on systemd + nginx (docs/DEPLOY.md).
+# Quickstart without local Python/Node:
+#   1. cp .env.example backend/.env   (ANTHROPIC_API_KEY eintragen, ZK_DEV_LOGIN=true)
+#   2. docker compose -f docker-compose.dev.yml up
+#   3. http://localhost:5173  ->  "Dev-Login (lokal)"
+
+services:
+  backend:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - backend-venv:/venv
+    environment:
+      - PIP_ROOT_USER_ACTION=ignore
+    command: >
+      bash -c "python -m venv /venv
+      && /venv/bin/pip install -q -r requirements-dev.txt
+      && /venv/bin/alembic upgrade head
+      && /venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8742 --reload"
+    ports:
+      - "8742:8742"
+
+  frontend:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend-modules:/app/node_modules
+    environment:
+      - ZK_API_PROXY=http://backend:8742
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  backend-venv:
+  frontend-modules:

@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, type ReactNode } from 'react';
 
 import { springBouncy } from '../../motion/springs';
+import { useFocusTrap } from '../../state/useFocusTrap';
 import './ui.css';
 
 interface DialogProps {
@@ -15,6 +16,7 @@ interface DialogProps {
 
 export function Dialog({ open, onClose, label, children }: DialogProps) {
   const reduced = useReducedMotion();
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -35,6 +37,7 @@ export function Dialog({ open, onClose, label, children }: DialogProps) {
             onClick={onClose}
           />
           <motion.div
+            ref={trapRef}
             className="dialog"
             role="dialog"
             aria-modal="true"

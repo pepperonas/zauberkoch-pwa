@@ -48,10 +48,15 @@ export function LandingPage() {
         <span className="hero__kueche">{t('app.tagline')}</span>
         <h1 className="hero__title">{t('landing.heroTitle')}</h1>
         <p className="hero__teaser">{t('landing.heroText')}</p>
-        <div style={{ marginTop: 'var(--space-5)' }}>
+        <div className="row" style={{ marginTop: 'var(--space-5)', flexWrap: 'wrap' }}>
           <Button big onClick={() => (window.location.href = '/api/v1/auth/login')}>
             {t('auth.login')}
           </Button>
+          {import.meta.env.DEV && (
+            <Button variant="text" onClick={() => (window.location.href = '/api/v1/auth/dev-login')}>
+              🛠 {t('auth.devLogin')}
+            </Button>
+          )}
         </div>
         {loginError && (
           <p style={{ marginTop: 'var(--space-4)', color: 'var(--c-error)' }} role="alert">
