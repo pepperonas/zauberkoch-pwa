@@ -90,6 +90,24 @@ async def generate(
     current_version = ai.prompt_version()
     cached = None if params.regenerate else cache.get_cached(db, h, current_version)
 
+    if cached is not None:
+        # A cached recipe the user has already received is a repeat, not a
+        # convenience — generate a fresh variation instead. The cache still
+        # serves first-time requests (other users, retry after an error).
+        titel = json.loads(cached.recipe_json).get("titel", "")
+        params_json = json.dumps(params.cache_relevant(), ensure_ascii=False, sort_keys=True)
+        seen = db.execute(
+            select(Recipe).where(
+                Recipe.user_id == user.id,
+                Recipe.params_json == params_json,
+                Recipe.prompt_version == cached.prompt_version,
+                Recipe.titel == titel,
+            )
+        ).scalars().first()
+        if seen is not None:
+            cached = None
+            params = params.model_copy(update={"regenerate": True})  # -> variation hint
+
     if cached is None:
         # Real generation: consume the daily budget up front (cache hits are free)
         ratelimit.consume_generation(db, user.id)

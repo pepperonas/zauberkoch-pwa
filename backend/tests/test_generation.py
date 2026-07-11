@@ -86,12 +86,30 @@ def test_generate_requires_csrf(client, logged_in, mock_ai):
     assert r.status_code == 403
 
 
-def test_cache_hit_is_free_and_replayed(client, logged_in, mock_ai):
+def test_repeat_by_same_user_yields_fresh_variation(client, logged_in, mock_ai):
+    """Identical params again must NOT re-serve the recipe the user already
+    got — the server flips to regenerate (variation hint) automatically."""
     generate(client, logged_in)
-    events = generate(client, logged_in)  # identical params -> cache
+    events = generate(client, logged_in)  # identical params, same user
+    saved = events[-1][1]
+    assert saved["cached"] is False
+    assert mock_ai["count"] == 2
+    assert dict(events)["meta"]["titel"].startswith("Variante:")
+    assert len(client.get("/api/v1/recipes").json()["items"]) == 2  # both in history
+
+
+def test_cache_serves_other_users_first_request(client, db_session, logged_in, mock_ai, monkeypatch):
+    from tests.test_auth import fake_claims
+
+    generate(client, logged_in)  # alice pays the live generation
+
+    add_to_allowlist(db_session, "bob@example.com")
+    do_login_callback(client, monkeypatch, claims=fake_claims(email="bob@example.com", sub="sub-bob"))
+    csrf = client.get("/api/v1/me").json()["csrf_token"]
+    events = generate(client, {"X-CSRF-Token": csrf})  # bob, same params -> free hit
     saved = events[-1][1]
     assert saved["cached"] is True
-    assert saved["remaining"] == 19  # unchanged, cache hits are free
+    assert saved["remaining"] == 20  # cache hits are free
     assert mock_ai["count"] == 1
 
 
@@ -160,11 +178,18 @@ def test_history_and_detail(client, logged_in, mock_ai):
     assert detail["is_favorite"] is False
 
 
-def test_generation_usage_is_logged(client, db_session, logged_in, mock_ai):
+def test_generation_usage_is_logged(client, db_session, logged_in, mock_ai, monkeypatch):
     from app.models import Generation
+    from tests.test_auth import fake_claims
 
-    generate(client, logged_in)          # live call
-    generate(client, logged_in)          # identical params -> cache hit
+    generate(client, logged_in)          # live call (alice)
+
+    # cache hit requires a DIFFERENT user (same-user repeats regenerate now)
+    add_to_allowlist(db_session, "bob@example.com")
+    do_login_callback(client, monkeypatch, claims=fake_claims(email="bob@example.com", sub="sub-bob"))
+    csrf = client.get("/api/v1/me").json()["csrf_token"]
+    generate(client, {"X-CSRF-Token": csrf})
+
     rows = db_session.query(Generation).order_by(Generation.id).all()
     assert len(rows) == 2
     live, hit = rows

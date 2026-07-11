@@ -67,9 +67,11 @@ def test_cache_miss_on_newer_prompt_version(client, logged_in, mock_ai, monkeypa
     assert mock_ai["count"] == 2
 
 
-def test_history_deduplicates_cache_hits(client, logged_in, mock_ai):  # noqa: F811
-    generate(client, logged_in)
-    generate(client, logged_in)  # cache hit
-    generate(client, logged_in)  # cache hit
+def test_history_deduplicates_identical_results(client, logged_in, mock_ai):  # noqa: F811
+    """Repeats regenerate now; if a variation lands on a title the user already
+    has (mock always returns the same variant), it must not duplicate history."""
+    generate(client, logged_in)  # original
+    generate(client, logged_in)  # repeat -> variation "Variante: …" (new row)
+    generate(client, logged_in)  # repeat -> same variant title -> deduped
     items = client.get("/api/v1/recipes").json()["items"]
-    assert len(items) == 1
+    assert len(items) == 2

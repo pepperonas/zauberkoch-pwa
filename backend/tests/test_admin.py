@@ -45,10 +45,11 @@ def test_admin_stats_shape(client, db_session, admin, monkeypatch, mock_ai):
     client.post(f"/api/v1/recipes/{recipe_id}/feedback", json={"wert": 1}, headers=admin)
 
     stats = client.get("/api/v1/admin/stats?days=7").json()
+    # identical params by the same user regenerate now -> both calls are live
     assert stats["generations"]["total"] == 2
-    assert stats["generations"]["live"] == 1
-    assert stats["generations"]["cached"] == 1
-    assert stats["tokens"]["in"] == 3000
+    assert stats["generations"]["live"] == 2
+    assert stats["generations"]["cached"] == 0
+    assert stats["tokens"]["in"] == 6000
     assert stats["cost_usd"] >= 0
     assert stats["per_user"][0]["email"] == "admin@example.com"
     version = list(stats["feedback"].keys())[0]
