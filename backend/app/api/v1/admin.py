@@ -17,7 +17,8 @@ from app.models import AllowlistEntry, Generation, Recipe, User
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(require_admin)])
 
-# USD per 1M tokens — keep in sync with scripts/stats.py
+# USD per 1M tokens — keep in sync with scripts/stats.py.
+# claude-sonnet-5 INTRO pricing through 2026-08-31; raise to 3.00/15.00 after.
 PRICE_IN = 2.00
 PRICE_OUT = 10.00
 PRICE_CACHE_READ = PRICE_IN * 0.1

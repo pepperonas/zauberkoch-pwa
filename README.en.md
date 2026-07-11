@@ -21,6 +21,8 @@ Pick a cuisine, flavors and constraints — the app streams a cookbook-quality r
 ## Highlights
 
 - **Live streaming generation** — an incremental JSON parser turns the Claude token stream into semantic SSE events (structured outputs + prompt caching keep it reliable and cheap)
+- **Magic cauldron** — while generating, the actual ingredients orbit a cauldron (or shaker in cocktail mode) as emojis and drop in with spark bursts on every stream event; the title reveals word by word
+- **Navigation-proof generation** — the stream lives in a global store and keeps running while you browse the app; a floating pill brings you back to the running or finished recipe
 - **Two modes** — cooking & cocktails (incl. mocktails, cl measurements, shaken/stirred/built), with an animated color-scheme morph (saffron ↔ violet)
 - **Adapt on demand** — tweak any recipe via chips or free text ("spicier", "no oven", "meal-prep")
 - **Preference profile** — diet, no-go ingredients and default servings merged into every generation
@@ -28,7 +30,8 @@ Pick a cuisine, flavors and constraints — the app streams a cookbook-quality r
 - **Lighthouse 99/100/100/100** measured against production
 - **Shopping list** with unit normalization and aggregation, drag reorder, undo everywhere
 - **Sharing** — unlisted links with server-rendered OG thumbnails (Pillow, 1200×630); shared recipes can be adopted into your own collection
-- **Handmade Material 3 Expressive** — design tokens as CSS custom properties, real spring physics (Motion), `prefers-reduced-motion` throughout
+- **Handmade Material 3 Expressive** — design tokens as CSS custom properties, real spring physics (Motion), circular-reveal theme switch (View Transitions API), `prefers-reduced-motion` throughout
+- **Admin panel** — usage/cost dashboard (generations, tokens, cache rate, feedback per prompt version) + allowlist management, gated via `ZK_ADMIN_EMAILS`
 - **PWA** — installable, favorites readable offline
 
 ## Stack

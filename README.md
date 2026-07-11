@@ -27,6 +27,8 @@ Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch s
 ## Features
 
 - 🪄 **Live-Streaming-Generierung** — semantische SSE-Events (Titel → Zutaten → Schritte → Tipps) aus einem inkrementellen JSON-Parser über der Claude-API (Structured Outputs, Prompt-Caching, disconnect-fest)
+- 🧙 **Magischer Kessel** — während der Generierung kreisen die echten Zutaten als Emojis um einen Kessel (bzw. Shaker im Cocktail-Modus) und fallen bei jedem Stream-Event mit Funken-Burst hinein; der Titel materialisiert Wort für Wort
+- 🔄 **Navigationsfeste Generierung** — der Stream lebt in einem globalen Store und läuft beim Seitenwechsel weiter; eine schwebende Status-Pille („🪄 Rezept wird gezaubert …" → „✨ fertig!") führt jederzeit zurück
 - ✨ **Anpassen per Zuruf** — jedes Rezept per Chip oder Freitext abwandeln („schärfer", „ohne Ofen", „für Meal-Prep")
 - 👤 **Präferenz-Profil** — Ernährungsform, No-Go-Zutaten und Standard-Personenzahl fließen automatisch in jede Generierung
 - 👍 **Feedback pro Rezept** (mit Grund-Chips) — fließt in die Prompt-Iteration; 📝 persönliche Koch-Notizen + „Gekocht"-Zähler
@@ -37,7 +39,8 @@ Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch s
 - 🛒 **Einkaufsliste** — Zutaten mehrerer Rezepte werden aggregiert (Einheiten normalisiert: kg→g, cl→ml), Drag-Reorder, Teilen, überall Undo
 - ⭐ **Favoriten & Verlauf** mit Suche und Filtern
 - 🔗 **Teilen** — unlisted Links mit server-seitig generierten OG-Thumbnails (Pillow, 1200×630); geteilte Rezepte können in die eigene Sammlung übernommen werden
-- 🎨 **Material 3 Expressive, handgebaut** — Design-Tokens als CSS Custom Properties, echte Spring-Physik (Motion), `prefers-reduced-motion` überall
+- 🎨 **Material 3 Expressive, handgebaut** — Design-Tokens als CSS Custom Properties, echte Spring-Physik (Motion), Theme-Wechsel als Circular Reveal (View Transitions API), `prefers-reduced-motion` überall
+- 🛡️ **Admin-Panel** — Nutzungs-/Kosten-Dashboard (Generierungen, Tokens, Cache-Quote, Feedback pro Prompt-Version) + Allowlist-Verwaltung, per `ZK_ADMIN_EMAILS` freigeschaltet
 - 📲 **PWA** — installierbar, Favoriten offline lesbar
 - 🔐 Google OAuth (PKCE, server-seitig), httpOnly-Sessions, CSRF-Schutz, Tageslimits pro User + global
 - 🚀 **Lighthouse 99 / 100 / 100 / 100** (Performance / Accessibility / Best Practices / SEO, gemessen gegen Prod)

@@ -73,6 +73,7 @@ npx playwright test  # E2E-Smoke (lokal)
 - **API-Contract**: anonymes `GET /me` antwortet `200 {authenticated:false}` (nie 401 — Konsolenfehler/Lighthouse). 
 - **Security**: `ANTHROPIC_API_KEY` nur server-seitig. Auth-Tokens NIE in localStorage (httpOnly-Cookies). CSRF-Schutz auf state-changing Requests. Scoring/Limits/Validierung server-seitig. CORS strikt auf zauberkoch.de.
 - **Rate-Limits**: `DAILY_LIMIT_PER_USER` (20) + `DAILY_LIMIT_GLOBAL` (Kostenschutz), beide env; 429 mit klarem UI-Feedback.
+- **Modellwahl geprüft (2026-07-11)**: `claude-sonnet-5` ist der Sweet Spot (~3–4 ct/Rezept live; Haiku spart nur ~2 ct bei sichtbarem Qualitätsverlust, Opus per `ANTHROPIC_MODEL`-Env A/B-testbar, falls Feedback-Daten es nahelegen). ⚠️ Kosten-Konstanten `PRICE_*` in `app/api/v1/admin.py` + `scripts/stats.py` = Sonnet-5-**Intro-Preise** ($2/$10) — **ab 2026-09-01 auf $3/$15 anheben**, sonst zeigt das Dashboard ~33 % zu wenig.
 - **Rezept-System-Prompt** ist ein iterierbares Kernstück: Versionen in `app/prompts/`, Prompt-Version wird am Rezept gespeichert. Keine generischen Rezepte; metrische Mengen; Cocktails mit cl + Technik (shaken/stirred/built).
 - **Keine KI-Bilder** — kuratierte SVG-Motive pro Länderküche.
 - **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` (aktuell **v7**) — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
