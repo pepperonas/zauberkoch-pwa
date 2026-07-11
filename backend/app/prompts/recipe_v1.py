@@ -109,6 +109,12 @@ def build_user_prompt(params: GenerateParams) -> str:
             + ", ".join(f"„{_clean(z)}“" for z in p.vorhandene_zutaten)
             + "."
         )
+    if p.vermeiden:
+        lines.append(
+            "Diese Zutaten unbedingt VERMEIDEN (Abneigung/Allergie): "
+            + ", ".join(f"„{_clean(v)}“" for v in p.vermeiden)
+            + "."
+        )
     if p.ueberrasch_mich:
         lines.append("Der Nutzer will überrascht werden — wähle etwas Besonderes, das nicht jeder kennt.")
 

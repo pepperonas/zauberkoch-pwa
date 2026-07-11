@@ -134,10 +134,56 @@ def _meta_block(row: Recipe, token: str) -> str:
     )
 
 
+def _jsonld(row: Recipe, token: str) -> str:
+    """schema.org Recipe JSON-LD for Google Rich Results on shared pages."""
+    settings = get_settings()
+    base = settings.zk_base_url.rstrip("/")
+    r = json.loads(row.recipe_json)
+
+    def amount(z: dict) -> str:
+        menge = z.get("menge")
+        einheit = z.get("einheit") or ""
+        prefix = f"{menge} {einheit}".strip() if menge not in (None, "") else ""
+        return f"{prefix} {z.get('name', '')}".strip()
+
+    data: dict = {
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        "name": r.get("titel", ""),
+        "description": r.get("teaser", ""),
+        "image": [f"{base}/api/v1/share/{token}/og.png"],
+        "inLanguage": "de",
+        "author": {"@type": "Organization", "name": "Zauberkoch", "url": base},
+        "datePublished": row.created_at.date().isoformat(),
+        "recipeCuisine": r.get("kueche", ""),
+        "keywords": ", ".join(r.get("tags", [])),
+        "recipeYield": f"{r.get('portionen', 1)} {'Drinks' if row.mode == 'cocktail' else 'Portionen'}",
+        "prepTime": f"PT{int(r.get('zeit_aktiv') or 0)}M",
+        "totalTime": f"PT{int(r.get('zeit_gesamt') or 0)}M",
+        "recipeIngredient": [amount(z) for z in r.get("zutaten", [])],
+        "recipeInstructions": [
+            {"@type": "HowToStep", "name": s_.get("titel", ""), "text": s_.get("text", "")}
+            for s_ in r.get("schritte", [])
+        ],
+    }
+    naehrwerte = r.get("naehrwerte") or {}
+    if naehrwerte.get("kalorien_kcal") is not None:
+        data["nutrition"] = {
+            "@type": "NutritionInformation",
+            "calories": f"{naehrwerte['kalorien_kcal']} kcal",
+            "proteinContent": f"{naehrwerte.get('eiweiss_g', 0)} g",
+            "fatContent": f"{naehrwerte.get('fett_g', 0)} g",
+            "carbohydrateContent": f"{naehrwerte.get('kohlenhydrate_g', 0)} g",
+        }
+    # "</" would end the script tag early — escape for safe inline embedding
+    payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    return f'<script type="application/ld+json">{payload}</script>'
+
+
 @html_router.get("/r/{token}", response_class=HTMLResponse)
 def shared_page(token: str, request: Request, db: DbSession = Depends(get_db)) -> HTMLResponse:
     check_ip_limit(request, scope="share", limit=60, window_s=60)
     row = _by_token(token, db)
     shell = WEBROOT_INDEX.read_text(encoding="utf-8") if WEBROOT_INDEX.exists() else FALLBACK_SHELL
-    page = shell.replace("</head>", f"{_meta_block(row, token)}</head>", 1)
+    page = shell.replace("</head>", f"{_meta_block(row, token)}{_jsonld(row, token)}</head>", 1)
     return HTMLResponse(page, headers={"Cache-Control": "no-cache"})

@@ -144,6 +144,20 @@ export const de = {
     notFound: 'Dieser Link ist ungültig oder wurde widerrufen.',
   },
   undo: 'Rückgängig',
+  feedback: {
+    question: 'Wie war das Rezept?',
+    thanks: 'Danke für dein Feedback!',
+    reasons: ['zu generisch', 'Mengen unplausibel', 'hat nicht funktioniert', 'passt nicht zu den Vorgaben'],
+  },
+  profile: {
+    title: 'Mein Profil',
+    open: 'Profil & Vorlieben',
+    diet: 'Ernährung (gilt für jedes Rezept)',
+    avoid: 'Zutaten, die ich nicht mag',
+    avoidPlaceholder: 'Zutat eintippen und Enter …',
+    defaultServings: 'Standard-Personenzahl',
+    saved: 'Profil gespeichert',
+  },
   adult: {
     title: 'Kurze Frage',
     text: 'Der Cocktail-Modus enthält Rezepte mit Alkohol. Bist du mindestens 18 Jahre alt?',

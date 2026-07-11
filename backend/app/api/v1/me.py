@@ -5,9 +5,12 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session as DbSession
 
+from pydantic import ValidationError
+
 from app.core.security import get_current_session, get_current_user, require_csrf
 from app.db import get_db
 from app.models import Session as SessionModel, User
+from app.schemas.recipe import Preferences
 
 router = APIRouter(prefix="/me")
 
@@ -24,6 +27,7 @@ def me(
         "picture_url": user.picture_url,
         "adult_confirmed": user.adult_confirmed_at is not None,
         "csrf_token": session.csrf_token,
+        "preferences": load_preferences(user).model_dump(),
     }
 
 
@@ -33,3 +37,21 @@ def confirm_adult(user: User = Depends(get_current_user), db: DbSession = Depend
         user.adult_confirmed_at = datetime.now(timezone.utc)
         db.commit()
     return {"adult_confirmed": True}
+
+
+def load_preferences(user: User) -> Preferences:
+    try:
+        return Preferences.model_validate_json(user.preferences_json or "{}")
+    except ValidationError:
+        return Preferences()
+
+
+@router.put("/preferences", dependencies=[Depends(require_csrf)])
+def put_preferences(
+    prefs: Preferences,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    user.preferences_json = prefs.model_dump_json()
+    db.commit()
+    return {"preferences": prefs.model_dump()}

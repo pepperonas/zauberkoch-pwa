@@ -72,6 +72,15 @@ export interface GenerateParams {
   regenerate?: boolean;
 }
 
+export interface Preferences {
+  vegetarisch: boolean;
+  vegan: boolean;
+  glutenfrei: boolean;
+  laktosefrei: boolean;
+  vermeiden: string[];
+  standard_personen: number;
+}
+
 export interface Me {
   id: number;
   email: string;
@@ -79,6 +88,7 @@ export interface Me {
   picture_url: string;
   adult_confirmed: boolean;
   csrf_token: string;
+  preferences: Preferences;
 }
 
 export interface RecipeListItem {
@@ -99,6 +109,7 @@ export interface RecipeDetail {
   mode: Modus;
   recipe: Recipe;
   is_favorite: boolean;
+  feedback: number | null;
   created_at: string;
 }
 

@@ -60,6 +60,22 @@ def main() -> int:
             .order_by(func.count().desc())
         ).all()
         print("per user:        " + ", ".join(f"#{uid}: {n}" for uid, n in by_user))
+
+        from app.models import Recipe
+
+        fb = db.execute(
+            select(Recipe.prompt_version, Recipe.feedback, func.count())
+            .where(Recipe.feedback.is_not(None), Recipe.created_at >= since)
+            .group_by(Recipe.prompt_version, Recipe.feedback)
+        ).all()
+        if fb:
+            per_version: dict[str, dict[int, int]] = {}
+            for version, wert, n in fb:
+                per_version.setdefault(version, {})[wert] = n
+            parts = [
+                f"{v}: 👍{c.get(1, 0)}/👎{c.get(-1, 0)}" for v, c in sorted(per_version.items())
+            ]
+            print("feedback:        " + ", ".join(parts))
         return 0
     finally:
         db.close()

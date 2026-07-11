@@ -11,7 +11,7 @@ const BASE = 'http://localhost:4173';
 const OUT = new URL('../../docs/screenshots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
-const ME = { id: 1, email: 'demo@zauberkoch.de', name: 'Demo', picture_url: '', adult_confirmed: true, csrf_token: 'x' };
+const ME = { id: 1, email: 'demo@zauberkoch.de', name: 'Demo', picture_url: '', adult_confirmed: true, csrf_token: 'x', preferences: { vegetarisch: false, vegan: false, glutenfrei: false, laktosefrei: false, vermeiden: [], standard_personen: 2 } };
 
 const RECIPE = {
   titel: 'Tom Kha Gai',

@@ -1,19 +1,23 @@
 import { AnimatePresence, motion } from 'motion/react';
+import { lazy, Suspense, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
+import { ProfileSheet } from './components/ProfileSheet';
 import { IconButton } from './components/ui';
 import { strings, t } from './i18n';
 import { api } from './lib/api';
 import { spring } from './motion/springs';
-import { FavoritesPage } from './pages/FavoritesPage';
-import { GeneratePage } from './pages/GeneratePage';
-import { HistoryPage } from './pages/HistoryPage';
-import { LandingPage } from './pages/LandingPage';
-import { RecipeDetailPage } from './pages/RecipeDetailPage';
-import { SharePage } from './pages/SharePage';
-import { ShoppingPage } from './pages/ShoppingPage';
 import { useApp } from './state/app';
 import './App.css';
+
+// Route-based code splitting: each page loads on demand
+const GeneratePage = lazy(() => import('./pages/GeneratePage').then((m) => ({ default: m.GeneratePage })));
+const RecipeDetailPage = lazy(() => import('./pages/RecipeDetailPage').then((m) => ({ default: m.RecipeDetailPage })));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then((m) => ({ default: m.FavoritesPage })));
+const HistoryPage = lazy(() => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })));
+const ShoppingPage = lazy(() => import('./pages/ShoppingPage').then((m) => ({ default: m.ShoppingPage })));
+const SharePage = lazy(() => import('./pages/SharePage').then((m) => ({ default: m.SharePage })));
+const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 
 const NAV_ITEMS = [
   { to: '/', icon: '✨', label: strings.nav.generate },
@@ -25,6 +29,7 @@ const NAV_ITEMS = [
 export default function App() {
   const { me, meLoading, theme, toggleTheme, refreshMe } = useApp();
   const location = useLocation();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogout = async () => {
     await api.logout();
@@ -43,9 +48,13 @@ export default function App() {
           </IconButton>
           {me && (
             <>
-              {me.picture_url ? (
-                <img className="avatar" src={me.picture_url} alt={me.name || me.email} referrerPolicy="no-referrer" />
-              ) : null}
+              <IconButton label={t('profile.open')} onClick={() => setProfileOpen(true)}>
+                {me.picture_url ? (
+                  <img className="avatar" src={me.picture_url} alt={me.name || me.email} referrerPolicy="no-referrer" />
+                ) : (
+                  '👤'
+                )}
+              </IconButton>
               <IconButton label={t('auth.logout')} onClick={() => void handleLogout()}>
                 ⏻
               </IconButton>
@@ -55,6 +64,7 @@ export default function App() {
       </header>
 
       <main className="shell__main">
+        <Suspense fallback={null}>
         {meLoading ? null : me ? (
           <Routes>
             <Route path="/" element={<GeneratePage />} />
@@ -71,7 +81,10 @@ export default function App() {
             <Route path="*" element={<LandingPage />} />
           </Routes>
         )}
+        </Suspense>
       </main>
+
+      {me && <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />}
 
       <footer className="shell__footer">{t('app.footer')}</footer>
 

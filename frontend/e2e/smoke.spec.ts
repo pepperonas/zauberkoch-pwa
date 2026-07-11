@@ -11,6 +11,7 @@ const ME = {
   picture_url: '',
   adult_confirmed: true,
   csrf_token: 'test-csrf',
+  preferences: { vegetarisch: false, vegan: false, glutenfrei: false, laktosefrei: false, vermeiden: [], standard_personen: 2 },
 };
 
 const RECIPE = {

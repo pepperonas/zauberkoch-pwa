@@ -1,6 +1,6 @@
 /** Typed API client. Session lives in an httpOnly cookie; CSRF via header. */
 
-import type { ApiError, Me, Modus, Recipe, RecipeDetail, RecipeListItem, ShoppingItem } from './types';
+import type { ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem } from './types';
 
 let csrfToken = '';
 
@@ -47,6 +47,13 @@ export const api = {
   me: () => request<Me>('/me'),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   confirmAdult: () => request<{ adult_confirmed: boolean }>('/me/confirm-adult', { method: 'POST' }),
+  putPreferences: (prefs: Preferences) =>
+    request<{ preferences: Preferences }>('/me/preferences', { method: 'PUT', body: JSON.stringify(prefs) }),
+  feedback: (recipeId: number, wert: 1 | -1, grund = '') =>
+    request<{ feedback: number; grund: string }>(`/recipes/${recipeId}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ wert, grund }),
+    }),
 
   recipes: (params: { q?: string; mode?: string; favorites_only?: boolean } = {}) => {
     const qs = new URLSearchParams();

@@ -30,6 +30,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(255), default="")
     picture_url: Mapped[str] = mapped_column(String(1024), default="")
     adult_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    preferences_json: Mapped[str] = mapped_column(Text, default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")
@@ -61,6 +62,8 @@ class Recipe(Base):
     prompt_version: Mapped[str] = mapped_column(String(32))
     model: Mapped[str] = mapped_column(String(64))
     share_token: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
+    feedback: Mapped[int | None] = mapped_column(Integer, nullable=True)  # +1 / -1
+    feedback_grund: Mapped[str] = mapped_column(String(255), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
 
 

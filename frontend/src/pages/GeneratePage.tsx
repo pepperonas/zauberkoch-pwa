@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { CookMode } from '../components/recipe/CookMode';
+import { FeedbackBar } from '../components/recipe/FeedbackBar';
 import { RecipeView, type RecipeViewData } from '../components/recipe/RecipeView';
 import { ShareDialog } from '../components/recipe/ShareDialog';
 import { Button, Chip, Segmented, Switch } from '../components/ui';
@@ -41,7 +42,7 @@ export function GeneratePage() {
   const [laktosefrei, setLaktosefrei] = useState(false);
   const [maxZeit, setMaxZeit] = useState<number | null>(null);
   const [schwierigkeit, setSchwierigkeit] = useState<Schwierigkeit | null>(null);
-  const [personen, setPersonen] = useState(2);
+  const [personen, setPersonen] = useState(me?.preferences?.standard_personen ?? 2);
   const [fridge, setFridge] = useState<string[]>([]);
   const [fridgeInput, setFridgeInput] = useState('');
   const [spirit, setSpirit] = useState('');
@@ -241,6 +242,8 @@ export function GeneratePage() {
             ) : null
           }
         />
+
+        {phase === 'done' && recipeId != null && !streamError && <FeedbackBar recipeId={recipeId} />}
 
         {recipeId != null && data.meta && (
           <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={data.meta.titel} />

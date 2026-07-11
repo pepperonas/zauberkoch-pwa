@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { CookMode } from '../components/recipe/CookMode';
+import { FeedbackBar } from '../components/recipe/FeedbackBar';
 import { RecipeView } from '../components/recipe/RecipeView';
 import { ShareDialog } from '../components/recipe/ShareDialog';
 import { Button } from '../components/ui';
@@ -120,6 +121,8 @@ export function RecipeDetailPage() {
           </>
         }
       />
+
+      <FeedbackBar recipeId={recipeId} initial={detail.data.feedback ?? null} />
 
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={recipe.titel} />
       <AnimatePresence>

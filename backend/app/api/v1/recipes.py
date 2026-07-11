@@ -3,10 +3,12 @@
 import asyncio
 import json
 import logging
+from typing import Literal
 from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
@@ -14,6 +16,7 @@ from app.core.security import get_current_user, require_csrf
 from app.db import get_db
 from app.models import Favorite, Generation, Recipe, User
 from app.schemas.recipe import GenerateParams
+from app.api.v1.me import load_preferences
 from app.services import ai, cache, ratelimit
 from app.services.json_stream import replay_events
 
@@ -70,6 +73,18 @@ async def generate(
             status_code=403,
             detail={"code": "adult_required", "message": "Bitte zuerst bestätigen, dass du 18+ bist."},
         )
+
+    # Merge the user's persistent preferences (diet flags OR'ed, no-gos united)
+    prefs = load_preferences(user)
+    params = params.model_copy(
+        update={
+            "vegetarisch": params.vegetarisch or prefs.vegetarisch,
+            "vegan": params.vegan or prefs.vegan,
+            "glutenfrei": params.glutenfrei or prefs.glutenfrei,
+            "laktosefrei": params.laktosefrei or prefs.laktosefrei,
+            "vermeiden": sorted({*params.vermeiden, *prefs.vermeiden}),
+        }
+    )
 
     h = cache.params_hash(params)
     current_version = ai.prompt_version()
@@ -242,5 +257,27 @@ def get_recipe(recipe_id: int, user: User = Depends(get_current_user), db: DbSes
         "mode": row.mode,
         "recipe": json.loads(row.recipe_json),
         "is_favorite": is_fav,
+        "feedback": row.feedback,
         "created_at": row.created_at.isoformat(),
     }
+
+
+class FeedbackBody(BaseModel):
+    wert: Literal[1, -1]
+    grund: str = Field(default="", max_length=255)
+
+
+@router.post("/{recipe_id}/feedback", dependencies=[Depends(require_csrf)])
+def give_feedback(
+    recipe_id: int,
+    body: FeedbackBody,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    row = db.get(Recipe, recipe_id)
+    if row is None or row.user_id != user.id:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
+    row.feedback = body.wert
+    row.feedback_grund = body.grund if body.wert == -1 else ""
+    db.commit()
+    return {"feedback": row.feedback, "grund": row.feedback_grund}

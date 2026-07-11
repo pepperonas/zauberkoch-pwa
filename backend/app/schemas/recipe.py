@@ -88,6 +88,7 @@ class GenerateParams(BaseModel):
     basis_spirituose: str = Field(default="", max_length=64)
     alkoholfrei: bool = False
     glas_vorgabe: str = Field(default="", max_length=64)
+    vermeiden: list[str] = Field(default=[], max_length=20)  # no-go ingredients (profile + request)
     # Meta
     ueberrasch_mich: bool = False
     regenerate: bool = False  # bypass cache, ask for a variation
@@ -97,8 +98,20 @@ class GenerateParams(BaseModel):
         data = self.model_dump(exclude={"regenerate"})
         data["geschmack"] = sorted(g.strip().lower() for g in data["geschmack"] if g.strip())
         data["vorhandene_zutaten"] = sorted(z.strip().lower() for z in data["vorhandene_zutaten"] if z.strip())
+        data["vermeiden"] = sorted(v.strip().lower() for v in data["vermeiden"] if v.strip())
         data["kueche"] = data["kueche"].strip().lower()
         data["kueche_freitext"] = data["kueche_freitext"].strip().lower()
         data["basis_spirituose"] = data["basis_spirituose"].strip().lower()
         data["glas_vorgabe"] = data["glas_vorgabe"].strip().lower()
         return data
+
+
+class Preferences(BaseModel):
+    """Persistent per-user defaults, merged into every generation."""
+
+    vegetarisch: bool = False
+    vegan: bool = False
+    glutenfrei: bool = False
+    laktosefrei: bool = False
+    vermeiden: list[str] = Field(default=[], max_length=20)
+    standard_personen: int = Field(default=2, ge=1, le=12)
