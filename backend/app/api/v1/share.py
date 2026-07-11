@@ -4,6 +4,7 @@ and the crawler-facing /r/{token} HTML with injected OG meta tags."""
 import html
 import json
 import logging
+import re
 import secrets
 from pathlib import Path
 
@@ -110,6 +111,13 @@ FALLBACK_SHELL = """<!doctype html><html lang="de"><head><meta charset="utf-8"><
 <body><p>Zauberkoch — <a href="/">zur App</a></p></body></html>"""
 
 
+# The static index.html carries root-page SEO/OG tags inside this sentinel
+# block — it must be stripped here, or crawlers would read the root tags
+# (which come first in <head>) instead of the recipe-specific ones.
+_ROOT_META_RE = re.compile(r"\s*<!--\s*zk:root-meta:start[^>]*-->.*?<!--\s*zk:root-meta:end\s*-->", re.S)
+_TITLE_RE = re.compile(r"<title>.*?</title>", re.S)
+
+
 def _meta_block(row: Recipe, token: str) -> str:
     settings = get_settings()
     base = settings.zk_base_url.rstrip("/")
@@ -119,14 +127,18 @@ def _meta_block(row: Recipe, token: str) -> str:
     url = f"{base}/r/{token}"
     image = f"{base}/api/v1/share/{token}/og.png"
     return (
+        f'<meta name="description" content="{desc}">'
+        f'<link rel="canonical" href="{url}">'
         f'<meta property="og:type" content="article">'
         f'<meta property="og:site_name" content="Zauberkoch">'
+        f'<meta property="og:locale" content="de_DE">'
         f'<meta property="og:title" content="{title}">'
         f'<meta property="og:description" content="{desc}">'
         f'<meta property="og:url" content="{url}">'
         f'<meta property="og:image" content="{image}">'
         f'<meta property="og:image:width" content="1200">'
         f'<meta property="og:image:height" content="630">'
+        f'<meta property="og:image:alt" content="{title}">'
         f'<meta name="twitter:card" content="summary_large_image">'
         f'<meta name="twitter:title" content="{title}">'
         f'<meta name="twitter:description" content="{desc}">'
@@ -185,5 +197,8 @@ def shared_page(token: str, request: Request, db: DbSession = Depends(get_db)) -
     check_ip_limit(request, scope="share", limit=60, window_s=60)
     row = _by_token(token, db)
     shell = WEBROOT_INDEX.read_text(encoding="utf-8") if WEBROOT_INDEX.exists() else FALLBACK_SHELL
+    shell = _ROOT_META_RE.sub("", shell)
+    page_title = html.escape(f"{json.loads(row.recipe_json).get('titel', 'Rezept')} — Zauberkoch")
+    shell = _TITLE_RE.sub(f"<title>{page_title}</title>", shell, count=1)
     page = shell.replace("</head>", f"{_meta_block(row, token)}{_jsonld(row, token)}</head>", 1)
     return HTMLResponse(page, headers={"Cache-Control": "no-cache"})

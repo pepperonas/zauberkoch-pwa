@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: 'Bricolage';
+    src: url('../frontend/public/fonts/bricolage.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: url('../frontend/public/fonts/inter.woff2') format('woff2');
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body { width: 1200px; height: 630px; overflow: hidden; }
+  .card {
+    position: relative;
+    width: 1200px; height: 630px;
+    background:
+      radial-gradient(720px 560px at 88% 30%, rgba(224, 181, 255, 0.16), transparent 65%),
+      radial-gradient(900px 700px at 18% 85%, rgba(255, 183, 126, 0.22), transparent 62%),
+      #19120c;
+    font-family: 'Inter', sans-serif;
+    color: #f5ede4;
+  }
+  .content { position: absolute; left: 84px; top: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 30px; z-index: 2; }
+  .brand { display: flex; align-items: center; gap: 26px; }
+  .brand__emoji { font-size: 96px; line-height: 1; }
+  h1 { font-family: 'Bricolage', sans-serif; font-size: 108px; font-weight: 800; letter-spacing: -2px; color: #fff4ea; }
+  h1 .zk { color: #ffb77e; }
+  .tagline { font-size: 40px; font-weight: 500; color: #dcc9b8; max-width: 620px; line-height: 1.3; }
+  .chips { display: flex; gap: 18px; margin-top: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 12px; font-size: 30px; font-weight: 600; padding: 14px 30px; border-radius: 999px; }
+  .chip--kochen { background: #723600; color: #ffdcc2; }
+  .chip--cocktail { background: #690f9b; color: #f2daff; }
+  .chip--live { background: rgba(255, 244, 234, 0.09); color: #f0e2d4; border: 2px solid rgba(255, 183, 126, 0.45); }
+  .domain { position: absolute; left: 84px; bottom: 44px; font-size: 30px; font-weight: 700; letter-spacing: 1px; color: #ffb77e; }
+  /* stage */
+  .stage { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); width: 480px; height: 480px; }
+  .glow { position: absolute; left: 50%; top: 56%; width: 400px; height: 400px; transform: translate(-50%, -50%); border-radius: 50%;
+          background: radial-gradient(circle, rgba(255, 183, 126, 0.30), transparent 65%); }
+  .vessel { position: absolute; left: 50%; top: 55%; width: 270px; height: 270px; transform: translate(-50%, -50%); }
+  .orb { position: absolute; font-size: 58px; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.55)); }
+  .spark { position: absolute; color: #ffb77e; }
+  .spark--v { color: #e0b5ff; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="content">
+    <div class="brand">
+      <span class="brand__emoji">🧑‍🍳</span>
+      <h1><span class="zk">Zauber</span>koch</h1>
+    </div>
+    <p class="tagline">Dein KI-Koch schreibt Rezepte auf Kochbuch-Niveau — live, Zutat für Zutat.</p>
+    <div class="chips">
+      <span class="chip chip--kochen">🍳 Kochen</span>
+      <span class="chip chip--cocktail">🍸 Cocktails</span>
+      <span class="chip chip--live">✨ KI-generiert</span>
+    </div>
+  </div>
+  <div class="domain">zauberkoch.de</div>
+
+  <div class="stage">
+    <div class="glow"></div>
+    <svg class="vessel" viewBox="0 0 120 120">
+      <path d="M40 102 L33 114 M80 102 L87 114" stroke="#8a7561" stroke-width="5" stroke-linecap="round"/>
+      <path d="M21 52 C21 88 38 102 60 102 C82 102 99 88 99 52 Z" fill="#2b2018" stroke="#57493c" stroke-width="2.5"/>
+      <rect x="14" y="42" width="92" height="13" rx="6.5" fill="#382a1f" stroke="#57493c" stroke-width="2.5"/>
+      <ellipse cx="60" cy="48.5" rx="39" ry="5" fill="#ffb77e"/>
+      <ellipse cx="48" cy="47.5" rx="12" ry="2" fill="#ffdcc2" opacity="0.85"/>
+      <circle cx="50" cy="36" r="3.5" fill="#ffdcc2" opacity="0.9"/>
+      <circle cx="64" cy="28" r="4.5" fill="#ffb77e" opacity="0.8"/>
+      <circle cx="74" cy="38" r="2.8" fill="#ffdcc2" opacity="0.7"/>
+    </svg>
+    <span class="orb" style="left: 4px;   top: 300px;">🍋</span>
+    <span class="orb" style="left: 205px; top: 6px;">🌿</span>
+    <span class="orb" style="left: 372px; top: 74px;">🍅</span>
+    <span class="orb" style="left: 390px; top: 244px;">🍸</span>
+    <span class="orb" style="left: 330px; top: 386px;">🥕</span>
+    <span class="orb" style="left: 168px; top: 408px;">🧄</span>
+    <span class="orb" style="left: 14px;  top: 200px;">🌶️</span>
+    <svg class="spark" style="left: 150px; top: 46px;" width="30" height="30" viewBox="0 0 24 24"><path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill="currentColor"/></svg>
+    <svg class="spark spark--v" style="left: 388px; top: 160px;" width="22" height="22" viewBox="0 0 24 24"><path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill="currentColor"/></svg>
+    <svg class="spark" style="left: 60px; top: 300px;" width="18" height="18" viewBox="0 0 24 24"><path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill="currentColor"/></svg>
+    <svg class="spark spark--v" style="left: 250px; top: 430px;" width="16" height="16" viewBox="0 0 24 24"><path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill="currentColor"/></svg>
+  </div>
+</div>
+</body>
+</html>

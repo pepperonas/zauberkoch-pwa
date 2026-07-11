@@ -87,6 +87,35 @@ def test_share_html_page_has_og_meta(client, logged_in, mock_ai):  # noqa: F811
     assert 'og:title' in r.text
     assert 'Pasta al Limone' in r.text
     assert f"/api/v1/share/{share['share_token']}/og.png" in r.text
+    assert 'rel="canonical"' in r.text
+    assert 'og:image:alt' in r.text
+
+
+def test_share_page_replaces_root_meta_and_title(client, logged_in, mock_ai, monkeypatch, tmp_path):  # noqa: F811
+    """The static root OG block must be stripped and <title> replaced — otherwise
+    crawlers read the root tags (first in <head>) instead of the recipe's."""
+    from app.api.v1 import share as share_module
+
+    shell = tmp_path / "index.html"
+    shell.write_text(
+        "<!doctype html><html><head>"
+        "<title>Zauberkoch — KI-Rezepte &amp; Cocktails</title>"
+        "<!-- zk:root-meta:start — stripped & replaced by share.py on /r/{token} pages -->"
+        '<meta property="og:title" content="ROOT-OG-TITLE">'
+        '<link rel="canonical" href="https://zauberkoch.de/">'
+        "<!-- zk:root-meta:end -->"
+        "</head><body></body></html>",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(share_module, "WEBROOT_INDEX", shell)
+
+    _, share = _shared_recipe(client, logged_in)
+    r = client.get(f"/r/{share['share_token']}")
+    assert r.status_code == 200
+    assert "ROOT-OG-TITLE" not in r.text
+    assert 'href="https://zauberkoch.de/"' not in r.text  # root canonical gone
+    assert "<title>Pasta al Limone — Zauberkoch</title>" in r.text
+    assert r.text.count("og:title") == 1  # exactly the recipe's
 
 
 # ---- shopping clear-all + replace (undo base) --------------------------------
