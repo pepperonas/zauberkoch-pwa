@@ -94,10 +94,10 @@ def test_callback_rejects_state_mismatch(client, monkeypatch):
     assert "login_error=state_mismatch" in r.headers["location"]
 
 
-def test_me_requires_session(client):
+def test_me_anonymous_is_200_unauthenticated(client):
     r = client.get("/api/v1/me")
-    assert r.status_code == 401
-    assert r.json()["error"]["code"] == "unauthorized"
+    assert r.status_code == 200
+    assert r.json() == {"authenticated": False}
 
 
 def test_confirm_adult_requires_csrf(client, db_session, monkeypatch):
@@ -120,7 +120,7 @@ def test_logout_clears_session(client, db_session, monkeypatch):
 
     r = client.post("/api/v1/auth/logout", headers={"X-CSRF-Token": csrf})
     assert r.status_code == 204
-    assert client.get("/api/v1/me").status_code == 401
+    assert client.get("/api/v1/me").json()["authenticated"] is False
 
 
 def test_auth_ip_rate_limit(client):
@@ -142,4 +142,4 @@ def test_expired_session_rejected(client, db_session, monkeypatch):
     sess.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
     db_session.commit()
 
-    assert client.get("/api/v1/me").status_code == 401
+    assert client.get("/api/v1/me").json()["authenticated"] is False

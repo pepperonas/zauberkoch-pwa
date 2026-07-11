@@ -43,8 +43,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
+export type MeResponse = ({ authenticated: true } & Me) | { authenticated: false };
+
 export const api = {
-  me: () => request<Me>('/me'),
+  me: () => request<MeResponse>('/me'),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   confirmAdult: () => request<{ adult_confirmed: boolean }>('/me/confirm-adult', { method: 'POST' }),
   putPreferences: (prefs: Preferences) =>

@@ -32,6 +32,7 @@
 
 .shell__main {
   flex: 1;
+  min-height: calc(100dvh - 60px); /* footer below the fold before lazy content arrives (CLS) */
   padding-bottom: 96px; /* room for bottom nav */
 }
 

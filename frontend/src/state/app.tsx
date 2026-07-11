@@ -45,13 +45,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const meQuery = useQuery({
     queryKey: ['me'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Me | null> => {
       try {
-        const me = await api.me();
-        setCsrfToken(me.csrf_token);
-        return me;
+        const res = await api.me();
+        if (!res.authenticated) return null;
+        setCsrfToken(res.csrf_token);
+        return res;
       } catch (err) {
-        if (err instanceof ApiRequestError && err.status === 401) return null;
+        if (err instanceof ApiRequestError && err.status === 401) return null; // legacy contract
         throw err;
       }
     },

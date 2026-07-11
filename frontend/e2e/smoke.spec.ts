@@ -5,6 +5,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const ME = {
+  authenticated: true,
   id: 1,
   email: 'alice@example.com',
   name: 'Alice',

@@ -10,25 +10,28 @@ import { useLocation } from 'react-router-dom';
 
 const EXAMPLES = [
   {
+    href: '/r/47Gob2qNH2un',
     kueche: 'Italienisch',
     mode: 'kochen' as const,
-    titel: 'Pasta al Limone mit knusprigem Salbei',
-    teaser: 'Cremig, zitronig, in 20 Minuten — das Pasta-Wasser macht die Sauce seidig.',
-    stats: ['🕐 20 Min.', '📶 einfach'],
+    titel: 'Spaghetti alle Vongole',
+    teaser: 'Klassiker aus Neapel: Muscheln, Weißwein, Knoblauch und Petersilie treffen auf perfekt al dente Spaghetti — frisch, salzig, in 25 Minuten fertig.',
+    stats: ['🕐 30 Min.', '📶 mittel'],
   },
   {
-    kueche: 'Thai',
+    href: '/r/_LCP3L_O-LuV',
+    kueche: 'Thailändisch',
     mode: 'kochen' as const,
-    titel: 'Gaeng Khiao Wan — grünes Curry',
-    teaser: 'Authentische Paste, Kokosmilch in zwei Stufen, Thai-Basilikum zum Schluss.',
-    stats: ['🕐 45 Min.', '📶 mittel'],
+    titel: 'Massaman-Curry mit Rindfleisch',
+    teaser: 'Mildscharf und cremig: geröstete Gewürze, zart geschmortes Rind und ein Hauch Tamarinde — die Klassik aus dem Süden Thailands.',
+    stats: ['🕐 1,5 h', '📶 mittel'],
   },
   {
+    href: '/r/BWyqyP7jL0lI',
     kueche: 'Klassiker',
     mode: 'cocktail' as const,
-    titel: 'Smoky Paloma',
-    teaser: 'Mezcal statt Tequila, frische Grapefruit, Salzrand — shaken, nicht gerührt.',
-    stats: ['🍸 2 Drinks', '🥃 Highball'],
+    titel: 'Gin Sour Royal',
+    teaser: 'Feiner Eiweiß-Schaum, spritzige Zitrusnote, ein Hauch Wacholder — frisch, sauer, perfekt austariert.',
+    stats: ['🍸 2 Drinks', '🥃 Coupette'],
   },
 ];
 
@@ -69,12 +72,14 @@ export function LandingPage() {
         <h2>{t('landing.exampleTitle')}</h2>
         <div className="stack" style={{ marginTop: 'var(--space-4)' }}>
           {EXAMPLES.map((ex, i) => (
-            <motion.div
+            <motion.a
               key={ex.titel}
+              href={ex.href}
               className="card card--outlined"
-              style={{ position: 'relative', overflow: 'hidden' }}
+              style={{ position: 'relative', overflow: 'hidden', display: 'block', color: 'inherit' }}
               {...(reduced ? {} : riseIn)}
               transition={stagger(i, 0.12)}
+              whileTap={reduced ? undefined : { scale: 0.98 }}
             >
               <CuisineHero kueche={ex.kueche} mode={ex.mode} />
               <span className="hero__kueche">{ex.kueche}</span>
@@ -85,7 +90,7 @@ export function LandingPage() {
                   <span key={s} className="stat">{s}</span>
                 ))}
               </div>
-            </motion.div>
+            </motion.a>
           ))}
         </div>
       </section>

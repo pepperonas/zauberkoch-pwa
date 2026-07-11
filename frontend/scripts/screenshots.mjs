@@ -11,7 +11,7 @@ const BASE = 'http://localhost:4173';
 const OUT = new URL('../../docs/screenshots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
-const ME = { id: 1, email: 'demo@zauberkoch.de', name: 'Demo', picture_url: '', adult_confirmed: true, csrf_token: 'x', preferences: { vegetarisch: false, vegan: false, glutenfrei: false, laktosefrei: false, vermeiden: [], standard_personen: 2 } };
+const ME = { authenticated: true, id: 1, email: 'demo@zauberkoch.de', name: 'Demo', picture_url: '', adult_confirmed: true, csrf_token: 'x', preferences: { vegetarisch: false, vegan: false, glutenfrei: false, laktosefrei: false, vermeiden: [], standard_personen: 2 } };
 
 const RECIPE = {
   titel: 'Tom Kha Gai',
@@ -59,7 +59,7 @@ const STREAM =
 
 async function mock(page, { loggedIn }) {
   await page.route('**/api/v1/me', (r) =>
-    loggedIn ? r.fulfill({ json: ME }) : r.fulfill({ status: 401, json: { error: { code: 'unauthorized', message: 'x' } } }),
+    loggedIn ? r.fulfill({ json: ME }) : r.fulfill({ json: { authenticated: false } }),
   );
   await page.route('**/api/v1/recipes/generate', (r) =>
     r.fulfill({ status: 200, contentType: 'text/event-stream', body: STREAM }),
