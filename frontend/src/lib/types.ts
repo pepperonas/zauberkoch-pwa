@@ -79,6 +79,8 @@ export interface Preferences {
   laktosefrei: boolean;
   vermeiden: string[];
   standard_personen: number;
+  /** Personalized wizard cuisine chips (empty = app defaults). */
+  kuechen?: string[];
 }
 
 export interface Me {

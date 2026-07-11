@@ -130,3 +130,20 @@
 .cook__dot { width: 8px; height: 8px; border-radius: 99px; background: var(--c-outline-variant); }
 .cook__dot--active { background: var(--c-primary); }
 .cook__nav { display: flex; gap: var(--space-3); justify-content: center; }
+
+/* List card (History/Favorites) with inline favorite star */
+.recipecard {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.recipecard__star {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: -12px -12px -12px 0; /* full touch target without inflating the row */
+  border-radius: var(--shape-full);
+  font-size: 1.3rem;
+  color: var(--c-on-surface-variant);
+}

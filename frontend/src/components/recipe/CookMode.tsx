@@ -91,13 +91,14 @@ function StepTimer({ seconds }: { seconds: number }) {
     };
   }, [running]);
 
-  const mm = Math.floor(remaining / 60);
+  const hh = Math.floor(remaining / 3600);
+  const mm = Math.floor((remaining % 3600) / 60);
   const ss = remaining % 60;
 
   return (
     <div>
       <div className="cook__timer" role="timer" aria-live="off">
-        {mm}:{String(ss).padStart(2, '0')}
+        {hh > 0 ? `${hh}:${String(mm).padStart(2, '0')}` : mm}:{String(ss).padStart(2, '0')}
       </div>
       <Button
         variant={running ? 'tonal' : 'filled'}

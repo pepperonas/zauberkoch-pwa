@@ -58,12 +58,44 @@ export const de = {
     glassAny: 'Glas egal',
     glassChoose: 'Glas vorgeben',
     surpriseMe: 'Überrasch mich!',
+    cuisineEdit: 'Anpassen',
+    cuisineSheetTitle: 'Küchen anpassen',
+    cuisineSheetHint: 'Stelle dir deine eigene Chip-Auswahl zusammen — sie erscheint dann im Zauber-Assistenten.',
+    cuisineSearch: 'Küche suchen …',
+    cuisineYourSelection: 'Deine Auswahl',
+    cuisineAddCustom: (name: string) => `＋ „${name}“ hinzufügen`,
+    cuisineReset: 'Standard wiederherstellen',
+    cuisineSaved: 'Küchen-Auswahl gespeichert',
+    cuisineMax: 'Maximal 40 Küchen möglich',
     next: 'Weiter',
     back: 'Zurück',
     skip: 'Überspringen',
     generate: 'Rezept zaubern',
   },
   cuisines: ['Italienisch', 'Japanisch', 'Mexikanisch', 'Thai', 'Indisch', 'Französisch', 'Levante', 'Koreanisch', 'Deutsch', 'Peruanisch'],
+  /** Catalog for the cuisine editor — grouped by region, ~110 entries. */
+  cuisineRegions: [
+    {
+      name: '🇪🇺 Europa',
+      items: ['Italienisch', 'Französisch', 'Deutsch', 'Spanisch', 'Portugiesisch', 'Griechisch', 'Türkisch', 'Österreichisch', 'Schweizerisch', 'Polnisch', 'Tschechisch', 'Ungarisch', 'Kroatisch', 'Serbisch', 'Rumänisch', 'Bulgarisch', 'Britisch', 'Irisch', 'Niederländisch', 'Belgisch', 'Dänisch', 'Schwedisch', 'Norwegisch', 'Finnisch', 'Isländisch', 'Russisch', 'Ukrainisch', 'Georgisch', 'Baskisch', 'Sizilianisch', 'Alpenküche'],
+    },
+    {
+      name: '🌏 Asien',
+      items: ['Japanisch', 'Thai', 'Indisch', 'Koreanisch', 'Chinesisch', 'Kantonesisch', 'Sichuan', 'Taiwanisch', 'Vietnamesisch', 'Indonesisch', 'Malaysisch', 'Singapurisch', 'Philippinisch', 'Kambodschanisch', 'Laotisch', 'Burmesisch', 'Nepalesisch', 'Tibetisch', 'Sri-lankisch', 'Südindisch', 'Punjabi', 'Bengalisch', 'Pakistanisch', 'Afghanisch', 'Usbekisch', 'Kasachisch', 'Mongolisch'],
+    },
+    {
+      name: '🕌 Nahost & Afrika',
+      items: ['Levante', 'Libanesisch', 'Israelisch', 'Syrisch', 'Persisch', 'Arabisch', 'Jemenitisch', 'Irakisch', 'Marokkanisch', 'Tunesisch', 'Algerisch', 'Ägyptisch', 'Äthiopisch', 'Eritreisch', 'Kenianisch', 'Nigerianisch', 'Senegalesisch', 'Ghanaisch', 'Südafrikanisch'],
+    },
+    {
+      name: '🌎 Amerika',
+      items: ['Mexikanisch', 'Peruanisch', 'Tex-Mex', 'Kalifornisch', 'Südstaaten (Soul Food)', 'Cajun & Kreolisch', 'BBQ & Smoker', 'Hawaiianisch', 'Karibisch', 'Kubanisch', 'Jamaikanisch', 'Puerto-ricanisch', 'Brasilianisch', 'Argentinisch', 'Chilenisch', 'Kolumbianisch', 'Venezolanisch', 'Bolivianisch', 'Kanadisch'],
+    },
+    {
+      name: '✨ Stile & Konzepte',
+      items: ['Mediterran', 'Nordisch (New Nordic)', 'Streetfood', 'Tapas & Pintxos', 'Mezze', 'Fusion', 'Ramen & Nudelsuppen', 'Sushi & Sashimi', 'Pizza Napoletana', 'Pasta-Klassiker', 'Bowls', 'Comfort Food', 'Fine Dining', 'Slow Cooking'],
+    },
+  ],
   tastes: ['scharf', 'umami', 'süß', 'sauer', 'rauchig', 'frisch', 'herzhaft', 'cremig'],
   spirits: ['Gin', 'Rum', 'Whiskey', 'Tequila', 'Wodka', 'Aperitivo'],
   stream: {
@@ -161,6 +193,27 @@ export const de = {
     notFound: 'Dieser Link ist ungültig oder wurde widerrufen.',
   },
   undo: 'Rückgängig',
+  units: {
+    /** Human duration from minutes: "45 Min." / "2 h 30 Min." / "3 Tage". */
+    duration: (totalMin: number): string => {
+      const min = Math.round(totalMin);
+      if (min < 1) return '< 1 Min.';
+      if (min < 90) return `${min} Min.`;
+      if (min < 48 * 60) {
+        const h = Math.floor(min / 60);
+        const rest = min % 60;
+        return rest === 0 ? `${h} h` : `${h} h ${rest} Min.`;
+      }
+      let tage = Math.floor(min / 1440);
+      let restH = Math.round((min % 1440) / 60);
+      if (restH === 24) {
+        tage += 1;
+        restH = 0;
+      }
+      const label = `${tage} ${tage === 1 ? 'Tag' : 'Tage'}`;
+      return restH === 0 ? label : `${label} ${restH} h`;
+    },
+  },
   adapt: {
     button: 'Anpassen',
     title: 'Rezept anpassen',

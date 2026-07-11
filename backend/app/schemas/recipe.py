@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Zutat(BaseModel):
@@ -115,3 +115,18 @@ class Preferences(BaseModel):
     laktosefrei: bool = False
     vermeiden: list[str] = Field(default=[], max_length=20)
     standard_personen: int = Field(default=2, ge=1, le=12)
+    # Personalized cuisine chips for the wizard (empty = app defaults). UI-only:
+    # the chosen cuisine still travels as a normal generation param.
+    kuechen: list[str] = Field(default=[], max_length=40)
+
+    @field_validator("kuechen")
+    @classmethod
+    def _clean_kuechen(cls, value: list[str]) -> list[str]:
+        seen: set[str] = set()
+        out: list[str] = []
+        for item in value:
+            name = " ".join(item.split())[:40].strip()
+            if name and name.lower() not in seen:
+                seen.add(name.lower())
+                out.append(name)
+        return out

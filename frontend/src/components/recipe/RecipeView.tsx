@@ -5,7 +5,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 
-import { t } from '../../i18n';
+import { strings, t } from '../../i18n';
 import type { Modus, Naehrwerte, RecipeMeta, Schritt, Zutat } from '../../lib/types';
 import { formatZutatMenge } from '../../lib/units';
 import { riseIn, spring, springBouncy, springSoft, stagger } from '../../motion/springs';
@@ -33,7 +33,7 @@ interface Props {
 
 function fmtMin(min: number | null | undefined): string {
   if (min == null) return '–';
-  return min >= 90 ? `${Math.round((min / 60) * 10) / 10} h` : `${min} ${t('wizard.minutes')}`;
+  return strings.units.duration(min);
 }
 
 export function RecipeView({ data, mode, streaming = false, actions, onPortionenChange }: Props) {
@@ -294,7 +294,7 @@ const SchrittRow = memo(function SchrittRow({ schritt, streaming }: { schritt: S
         <div className="schritt__titel">{schritt.titel}</div>
         <p className="schritt__text">{schritt.text}</p>
         {schritt.dauer_sek != null && schritt.dauer_sek > 0 && (
-          <span className="schritt__timer">⏲ {Math.round(schritt.dauer_sek / 60)} {t('wizard.minutes')}</span>
+          <span className="schritt__timer">⏲ {strings.units.duration(schritt.dauer_sek / 60)}</span>
         )}
       </div>
     </motion.div>

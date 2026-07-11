@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { CuisineSheet } from '../components/CuisineSheet';
 import { AdaptSheet } from '../components/recipe/AdaptSheet';
 import { ConjureStage, SparkBurst } from '../components/recipe/ConjureStage';
 import { CookMode } from '../components/recipe/CookMode';
@@ -66,6 +67,7 @@ export function GeneratePage() {
   const [adultOpen, setAdultOpen] = useState(false);
   const [adaptOpen, setAdaptOpen] = useState(false);
   const [adaptTarget, setAdaptTarget] = useState<number | null>(null);
+  const [cuisineEditOpen, setCuisineEditOpen] = useState(false);
   const { show } = useSnackbar();
   const { withUndo } = useShoppingUndo();
   const prevPhase = useRef(gen.phase);
@@ -323,11 +325,14 @@ export function GeneratePage() {
             <section>
               <h2 className="wiz__step-title">{t('wizard.cuisineTitle')}</h2>
               <div className="chips">
-                {strings.cuisines.map((c) => (
+                {(me?.preferences?.kuechen?.length ? me.preferences.kuechen : strings.cuisines).map((c) => (
                   <Chip key={c} selected={kueche === c} onToggle={() => setKueche(kueche === c ? '' : c)}>
                     {c}
                   </Chip>
                 ))}
+                <Chip selected={false} onToggle={() => setCuisineEditOpen(true)}>
+                  ✏️ {t('wizard.cuisineEdit')}
+                </Chip>
               </div>
               <div className="wiz__free">
                 <label htmlFor="kueche-frei">{t('wizard.cuisineFreeLabel')}</label>
@@ -497,6 +502,15 @@ export function GeneratePage() {
           <Button onClick={() => setConstraintsOpen(false)}>{t('common.save')}</Button>
         </div>
       </Sheet>
+
+      {/* Cuisine chip editor */}
+      <CuisineSheet
+        open={cuisineEditOpen}
+        onClose={() => setCuisineEditOpen(false)}
+        onSaved={(list) => {
+          if (kueche && !list.some((k) => k.toLowerCase() === kueche.toLowerCase())) setKueche('');
+        }}
+      />
 
       {/* Adapt handed over from the detail page (wizard phase) */}
       <AdaptSheet

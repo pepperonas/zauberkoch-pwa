@@ -37,6 +37,7 @@ def test_preferences_roundtrip_and_merge(client, logged_in, mock_ai, monkeypatch
     assert r.status_code == 200
     assert client.get("/api/v1/me").json()["preferences"]["vegan"] is True
 
+
     # capture the params that actually reach the AI service
     captured: dict = {}
     from app.api.v1 import recipes as recipes_module
@@ -53,6 +54,19 @@ def test_preferences_roundtrip_and_merge(client, logged_in, mock_ai, monkeypatch
     merged = captured["params"]
     assert merged.vegan is True
     assert set(merged.vermeiden) == {"Koriander", "Rosinen"}
+
+
+def test_preferences_custom_cuisines(client, logged_in):
+    # dedupe (case-insensitive), whitespace collapse, order preserved
+    prefs = {"kuechen": ["Sizilianisch", "  sizilianisch ", "Tex-Mex", "Ramen &  Nudelsuppen", ""]}
+    r = client.put("/api/v1/me/preferences", json=prefs, headers=logged_in)
+    assert r.status_code == 200
+    assert r.json()["preferences"]["kuechen"] == ["Sizilianisch", "Tex-Mex", "Ramen & Nudelsuppen"]
+    assert client.get("/api/v1/me").json()["preferences"]["kuechen"][0] == "Sizilianisch"
+
+    # cap at 40 entries -> 422
+    too_many = {"kuechen": [f"Küche {i}" for i in range(41)]}
+    assert client.put("/api/v1/me/preferences", json=too_many, headers=logged_in).status_code == 422
 
 
 def test_preferences_affect_cache_key(client, logged_in, mock_ai):
