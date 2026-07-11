@@ -19,6 +19,11 @@ const ShoppingPage = lazy(() => import('./pages/ShoppingPage').then((m) => ({ de
 const SharePage = lazy(() => import('./pages/SharePage').then((m) => ({ default: m.SharePage })));
 const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+// Lazy on purpose: keeps motion-dom's full engine out of the entry chunk
+// (a component imported by the entry hoists its whole dep graph there).
+const GenerationPill = lazy(() =>
+  import('./components/GenerationPill').then((m) => ({ default: m.GenerationPill })),
+);
 
 const NAV_ITEMS = [
   { to: '/', icon: '✨', label: strings.nav.generate },
@@ -92,6 +97,11 @@ export default function App() {
       </main>
 
       {me && <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />}
+      {me && (
+        <Suspense fallback={null}>
+          <GenerationPill />
+        </Suspense>
+      )}
 
       <footer className="shell__footer">{t('app.footer')}</footer>
 

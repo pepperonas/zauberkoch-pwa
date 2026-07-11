@@ -8,7 +8,7 @@ import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { t } from '../../i18n';
 import type { Modus, Naehrwerte, RecipeMeta, Schritt, Zutat } from '../../lib/types';
 import { formatZutatMenge } from '../../lib/units';
-import { riseIn, spring, springBouncy, stagger } from '../../motion/springs';
+import { riseIn, spring, springBouncy, springSoft, stagger } from '../../motion/springs';
 import { NumberTicker } from './NumberTicker';
 import { CuisineHero } from './CuisineHero';
 import './recipe.css';
@@ -77,7 +77,23 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
         <motion.section className="hero" {...(reduced ? {} : riseIn)} transition={spring}>
           <CuisineHero kueche={meta.kueche} mode={mode} />
           <span className="hero__kueche">{meta.kueche}</span>
-          <h1 className="hero__title">{meta.titel}</h1>
+          <h1 className="hero__title">
+            {streaming && !reduced
+              ? meta.titel.split(' ').map((word, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && ' '}
+                    <motion.span
+                      style={{ display: 'inline-block' }}
+                      initial={{ opacity: 0, y: 16, rotate: -4 }}
+                      animate={{ opacity: 1, y: 0, rotate: 0 }}
+                      transition={{ ...springSoft, delay: 0.07 * i }}
+                    >
+                      {word}
+                    </motion.span>
+                  </Fragment>
+                ))
+              : meta.titel}
+          </h1>
           <p className="hero__teaser">{meta.teaser}</p>
           <div className="hero__stats">
             <span className="stat">⏱ {t('recipe.activeTime')} {fmtMin(meta.zeit_aktiv)}</span>

@@ -81,6 +81,44 @@
   background: var(--c-primary-container);
 }
 
+/* Floating generation pill (above the bottom nav) */
+.genpill {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom) + 76px);
+  translate: -50% 0;
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--shape-full);
+  background: var(--c-primary-container);
+  color: var(--c-on-primary-container);
+  font: var(--type-label-lg);
+  box-shadow: var(--elev-2);
+  white-space: nowrap;
+}
+.genpill--ready {
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+}
+.genpill__icon {
+  display: inline-block;
+  font-size: 1.15rem;
+}
+.genpill__label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+.genpill__meta {
+  font: var(--type-label-sm);
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Generic page bits */
 .page__title { margin: var(--space-4) 0 var(--space-5); }
 .row { display: flex; align-items: center; gap: var(--space-3); }

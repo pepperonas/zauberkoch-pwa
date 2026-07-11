@@ -75,7 +75,8 @@ npx playwright test  # E2E-Smoke (lokal)
 - **Rate-Limits**: `DAILY_LIMIT_PER_USER` (20) + `DAILY_LIMIT_GLOBAL` (Kostenschutz), beide env; 429 mit klarem UI-Feedback.
 - **Rezept-System-Prompt** ist ein iterierbares Kernstück: Versionen in `app/prompts/`, Prompt-Version wird am Rezept gespeichert. Keine generischen Rezepte; metrische Mengen; Cocktails mit cl + Technik (shaken/stirred/built).
 - **Keine KI-Bilder** — kuratierte SVG-Motive pro Länderküche.
-- **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` (aktuell **v5**) — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
+- **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` (aktuell **v6**) — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
+- **Generierung ist navigationsfest**: Der SSE-Stream lebt im globalen Store `src/state/generation.ts` (außerhalb React, `useSyncExternalStore`) — NIE in Komponenten-State zurückverlagern oder beim Unmount aborten. Streaming-UX = `ConjureStage` (magischer Kessel/Shaker, event-getriebene Phasen) + globale `GenerationPill` (schwebt über der Nav, führt zur laufenden/fertigen Generierung zurück).
 - **CSP beachtet**: `script-src 'self'` — KEINE Inline-Scripts in index.html (Theme-Init liegt extern in `public/theme-init.js`).
 - **Tests vor Deploy**: `pytest` + `npm test` müssen grün sein; `deploy.sh` erzwingt das.
 - Touch-Targets ≥ 48 px. Lighthouse-Stand (Prod, 2026-07-11): **99/100/100/100** — bei UI-Änderungen nicht darunter fallen (CLS-Falle: Footer/Lazy-Content, siehe App.css `min-height`). Footer überall: `© 2026 Martin Pfeffer | celox.io`.

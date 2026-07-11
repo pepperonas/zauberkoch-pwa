@@ -1,4 +1,6 @@
-/** Home: 3-step wizard (skippable) -> live streaming recipe. */
+/** Home: 3-step wizard (skippable) -> live conjuring stage + streaming recipe.
+ * The stream itself lives in the global generation store (state/generation.ts)
+ * so it keeps running when the user navigates elsewhere. */
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -6,9 +8,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { AdaptSheet } from '../components/recipe/AdaptSheet';
+import { ConjureStage, SparkBurst } from '../components/recipe/ConjureStage';
 import { CookMode } from '../components/recipe/CookMode';
 import { FeedbackBar } from '../components/recipe/FeedbackBar';
-import { RecipeView, type RecipeViewData } from '../components/recipe/RecipeView';
+import { RecipeView } from '../components/recipe/RecipeView';
 import { ShareDialog } from '../components/recipe/ShareDialog';
 import { Button, Chip, Segmented, Switch } from '../components/ui';
 import { Dialog } from '../components/ui/Dialog';
@@ -17,15 +20,20 @@ import { useSnackbar } from '../components/ui/Snackbar';
 import { useShoppingUndo } from '../state/useShoppingUndo';
 import { strings, t } from '../i18n';
 import { api } from '../lib/api';
-import { adaptRecipe, streamRecipe, type StreamCallbacks } from '../lib/sse';
-import type { ApiError, GenerateParams, Modus, Schwierigkeit } from '../lib/types';
+import type { GenerateParams, Modus, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
 import { useApp } from '../state/app';
+import {
+  cancelGeneration,
+  markGenerationSeen,
+  regenerateGeneration,
+  retryGeneration,
+  setGenerationFavorite,
+  startAdaptGeneration,
+  startRecipeGeneration,
+  useGeneration,
+} from '../state/generation';
 import './wizard.css';
-
-type Phase = 'wizard' | 'streaming' | 'done' | 'limit';
-
-const EMPTY_DATA: RecipeViewData = { meta: null, zutaten: [], schritte: [], tipps: [] };
 
 export function GeneratePage() {
   const { mode, setMode, me, refreshMe } = useApp();
@@ -50,13 +58,9 @@ export function GeneratePage() {
   const [spirit, setSpirit] = useState('');
   const [alkoholfrei, setAlkoholfrei] = useState(false);
 
-  // Stream state
-  const [phase, setPhase] = useState<Phase>('wizard');
-  const [data, setData] = useState<RecipeViewData>(EMPTY_DATA);
-  const [recipeId, setRecipeId] = useState<number | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [remaining, setRemaining] = useState<number | null>(null);
-  const [streamError, setStreamError] = useState<ApiError | null>(null);
+  // Stream state lives in the global store — survives navigation.
+  const gen = useGeneration();
+  const [burst, setBurst] = useState(false);
   const [cookOpen, setCookOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [adultOpen, setAdultOpen] = useState(false);
@@ -64,12 +68,25 @@ export function GeneratePage() {
   const [adaptTarget, setAdaptTarget] = useState<number | null>(null);
   const { show } = useSnackbar();
   const { withUndo } = useShoppingUndo();
-  const abortRef = useRef<(() => void) | null>(null);
-  const lastRunner = useRef<((cb: StreamCallbacks) => () => void) | null>(null);
+  const prevPhase = useRef(gen.phase);
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => () => abortRef.current?.(), []);
+  // The user is looking at the result -> pill elsewhere can stand down.
+  useEffect(() => {
+    if (gen.phase === 'done' || gen.phase === 'limit') markGenerationSeen();
+  }, [gen.phase]);
+
+  // Celebratory spark burst when a live run lands while we're watching.
+  useEffect(() => {
+    const prev = prevPhase.current;
+    prevPhase.current = gen.phase;
+    if (prev === 'streaming' && gen.phase === 'done' && !gen.error) {
+      setBurst(true);
+      const id = window.setTimeout(() => setBurst(false), 1100);
+      return () => window.clearTimeout(id);
+    }
+  }, [gen.phase, gen.error]);
 
   const buildParams = useCallback(
     (overrides: Partial<GenerateParams> = {}): GenerateParams => ({
@@ -92,58 +109,18 @@ export function GeneratePage() {
     [mode, kueche, kuecheFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei],
   );
 
-  const start = useCallback(
-    (run: (cb: StreamCallbacks) => () => void) => {
-      abortRef.current?.();
-      lastRunner.current = run;
-      setData(EMPTY_DATA);
-      setRecipeId(null);
-      setIsFavorite(false);
-      setStreamError(null);
-      setPhase('streaming');
-      abortRef.current = run({
-        onMeta: (meta) => setData((d) => ({ ...d, meta })),
-        onZutat: (z) => setData((d) => ({ ...d, zutaten: [...d.zutaten, z] })),
-        onSchritt: (s) => setData((d) => ({ ...d, schritte: [...d.schritte, s] })),
-        onTipp: (tip) => setData((d) => ({ ...d, tipps: [...d.tipps, tip] })),
-        onDone: (recipe) =>
-          setData({
-            meta: recipe,
-            zutaten: recipe.zutaten,
-            schritte: recipe.schritte,
-            tipps: recipe.tipps,
-            naehrwerte: recipe.naehrwerte,
-            glas: recipe.glas,
-            garnitur: recipe.garnitur,
-          }),
-        onSaved: (info) => {
-          setRecipeId(info.recipe_id);
-          setRemaining(info.remaining);
-          setPhase('done');
-          void queryClient.invalidateQueries({ queryKey: ['recipes'] });
-        },
-        onError: (error) => {
-          if (error.code.startsWith('daily_limit')) {
-            setStreamError(error);
-            setPhase('limit');
-          } else {
-            setStreamError(error);
-            setPhase('done');
-          }
-        },
-      });
-    },
+  const invalidateRecipes = useCallback(
+    () => void queryClient.invalidateQueries({ queryKey: ['recipes'] }),
     [queryClient],
   );
 
   const generate = (overrides: Partial<GenerateParams> = {}) => {
-    const params = buildParams(overrides);
-    start((cb) => streamRecipe(params, cb));
+    startRecipeGeneration(buildParams(overrides), invalidateRecipes);
   };
 
   const runAdapt = useCallback(
-    (id: number, anweisung: string) => start((cb) => adaptRecipe(id, anweisung, cb)),
-    [start],
+    (id: number, anweisung: string) => startAdaptGeneration(id, anweisung, mode, invalidateRecipes),
+    [mode, invalidateRecipes],
   );
 
   // Adapt requests handed over from the detail page via router state
@@ -173,18 +150,19 @@ export function GeneratePage() {
   };
 
   const toggleFavorite = async () => {
+    const recipeId = gen.recipeId;
     if (recipeId == null) return;
-    const next = !isFavorite;
-    setIsFavorite(next);
+    const next = !gen.isFavorite;
+    setGenerationFavorite(next);
     await api.favorite(recipeId, next);
-    void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+    invalidateRecipes();
     if (!next) {
       show(t('recipe.favoriteRemoved'), {
         actionLabel: t('undo'),
         onAction: async () => {
-          setIsFavorite(true);
+          setGenerationFavorite(true);
           await api.favorite(recipeId, true);
-          void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+          invalidateRecipes();
         },
       });
     }
@@ -197,52 +175,45 @@ export function GeneratePage() {
   };
 
   /* ---------- render: streaming / result ---------- */
-  if (phase === 'streaming' || phase === 'done') {
+  if (gen.phase === 'streaming' || gen.phase === 'done') {
+    const { data, recipeId, error } = gen;
     return (
       <div>
         <div className="stream__toolbar">
-          <Button variant="text" onClick={() => { abortRef.current?.(); setPhase('wizard'); }}>
-            ← {t('wizard.back')}
-          </Button>
-          {remaining != null && <span className="muted">{strings.stream.remainingToday(remaining)}</span>}
+          {gen.phase === 'streaming' ? (
+            <Button variant="text" onClick={cancelGeneration}>✕ {t('common.cancel')}</Button>
+          ) : (
+            <Button variant="text" onClick={cancelGeneration}>← {t('stream.newRecipe')}</Button>
+          )}
+          {gen.remaining != null && <span className="muted">{strings.stream.remainingToday(gen.remaining)}</span>}
         </div>
 
-        {streamError && phase === 'done' && (
+        {error && gen.phase === 'done' && (
           <div className="card card--outlined" style={{ marginBottom: 'var(--space-4)' }}>
             <p>{t('stream.failed')}</p>
             <div className="actions">
-              <Button onClick={() => lastRunner.current && start(lastRunner.current)}>{t('common.retry')}</Button>
+              <Button onClick={retryGeneration}>{t('common.retry')}</Button>
             </div>
           </div>
         )}
 
-        {!data.meta && phase === 'streaming' && (
-          <motion.div
-            className="limitbox"
-            initial={reduced ? undefined : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <motion.div
-              className="limitbox__emoji"
-              animate={reduced ? undefined : { rotate: [0, -8, 8, 0] }}
-              transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
-              aria-hidden
-            >
-              🪄
-            </motion.div>
-            <p className="muted" role="status">{t('stream.conjuring')}</p>
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {gen.phase === 'streaming' && (
+            <ConjureStage mode={gen.mode} data={data} lastEvent={gen.lastEvent} />
+          )}
+        </AnimatePresence>
+
+        {burst && <SparkBurst />}
 
         <RecipeView
           data={data}
-          mode={mode}
-          streaming={phase === 'streaming'}
+          mode={gen.mode}
+          streaming={gen.phase === 'streaming'}
           actions={
-            phase === 'done' && !streamError ? (
+            gen.phase === 'done' && !error ? (
               <>
-                <Button variant={isFavorite ? 'tonal' : 'outlined'} onClick={() => void toggleFavorite()}>
-                  {isFavorite ? '⭐' : '☆'} {t('recipe.favorite')}
+                <Button variant={gen.isFavorite ? 'tonal' : 'outlined'} onClick={() => void toggleFavorite()}>
+                  {gen.isFavorite ? '⭐' : '☆'} {t('recipe.favorite')}
                 </Button>
                 {recipeId != null && (
                   <Button
@@ -265,15 +236,17 @@ export function GeneratePage() {
                     ✨ {t('adapt.button')}
                   </Button>
                 )}
-                <Button variant="text" onClick={() => generate({ regenerate: true })}>
-                  🎲 {t('stream.regenerate')}
-                </Button>
+                {gen.canRegenerate && (
+                  <Button variant="text" onClick={regenerateGeneration}>
+                    🎲 {t('stream.regenerate')}
+                  </Button>
+                )}
               </>
             ) : null
           }
         />
 
-        {phase === 'done' && recipeId != null && !streamError && <FeedbackBar recipeId={recipeId} />}
+        {gen.phase === 'done' && recipeId != null && !error && <FeedbackBar recipeId={recipeId} />}
 
         <AdaptSheet
           open={adaptOpen}
@@ -288,21 +261,21 @@ export function GeneratePage() {
           <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={data.meta.titel} />
         )}
         <AnimatePresence>
-          {cookOpen && <CookMode schritte={data.schritte} mode={mode} onClose={() => setCookOpen(false)} />}
+          {cookOpen && <CookMode schritte={data.schritte} mode={gen.mode} onClose={() => setCookOpen(false)} />}
         </AnimatePresence>
       </div>
     );
   }
 
   /* ---------- render: daily limit ---------- */
-  if (phase === 'limit') {
+  if (gen.phase === 'limit') {
     return (
       <div className="limitbox">
         <div className="limitbox__emoji" aria-hidden>😴</div>
         <h2>{t('stream.limitReached')}</h2>
-        <p className="muted" style={{ marginTop: 'var(--space-3)' }}>{streamError?.message}</p>
+        <p className="muted" style={{ marginTop: 'var(--space-3)' }}>{gen.error?.message}</p>
         <div style={{ marginTop: 'var(--space-6)' }}>
-          <Button variant="tonal" onClick={() => setPhase('wizard')}>← {t('wizard.back')}</Button>
+          <Button variant="tonal" onClick={cancelGeneration}>← {t('wizard.back')}</Button>
         </div>
       </div>
     );
@@ -530,7 +503,7 @@ export function GeneratePage() {
         open={adaptOpen}
         onClose={() => setAdaptOpen(false)}
         onAdapt={(anweisung) => {
-          const target = adaptTarget ?? recipeId;
+          const target = adaptTarget ?? gen.recipeId;
           if (target != null) runAdapt(target, anweisung);
         }}
       />

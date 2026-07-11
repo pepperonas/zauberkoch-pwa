@@ -74,6 +74,23 @@ export const de = {
     failed: 'Da ist etwas schiefgegangen. Versuch es gleich nochmal.',
     limitReached: 'Tageslimit erreicht — morgen geht die Zauberei weiter!',
     remainingToday: (n: number) => `Noch ${n} Zauber heute`,
+    newRecipe: 'Neues Rezept',
+    cancelHint: 'Du kannst weiter durch die App — der Zauber läuft im Hintergrund.',
+    phaseStart: 'Der Zauberkoch schwingt den Stab …',
+    phaseMeta: (titel: string) => `„${titel}“ nimmt Gestalt an …`,
+    phaseZutaten: (n: number) =>
+      n === 1 ? 'Die erste Zutat fällt hinein …' : `${n} Zutaten sind schon drin …`,
+    phaseSchritte: (n: number) => `Schritt ${n} schreibt sich …`,
+    phaseTipps: 'Noch ein paar Profi-Tipps …',
+    phaseFinish: 'Der letzte Schliff …',
+    pillBrewing: 'Rezept wird gezaubert …',
+    pillReady: 'Dein Rezept ist fertig!',
+    pillFailed: 'Zauber fehlgeschlagen',
+    pillProgress: (z: number, s: number) => {
+      const zt = `${z} ${z === 1 ? 'Zutat' : 'Zutaten'}`;
+      return s > 0 ? `${zt} · ${s} ${s === 1 ? 'Schritt' : 'Schritte'}` : zt;
+    },
+    stageLabel: 'Rezept wird erstellt',
   },
   recipe: {
     ingredients: 'Zutaten',

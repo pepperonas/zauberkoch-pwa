@@ -96,6 +96,31 @@ test('login -> generate -> favorite', async ({ page }) => {
   await expect.poll(() => favoriteCalls).toContain('PUT');
 });
 
+test('generation survives navigation and is reachable via the pill', async ({ page }) => {
+  await mockApi(page);
+  // Slow stream: response arrives after 1.5s so the run is "in flight" while we navigate
+  await page.unroute('**/api/v1/recipes/generate');
+  await page.route('**/api/v1/recipes/generate', async (route) => {
+    await new Promise((r) => setTimeout(r, 1500));
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: STREAM_BODY });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Italienisch' }).click();
+  await page.getByRole('button', { name: /Weiter/ }).click();
+  await page.getByRole('button', { name: /Weiter/ }).click();
+  await page.getByRole('button', { name: /Rezept zaubern/ }).click();
+
+  // Conjuring stage is up -> navigate away while the stream is running
+  await expect(page.getByText('Der Zauberkoch schwingt den Stab …')).toBeVisible();
+  await page.getByRole('link', { name: /Favoriten/ }).click();
+
+  // Floating pill: first brewing, then ready — generation kept running
+  await expect(page.getByRole('button', { name: /Rezept wird gezaubert/ })).toBeVisible();
+  await page.getByRole('button', { name: /Dein Rezept ist fertig/ }).click();
+  await expect(page.getByRole('heading', { name: 'Pasta al Limone' })).toBeVisible();
+});
+
 test('landing page for logged-out users', async ({ page }) => {
   await page.route('**/api/v1/me', (route) =>
     route.fulfill({ status: 401, json: { error: { code: 'unauthorized', message: 'x' } } }),
