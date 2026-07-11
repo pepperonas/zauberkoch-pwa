@@ -1,6 +1,6 @@
 # Deploy — zauberkoch.de
 
-**Status: ✅ LIVE seit 2026-07-10.** Erst-Einrichtung abgeschlossen: DNS ✓, systemd `zauberkoch-api` (Port 8742) ✓, nginx-vHost + Let's-Encrypt-Cert ✓, Backup-Timer (03:45) ✓, Allowlist (martinpaush@gmail.com, martin.pfeffer@celox.io) ✓. **Eigener Google-OAuth-Client** (`575245359999-…`, Redirect-URI registriert & verifiziert); Creds in `/opt/zauberkoch-api/.env`.
+**Status: ✅ LIVE seit 2026-07-10.** Erst-Einrichtung abgeschlossen: DNS ✓, systemd `zauberkoch-api` (Port 8742) ✓, nginx-vHost + Let's-Encrypt-Cert ✓, Backup-Timer (03:45) ✓, Allowlist (Betreiber-Konten) ✓. **Eigener Google-OAuth-Client** (`575245359999-…`, Redirect-URI registriert & verifiziert); Creds in `/opt/zauberkoch-api/.env`.
 
 ## Ziel-Setup (VPS 69.62.121.168, systemd + zentraler nginx — KEIN Docker)
 
@@ -28,7 +28,7 @@ Port 8742 vor der Einrichtung auf Kollision prüfen: `ssh root@69.62.121.168 'ss
 8. Certbot (Schritt 1 muss propagiert sein)
 9. Backup-Timer aus `deploy/` installieren + `systemctl enable --now zauberkoch-backup.timer`
 10. Erster Deploy: `./deploy/deploy.sh` (führt auch `alembic upgrade head` auf dem VPS aus)
-11. Allowlist befüllen: `ssh root@69.62.121.168 'cd /opt/zauberkoch-api && .venv/bin/python -m scripts.allowlist add martinpaush@gmail.com'` (+ martin.pfeffer@celox.io)
+11. Allowlist befüllen: `ssh root@69.62.121.168 'cd /opt/zauberkoch-api && .venv/bin/python -m scripts.allowlist add <email>'`
 12. Live-Smoke: Login → Generierung streamt → Favorit
 
 ## Monitoring & Off-VPS-Backup (seit 2026-07-11)
@@ -39,7 +39,7 @@ Port 8742 vor der Einrichtung auf Kollision prüfen: `ssh root@69.62.121.168 'ss
 | Fehler-Digest (journalctl ERROR/CRITICAL 24 h) → ntfy | VPS cron `/usr/local/bin/zauberkoch-error-digest.sh` | täglich 06:30 |
 | Off-VPS-Backup-Pull (neuester Dump → raspi3, 14 Tage Rotation) | raspi3 cron `/home/pi/bin/zauberkoch-backup-pull.sh` → `/home/pi/zauberkoch-backup/` | täglich 05:00 |
 
-**ntfy-Topic: `zauberkoch-alerts-7afe2f13`** — in der ntfy-App (iOS/Android) oder unter https://ntfy.sh/zauberkoch-alerts-7afe2f13 abonnieren. Topic liegt auf raspi3 (`~/.zauberkoch-ntfy-topic`) und VPS (`/opt/zauberkoch-api/.ntfy-topic`). SSH: dedizierter Key `raspi3:~/.ssh/id_zauberkoch_backup` → VPS. Restore-Probe zuletzt: 2026-07-11 ✓ (users/recipes aus Dump gelesen).
+**ntfy-Topic:** privat — liegt auf raspi3 (`~/.zauberkoch-ntfy-topic`) und VPS (`/opt/zauberkoch-api/.ntfy-topic`), dort nachlesen und in der ntfy-App abonnieren. Nie ins Repo committen. SSH: dedizierter Key `raspi3:~/.ssh/id_zauberkoch_backup` → VPS. Restore-Probe zuletzt: 2026-07-11 ✓ (users/recipes aus Dump gelesen).
 
 **Usage-/Kosten-Report:** `ssh root@69.62.121.168 'cd /opt/zauberkoch-api && .venv/bin/python -m scripts.stats 30'`
 
