@@ -144,6 +144,20 @@ export const de = {
     notFound: 'Dieser Link ist ungültig oder wurde widerrufen.',
   },
   undo: 'Rückgängig',
+  adapt: {
+    button: 'Anpassen',
+    title: 'Rezept anpassen',
+    placeholder: 'Eigener Wunsch, z. B. „mit Ofen statt Pfanne“ …',
+    go: 'Anpassen ✨',
+    chips: ['schärfer', 'milder', 'vegetarisch machen', 'schneller (unter 30 Min.)', 'ohne Ofen', 'für Meal-Prep'],
+  },
+  notes: {
+    label: 'Meine Notiz',
+    placeholder: 'z. B. „Nächstes Mal weniger Chili“ …',
+    saved: 'Notiz gespeichert',
+    cooked: 'Gekocht!',
+    cookedCount: (n: number) => `${n}× gekocht`,
+  },
   feedback: {
     question: 'Wie war das Rezept?',
     thanks: 'Danke für dein Feedback!',

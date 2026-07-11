@@ -17,14 +17,23 @@ export interface StreamCallbacks {
 
 /** Start a generation stream. Returns an abort function. */
 export function streamRecipe(params: GenerateParams, callbacks: StreamCallbacks): () => void {
+  return streamSSE('/api/v1/recipes/generate', params, callbacks);
+}
+
+/** Adapt an existing recipe ("schärfer", "ohne Ofen" …) — same event stream. */
+export function adaptRecipe(recipeId: number, anweisung: string, callbacks: StreamCallbacks): () => void {
+  return streamSSE(`/api/v1/recipes/${recipeId}/adapt`, { anweisung }, callbacks);
+}
+
+function streamSSE(url: string, body: unknown, callbacks: StreamCallbacks): () => void {
   const controller = new AbortController();
 
   void (async () => {
     try {
-      const res = await fetch('/api/v1/recipes/generate', {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-        body: JSON.stringify(params),
+        body: JSON.stringify(body),
         credentials: 'same-origin',
         signal: controller.signal,
       });

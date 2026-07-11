@@ -43,6 +43,32 @@ function useWakeLock(active: boolean) {
   }, [active]);
 }
 
+function timerDone() {
+  if ('vibrate' in navigator) navigator.vibrate?.([200, 100, 200]);
+  try {
+    // short two-tone chime via WebAudio — no asset needed
+    const ctx = new AudioContext();
+    [880, 1320].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.connect(gain).connect(ctx.destination);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.25);
+      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + i * 0.25 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.25 + 0.22);
+      osc.start(ctx.currentTime + i * 0.25);
+      osc.stop(ctx.currentTime + i * 0.25 + 0.25);
+    });
+    window.setTimeout(() => void ctx.close(), 800);
+  } catch {
+    /* audio unavailable */
+  }
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('⏲ Zauberkoch', { body: 'Timer abgelaufen!' });
+  }
+}
+
+
 function StepTimer({ seconds }: { seconds: number }) {
   const [remaining, setRemaining] = useState(seconds);
   const [running, setRunning] = useState(false);
@@ -54,7 +80,7 @@ function StepTimer({ seconds }: { seconds: number }) {
       setRemaining((r) => {
         if (r <= 1) {
           setRunning(false);
-          if ('vibrate' in navigator) navigator.vibrate?.([200, 100, 200]);
+          timerDone();
           return 0;
         }
         return r - 1;
@@ -73,7 +99,15 @@ function StepTimer({ seconds }: { seconds: number }) {
       <div className="cook__timer" role="timer" aria-live="off">
         {mm}:{String(ss).padStart(2, '0')}
       </div>
-      <Button variant={running ? 'tonal' : 'filled'} onClick={() => setRunning((r) => !r)}>
+      <Button
+        variant={running ? 'tonal' : 'filled'}
+        onClick={() => {
+          if (!running && 'Notification' in window && Notification.permission === 'default') {
+            void Notification.requestPermission();
+          }
+          setRunning((r) => !r);
+        }}
+      >
         {running ? t('cook.timerStop') : t('cook.timerStart')}
       </Button>
     </div>

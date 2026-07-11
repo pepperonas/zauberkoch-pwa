@@ -2,8 +2,10 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { AdaptSheet } from '../components/recipe/AdaptSheet';
 import { CookMode } from '../components/recipe/CookMode';
 import { FeedbackBar } from '../components/recipe/FeedbackBar';
 import { RecipeView, type RecipeViewData } from '../components/recipe/RecipeView';
@@ -15,7 +17,7 @@ import { useSnackbar } from '../components/ui/Snackbar';
 import { useShoppingUndo } from '../state/useShoppingUndo';
 import { strings, t } from '../i18n';
 import { api } from '../lib/api';
-import { streamRecipe } from '../lib/sse';
+import { adaptRecipe, streamRecipe, type StreamCallbacks } from '../lib/sse';
 import type { ApiError, GenerateParams, Modus, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
 import { useApp } from '../state/app';
@@ -58,10 +60,14 @@ export function GeneratePage() {
   const [cookOpen, setCookOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [adultOpen, setAdultOpen] = useState(false);
+  const [adaptOpen, setAdaptOpen] = useState(false);
+  const [adaptTarget, setAdaptTarget] = useState<number | null>(null);
   const { show } = useSnackbar();
   const { withUndo } = useShoppingUndo();
   const abortRef = useRef<(() => void) | null>(null);
-  const lastParams = useRef<GenerateParams | null>(null);
+  const lastRunner = useRef<((cb: StreamCallbacks) => () => void) | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => () => abortRef.current?.(), []);
 
@@ -87,15 +93,15 @@ export function GeneratePage() {
   );
 
   const start = useCallback(
-    (params: GenerateParams) => {
+    (run: (cb: StreamCallbacks) => () => void) => {
       abortRef.current?.();
-      lastParams.current = params;
+      lastRunner.current = run;
       setData(EMPTY_DATA);
       setRecipeId(null);
       setIsFavorite(false);
       setStreamError(null);
       setPhase('streaming');
-      abortRef.current = streamRecipe(params, {
+      abortRef.current = run({
         onMeta: (meta) => setData((d) => ({ ...d, meta })),
         onZutat: (z) => setData((d) => ({ ...d, zutaten: [...d.zutaten, z] })),
         onSchritt: (s) => setData((d) => ({ ...d, schritte: [...d.schritte, s] })),
@@ -130,7 +136,26 @@ export function GeneratePage() {
     [queryClient],
   );
 
-  const generate = (overrides: Partial<GenerateParams> = {}) => start(buildParams(overrides));
+  const generate = (overrides: Partial<GenerateParams> = {}) => {
+    const params = buildParams(overrides);
+    start((cb) => streamRecipe(params, cb));
+  };
+
+  const runAdapt = useCallback(
+    (id: number, anweisung: string) => start((cb) => adaptRecipe(id, anweisung, cb)),
+    [start],
+  );
+
+  // Adapt requests handed over from the detail page via router state
+  useEffect(() => {
+    const state = location.state as { adaptId?: number; openAdapt?: boolean } | null;
+    if (state?.adaptId && state.openAdapt) {
+      navigate('.', { replace: true, state: null });
+      setAdaptTarget(state.adaptId);
+      setAdaptOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleModeChange = (next: Modus) => {
     if (next === 'cocktail' && me && !me.adult_confirmed) {
@@ -186,7 +211,7 @@ export function GeneratePage() {
           <div className="card card--outlined" style={{ marginBottom: 'var(--space-4)' }}>
             <p>{t('stream.failed')}</p>
             <div className="actions">
-              <Button onClick={() => lastParams.current && start(lastParams.current)}>{t('common.retry')}</Button>
+              <Button onClick={() => lastRunner.current && start(lastRunner.current)}>{t('common.retry')}</Button>
             </div>
           </div>
         )}
@@ -235,6 +260,11 @@ export function GeneratePage() {
                 {data.schritte.length > 0 && (
                   <Button onClick={() => setCookOpen(true)}>👨‍🍳 {t('recipe.cookMode')}</Button>
                 )}
+                {recipeId != null && (
+                  <Button variant="tonal" onClick={() => { setAdaptTarget(recipeId); setAdaptOpen(true); }}>
+                    ✨ {t('adapt.button')}
+                  </Button>
+                )}
                 <Button variant="text" onClick={() => generate({ regenerate: true })}>
                   🎲 {t('stream.regenerate')}
                 </Button>
@@ -244,6 +274,15 @@ export function GeneratePage() {
         />
 
         {phase === 'done' && recipeId != null && !streamError && <FeedbackBar recipeId={recipeId} />}
+
+        <AdaptSheet
+          open={adaptOpen}
+          onClose={() => setAdaptOpen(false)}
+          onAdapt={(anweisung) => {
+            const target = adaptTarget ?? recipeId;
+            if (target != null) runAdapt(target, anweisung);
+          }}
+        />
 
         {recipeId != null && data.meta && (
           <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={data.meta.titel} />
@@ -485,6 +524,16 @@ export function GeneratePage() {
           <Button onClick={() => setConstraintsOpen(false)}>{t('common.save')}</Button>
         </div>
       </Sheet>
+
+      {/* Adapt handed over from the detail page (wizard phase) */}
+      <AdaptSheet
+        open={adaptOpen}
+        onClose={() => setAdaptOpen(false)}
+        onAdapt={(anweisung) => {
+          const target = adaptTarget ?? recipeId;
+          if (target != null) runAdapt(target, anweisung);
+        }}
+      />
 
       {/* 18+ dialog */}
       <Dialog open={adultOpen} onClose={() => setAdultOpen(false)} label={t('adult.title')}>

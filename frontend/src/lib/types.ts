@@ -110,6 +110,8 @@ export interface RecipeDetail {
   recipe: Recipe;
   is_favorite: boolean;
   feedback: number | null;
+  notiz: string;
+  gekocht_count: number;
   created_at: string;
 }
 

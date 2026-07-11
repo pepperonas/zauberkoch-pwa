@@ -64,6 +64,8 @@ class Recipe(Base):
     share_token: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
     feedback: Mapped[int | None] = mapped_column(Integer, nullable=True)  # +1 / -1
     feedback_grund: Mapped[str] = mapped_column(String(255), default="")
+    notiz: Mapped[str] = mapped_column(Text, default="", server_default="")  # personal cooking note
+    gekocht_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
 
 

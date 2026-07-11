@@ -11,7 +11,7 @@ import { RecipeView } from '../components/recipe/RecipeView';
 import { ShareDialog } from '../components/recipe/ShareDialog';
 import { Button } from '../components/ui';
 import { useSnackbar } from '../components/ui/Snackbar';
-import { t } from '../i18n';
+import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 import { recipeToText } from '../lib/units';
 import { spring } from '../motion/springs';
@@ -27,6 +27,8 @@ export function RecipeDetailPage() {
   const { withUndo } = useShoppingUndo();
   const [cookOpen, setCookOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [notiz, setNotiz] = useState<string | null>(null);
+  const [gekocht, setGekocht] = useState<number | null>(null);
   const [portionen, setPortionen] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('');
 
@@ -118,11 +120,47 @@ export function RecipeDetailPage() {
             {recipe.schritte.length > 0 && (
               <Button onClick={() => setCookOpen(true)}>👨‍🍳 {t('recipe.cookMode')}</Button>
             )}
+            <Button
+              variant="tonal"
+              onClick={() => navigate('/', { state: { adaptId: recipeId, openAdapt: true } })}
+            >
+              ✨ {t('adapt.button')}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => void api.markCooked(recipeId).then((r) => { setGekocht(r.gekocht_count); show(t('notes.cooked')); })}
+            >
+              ✅ {(gekocht ?? detail.data.gekocht_count) > 0
+                ? strings.notes.cookedCount(gekocht ?? detail.data.gekocht_count)
+                : t('notes.cooked')}
+            </Button>
           </>
         }
       />
 
+      <section className="section">
+        <label className="muted" htmlFor="notiz" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+          📝 {t('notes.label')}
+        </label>
+        <textarea
+          id="notiz"
+          className="input"
+          style={{ minHeight: 88, padding: 'var(--space-3) var(--space-4)', resize: 'vertical' }}
+          defaultValue={detail.data.notiz}
+          placeholder={t('notes.placeholder')}
+          maxLength={2000}
+          onBlur={(e) => {
+            const value = e.target.value.trim();
+            if (value !== (notiz ?? detail.data.notiz)) {
+              setNotiz(value);
+              void api.setNotiz(recipeId, value).then(() => show(t('notes.saved')));
+            }
+          }}
+        />
+      </section>
+
       <FeedbackBar recipeId={recipeId} initial={detail.data.feedback ?? null} />
+
 
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={recipe.titel} />
       <AnimatePresence>

@@ -49,6 +49,10 @@ export const api = {
   confirmAdult: () => request<{ adult_confirmed: boolean }>('/me/confirm-adult', { method: 'POST' }),
   putPreferences: (prefs: Preferences) =>
     request<{ preferences: Preferences }>('/me/preferences', { method: 'PUT', body: JSON.stringify(prefs) }),
+  setNotiz: (recipeId: number, notiz: string) =>
+    request<{ notiz: string }>(`/recipes/${recipeId}/notiz`, { method: 'PATCH', body: JSON.stringify({ notiz }) }),
+  markCooked: (recipeId: number) =>
+    request<{ gekocht_count: number }>(`/recipes/${recipeId}/gekocht`, { method: 'POST' }),
   feedback: (recipeId: number, wert: 1 | -1, grund = '') =>
     request<{ feedback: number; grund: string }>(`/recipes/${recipeId}/feedback`, {
       method: 'POST',

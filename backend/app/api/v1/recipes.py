@@ -208,7 +208,8 @@ def list_recipes(
 ) -> dict:
     stmt = select(Recipe).where(Recipe.user_id == user.id)
     if q:
-        stmt = stmt.where(Recipe.titel.ilike(f"%{q}%"))
+        pattern = f"%{q}%"
+        stmt = stmt.where(Recipe.titel.ilike(pattern) | Recipe.recipe_json.ilike(pattern))
     if mode:
         stmt = stmt.where(Recipe.mode == mode)
     if kueche:
@@ -258,6 +259,8 @@ def get_recipe(recipe_id: int, user: User = Depends(get_current_user), db: DbSes
         "recipe": json.loads(row.recipe_json),
         "is_favorite": is_fav,
         "feedback": row.feedback,
+        "notiz": row.notiz,
+        "gekocht_count": row.gekocht_count,
         "created_at": row.created_at.isoformat(),
     }
 
@@ -281,3 +284,142 @@ def give_feedback(
     row.feedback_grund = body.grund if body.wert == -1 else ""
     db.commit()
     return {"feedback": row.feedback, "grund": row.feedback_grund}
+
+
+class AdaptBody(BaseModel):
+    anweisung: str = Field(min_length=2, max_length=200)
+
+
+@router.post("/{recipe_id}/adapt", dependencies=[Depends(require_csrf)])
+async def adapt(
+    recipe_id: int,
+    body: AdaptBody,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> StreamingResponse:
+    """Adapt an existing recipe ("schärfer", "vegetarisch", …) — costs one
+    generation, streams like /generate, survives client disconnects."""
+    source = db.get(Recipe, recipe_id)
+    if source is None or source.user_id != user.id:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
+
+    ratelimit.consume_generation(db, user.id)
+    recipe_dict = json.loads(source.recipe_json)
+    user_id = user.id
+    source_id = source.id
+    modus = source.mode
+    current_version = ai.prompt_version()
+    model = ai.get_settings_model()
+    anweisung = " ".join(body.anweisung.split())
+
+    def _finalize(final: dict | None, usage: dict | None) -> dict | None:
+        from app.db import SessionLocal
+
+        session = SessionLocal()
+        try:
+            session.add(
+                Generation(
+                    user_id=user_id,
+                    mode=modus,
+                    prompt_version=current_version,
+                    model=model,
+                    cached=False,
+                    status="ok" if final is not None else "error",
+                    **(usage or {}),
+                )
+            )
+            session.commit()
+            if final is None:
+                return None
+            row = Recipe(
+                user_id=user_id,
+                mode=modus,
+                params_json=json.dumps(
+                    {"adapted_from": source_id, "anweisung": anweisung}, ensure_ascii=False, sort_keys=True
+                ),
+                recipe_json=json.dumps(final, ensure_ascii=False),
+                titel=final.get("titel", ""),
+                kueche=final.get("kueche", ""),
+                prompt_version=current_version,
+                model=model,
+            )
+            session.add(row)
+            session.commit()
+            return {"recipe_id": row.id, "cached": False, **ratelimit.get_usage(session, user_id)}
+        finally:
+            session.close()
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        queue: asyncio.Queue[tuple[str, object] | None] = asyncio.Queue()
+
+        async def produce() -> None:
+            final: dict | None = None
+            usage: dict | None = None
+            failed = False
+            try:
+                async for name, data in ai.adapt_recipe_events(recipe_dict, anweisung):
+                    if name == "usage":
+                        usage = data
+                        continue
+                    if name == "error":
+                        failed = True
+                    if name == "done":
+                        final = data
+                    await queue.put((name, data))
+                saved = await asyncio.to_thread(_finalize, None if failed else final, usage)
+                if saved is not None:
+                    await queue.put(("saved", saved))
+            except Exception:
+                logger.exception("adapt task failed")
+                await queue.put(("error", {"code": "generation_failed", "message": "Anpassung fehlgeschlagen."}))
+            finally:
+                await queue.put(None)
+
+        task = asyncio.create_task(produce())
+        _live_tasks.add(task)
+        task.add_done_callback(_live_tasks.discard)
+
+        while True:
+            item = await queue.get()
+            if item is None:
+                break
+            yield _sse(item[0], item[1])
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+class NotizBody(BaseModel):
+    notiz: str = Field(default="", max_length=2000)
+
+
+@router.patch("/{recipe_id}/notiz", dependencies=[Depends(require_csrf)])
+def set_notiz(
+    recipe_id: int,
+    body: NotizBody,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    row = db.get(Recipe, recipe_id)
+    if row is None or row.user_id != user.id:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
+    row.notiz = body.notiz.strip()
+    db.commit()
+    return {"notiz": row.notiz}
+
+
+@router.post("/{recipe_id}/gekocht", dependencies=[Depends(require_csrf)])
+def mark_cooked(
+    recipe_id: int,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    row = db.get(Recipe, recipe_id)
+    if row is None or row.user_id != user.id:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
+    row.gekocht_count += 1
+    db.commit()
+    return {"gekocht_count": row.gekocht_count}
