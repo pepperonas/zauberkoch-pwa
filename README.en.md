@@ -22,7 +22,10 @@ Pick a cuisine, flavors and constraints — the app streams a cookbook-quality r
 
 - **Live streaming generation** — an incremental JSON parser turns the Claude token stream into semantic SSE events (structured outputs + prompt caching keep it reliable and cheap)
 - **Two modes** — cooking & cocktails (incl. mocktails, cl measurements, shaken/stirred/built), with an animated color-scheme morph (saffron ↔ violet)
-- **Cook mode** — fullscreen, one step per screen, swipe navigation, built-in timers, wake lock
+- **Adapt on demand** — tweak any recipe via chips or free text ("spicier", "no oven", "meal-prep")
+- **Preference profile** — diet, no-go ingredients and default servings merged into every generation
+- **Cook mode** — fullscreen, one step per screen, swipe navigation, built-in timers (chime + notification), wake lock
+- **Lighthouse 99/100/100/100** measured against production
 - **Shopping list** with unit normalization and aggregation, drag reorder, undo everywhere
 - **Sharing** — unlisted links with server-rendered OG thumbnails (Pillow, 1200×630); shared recipes can be adopted into your own collection
 - **Handmade Material 3 Expressive** — design tokens as CSS custom properties, real spring physics (Motion), `prefers-reduced-motion` throughout

@@ -31,7 +31,7 @@ backend/          # FastAPI-App (eigenes venv: backend/.venv)
                   #   cache, ratelimit, aggregation (Einkaufsliste)
   app/prompts/    # Rezept-System-Prompts, VERSIONIERT (recipe_v1.py, …) — Kernstück!
   alembic/        # Migrationen (von Anfang an; nie Schema ohne Migration ändern)
-  scripts/        # Admin-CLI: python -m scripts.allowlist add <email>
+  scripts/        # Admin-CLIs: allowlist, stats, smoke_ai, showcase
   tests/          # pytest (Temp-DB, keine echten API-Calls)
 frontend/         # React-App
   src/styles/     # tokens.css (M3-Schemata: Safran-Orange=Kochen, Violett=Cocktail, je Light+Dark)
@@ -51,6 +51,9 @@ uvicorn app.main:app --reload --port 8742     # Dev-Server
 alembic upgrade head                          # Migrationen
 pytest                                        # Tests — Pflicht vor Deploy
 python -m scripts.allowlist add <email>       # Allowlist verwalten
+python -m scripts.stats [tage]                # Usage/Kosten/Cache-Quote/Feedback-Report
+python -m scripts.smoke_ai [cocktail]         # 1 echte Generierung (Prompt/Parser-Smoke, kostet Tokens)
+python -m scripts.showcase                    # Landing-Galerie seeden (idempotent, auf dem VPS)
 
 # Frontend (aus frontend/)
 npm run dev          # Vite-Dev-Server (Proxy /api → localhost:8742)
@@ -67,6 +70,7 @@ npx playwright test  # E2E-Smoke (lokal)
 - **UI-Texte Deutsch**, Code/Kommentare/Commits Englisch. Strings NUR über `src/i18n/de.ts` (i18n-ready).
 - **M3 Expressive handgebaut**: alle Farben/Shapes/Typo über Tokens in `tokens.css`. Moduswechsel Kochen↔Cocktail = Token-Morph (animiert), kein Neu-Rendern.
 - **Motion**: echte Springs (stiffness/damping) via Motion-Library — **keine linearen `ease-in-out`-CSS-Transitions als Animations-Ersatz**. Nur `transform`/`opacity` animieren, `will-change` gezielt. `prefers-reduced-motion` → schnelle Fades, Pflicht auf jeder Animation.
+- **API-Contract**: anonymes `GET /me` antwortet `200 {authenticated:false}` (nie 401 — Konsolenfehler/Lighthouse). 
 - **Security**: `ANTHROPIC_API_KEY` nur server-seitig. Auth-Tokens NIE in localStorage (httpOnly-Cookies). CSRF-Schutz auf state-changing Requests. Scoring/Limits/Validierung server-seitig. CORS strikt auf zauberkoch.de.
 - **Rate-Limits**: `DAILY_LIMIT_PER_USER` (20) + `DAILY_LIMIT_GLOBAL` (Kostenschutz), beide env; 429 mit klarem UI-Feedback.
 - **Rezept-System-Prompt** ist ein iterierbares Kernstück: Versionen in `app/prompts/`, Prompt-Version wird am Rezept gespeichert. Keine generischen Rezepte; metrische Mengen; Cocktails mit cl + Technik (shaken/stirred/built).
@@ -74,7 +78,7 @@ npx playwright test  # E2E-Smoke (lokal)
 - **PWA**: Service Worker mit versioniertem Cache `zauberkoch-vN` (aktuell **v5**) — bei jedem App-Shell-Change bumpen und Version hier nachführen. Favoriten offline lesbar.
 - **CSP beachtet**: `script-src 'self'` — KEINE Inline-Scripts in index.html (Theme-Init liegt extern in `public/theme-init.js`).
 - **Tests vor Deploy**: `pytest` + `npm test` müssen grün sein; `deploy.sh` erzwingt das.
-- Touch-Targets ≥ 48 px, Lighthouse Accessibility ≥ 95. Footer überall: `© 2026 Martin Pfeffer | celox.io`.
+- Touch-Targets ≥ 48 px. Lighthouse-Stand (Prod, 2026-07-11): **99/100/100/100** — bei UI-Änderungen nicht darunter fallen (CLS-Falle: Footer/Lazy-Content, siehe App.css `min-height`). Footer überall: `© 2026 Martin Pfeffer | celox.io`.
 
 ## Env-Variablen
 

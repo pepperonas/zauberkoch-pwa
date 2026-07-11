@@ -41,6 +41,8 @@ Port 8742 vor der Einrichtung auf Kollision prüfen: `ssh root@69.62.121.168 'ss
 
 **ntfy-Topic:** privat — liegt auf raspi3 (`~/.zauberkoch-ntfy-topic`) und VPS (`/opt/zauberkoch-api/.ntfy-topic`), dort nachlesen und in der ntfy-App abonnieren. Nie ins Repo committen. SSH: dedizierter Key `raspi3:~/.ssh/id_zauberkoch_backup` → VPS. Restore-Probe zuletzt: 2026-07-11 ✓ (users/recipes aus Dump gelesen).
 
+**Landing-Galerie (Showcase):** 3 kuratierte öffentliche Rezepte unter dem User `showcase@zauberkoch.local`, erzeugt via `scripts/showcase.py` (idempotent; neue Einträge = SHOWCASE-Liste erweitern + auf dem VPS ausführen + Tokens in `LandingPage.tsx`/`sitemap.xml` nachziehen). `robots.txt` + `sitemap.xml` liegen in `frontend/public/`.
+
 **Usage-/Kosten-Report:** `ssh root@69.62.121.168 'cd /opt/zauberkoch-api && .venv/bin/python -m scripts.stats 30'`
 
 ## Regel-Deploy

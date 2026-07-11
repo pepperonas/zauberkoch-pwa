@@ -26,7 +26,10 @@ Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch s
 
 ## Features
 
-- 🪄 **Live-Streaming-Generierung** — semantische SSE-Events (Titel → Zutaten → Schritte → Tipps) aus einem inkrementellen JSON-Parser über der Claude-API (Structured Outputs, Prompt-Caching)
+- 🪄 **Live-Streaming-Generierung** — semantische SSE-Events (Titel → Zutaten → Schritte → Tipps) aus einem inkrementellen JSON-Parser über der Claude-API (Structured Outputs, Prompt-Caching, disconnect-fest)
+- ✨ **Anpassen per Zuruf** — jedes Rezept per Chip oder Freitext abwandeln („schärfer", „ohne Ofen", „für Meal-Prep")
+- 👤 **Präferenz-Profil** — Ernährungsform, No-Go-Zutaten und Standard-Personenzahl fließen automatisch in jede Generierung
+- 👍 **Feedback pro Rezept** (mit Grund-Chips) — fließt in die Prompt-Iteration; 📝 persönliche Koch-Notizen + „Gekocht"-Zähler
 - 🍳/🍸 **Zwei Modi** — Kochen & Cocktails (inkl. Mocktails, cl-Angaben, shaken/stirred/built), mit animiertem Farbschema-Morph (Safran ↔ Violett)
 - 🧙 **3-Schritt-Wizard**, komplett überspringbar: Länderküche, Geschmacks-Chips, Constraints (Diät, Zeit, Schwierigkeit, „Was hab ich im Kühlschrank"), „Überrasch mich"
 - 📱 **Koch-Modus** — Vollbild, ein Schritt pro Screen, Swipe-Navigation, integrierte Timer, Wake Lock
@@ -37,6 +40,7 @@ Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch s
 - 🎨 **Material 3 Expressive, handgebaut** — Design-Tokens als CSS Custom Properties, echte Spring-Physik (Motion), `prefers-reduced-motion` überall
 - 📲 **PWA** — installierbar, Favoriten offline lesbar
 - 🔐 Google OAuth (PKCE, server-seitig), httpOnly-Sessions, CSRF-Schutz, Tageslimits pro User + global
+- 🚀 **Lighthouse 99 / 100 / 100 / 100** (Performance / Accessibility / Best Practices / SEO, gemessen gegen Prod)
 
 ## Stack
 
