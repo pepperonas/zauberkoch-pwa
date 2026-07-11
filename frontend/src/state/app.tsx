@@ -1,6 +1,7 @@
 /** App-level state: theme, mode (kochen/cocktail), current user. */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalStorageState } from './useLocalStorageState';
 
@@ -11,7 +12,7 @@ type Theme = 'light' | 'dark';
 
 interface AppState {
   theme: Theme;
-  toggleTheme: () => void;
+  toggleTheme: (origin?: { x: number; y: number }) => void;
   mode: Modus;
   setMode: (mode: Modus) => void;
   me: Me | null;
@@ -60,9 +61,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     retry: 1,
   });
 
-  const toggleTheme = useCallback(() => {
-    withColorMorph(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')));
-  }, [setTheme]);
+  const toggleTheme = useCallback(
+    (origin?: { x: number; y: number }) => {
+      const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Circular reveal (celox.io signature): the new theme wipes out of the
+      // toggle button. Fallback: the existing token color-morph.
+      if (doc.startViewTransition && origin && !reduced) {
+        const root = document.documentElement;
+        const radius = Math.hypot(
+          Math.max(origin.x, window.innerWidth - origin.x),
+          Math.max(origin.y, window.innerHeight - origin.y),
+        );
+        root.style.setProperty('--vt-x', `${origin.x}px`);
+        root.style.setProperty('--vt-y', `${origin.y}px`);
+        root.style.setProperty('--vt-r', `${radius}px`);
+        doc.startViewTransition(() => {
+          // Attribute must flip synchronously inside the VT callback; the
+          // theme effect re-sets it later (idempotent).
+          const next: Theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', next);
+          flushSync(() => setTheme(next));
+        });
+        return;
+      }
+      withColorMorph(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')));
+    },
+    [setTheme],
+  );
 
   const setMode = useCallback(
     (next: Modus) => {

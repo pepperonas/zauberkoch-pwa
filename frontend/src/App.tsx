@@ -46,10 +46,16 @@ export default function App() {
     <div className="shell">
       <header className="shell__header">
         <a href="/" className="shell__logo">
-          <span aria-hidden>🧑‍🍳</span> {t('app.name')}
+          <span aria-hidden>🧑‍🍳</span> <span className="shell__logo-text">{t('app.name')}</span>
         </a>
-        <div className="row">
-          <IconButton label={t('common.themeToggle')} onClick={toggleTheme}>
+        <div className="row shell__actions">
+          <IconButton
+            label={t('common.themeToggle')}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              toggleTheme({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+            }}
+          >
             {theme === 'dark' ? '☀️' : '🌙'}
           </IconButton>
           {me?.is_admin && (
@@ -66,7 +72,7 @@ export default function App() {
                   '👤'
                 )}
               </IconButton>
-              <IconButton label={t('auth.logout')} onClick={() => void handleLogout()}>
+              <IconButton className="shell__logout" label={t('auth.logout')} onClick={() => void handleLogout()}>
                 ⏻
               </IconButton>
             </>

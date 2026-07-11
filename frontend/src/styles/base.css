@@ -4,6 +4,10 @@
 
 html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
 
+/* Never allow horizontal page scroll (clip, not hidden: no scroll container,
+   position: sticky keeps working). */
+html, body { overflow-x: clip; }
+
 body {
   margin: 0;
   min-height: 100dvh;
@@ -49,4 +53,20 @@ img, svg { display: block; max-width: 100%; }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Theme toggle: MD3-expressive circular reveal via the View Transitions API.
+   The new theme wipes out of the toggle button (origin/radius set as inline
+   CSS vars by toggleTheme). JS gates on reduced motion + API support. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: zk-theme-reveal 1.15s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+@keyframes zk-theme-reveal {
+  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0%)); }
+  to { clip-path: circle(var(--vt-r, 150%) at var(--vt-x, 50%) var(--vt-y, 0%)); }
 }

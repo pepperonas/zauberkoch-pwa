@@ -46,6 +46,13 @@ export function ProfileSheet({ open, onClose }: Props) {
     show(t('profile.saved'));
   };
 
+  // On narrow screens the header logout is hidden — this is the fallback.
+  const logout = async () => {
+    await api.logout();
+    refreshMe();
+    onClose();
+  };
+
   return (
     <Sheet open={open} onClose={onClose} label={t('profile.title')}>
       <div className="stack">
@@ -114,6 +121,7 @@ export function ProfileSheet({ open, onClose }: Props) {
         </div>
 
         <Button onClick={() => void save()}>{t('common.save')}</Button>
+        <Button variant="text" onClick={() => void logout()}>⏻ {t('auth.logout')}</Button>
       </div>
     </Sheet>
   );
