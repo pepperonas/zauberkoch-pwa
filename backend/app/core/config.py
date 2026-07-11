@@ -40,8 +40,13 @@ class Settings(BaseSettings):
     # Access & limits
     open_signup: bool = False
     zk_dev_login: bool = False  # dev-only fake login (hard-refused in prod)
+    zk_admin_emails: str = ""  # comma-separated admin emails
     daily_limit_per_user: int = 20
     daily_limit_global: int = 200
+
+    @property
+    def admin_emails(self) -> set[str]:
+        return {e.strip().lower() for e in self.zk_admin_emails.split(",") if e.strip()}
 
     @property
     def is_prod(self) -> bool:

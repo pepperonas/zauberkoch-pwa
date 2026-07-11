@@ -122,3 +122,10 @@ def require_csrf(request: Request, session: SessionModel = Depends(get_current_s
     header = request.headers.get(CSRF_HEADER, "")
     if not header or not hmac.compare_digest(header, session.csrf_token):
         raise HTTPException(status_code=403, detail={"code": "csrf_invalid", "message": "Ungültiges CSRF-Token."})
+
+
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    """Admin gate — 404 (not 403) so the endpoint's existence isn't leaked."""
+    if user.email.lower() not in get_settings().admin_emails:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Nicht gefunden."})
+    return user

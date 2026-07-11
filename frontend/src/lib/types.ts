@@ -82,6 +82,7 @@ export interface Preferences {
 }
 
 export interface Me {
+  is_admin: boolean;
   id: number;
   email: string;
   name: string;
@@ -128,4 +129,22 @@ export interface ApiError {
   code: string;
   message: string;
   retry_after?: number;
+}
+
+export interface AdminStats {
+  days: number;
+  generations: { total: number; live: number; cached: number; errors: number };
+  tokens: { in: number; out: number; cache_read: number; cache_write: number };
+  cache_hit_rate: number;
+  cost_usd: number;
+  median_duration_ms: number;
+  per_user: { email: string; count: number }[];
+  feedback: Record<string, { up: number; down: number }>;
+  limits: { per_user: number; global: number };
+}
+
+export interface AllowlistItem {
+  email: string;
+  registered: boolean;
+  created_at: string;
 }

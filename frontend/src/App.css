@@ -32,8 +32,9 @@
 
 .shell__main {
   flex: 1;
-  min-height: calc(100dvh - 60px); /* footer below the fold before lazy content arrives (CLS) */
-  padding-bottom: 96px; /* room for bottom nav */
+  padding-bottom: var(--space-6);
+  /* NOTE (CLS): space is reserved by the Suspense fallback spacer in App.tsx,
+     not here — a permanent min-height made short pages scroll unnecessarily. */
 }
 
 .shell__footer {

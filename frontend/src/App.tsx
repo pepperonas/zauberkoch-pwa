@@ -18,6 +18,7 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage').then((m) => ({ defa
 const ShoppingPage = lazy(() => import('./pages/ShoppingPage').then((m) => ({ default: m.ShoppingPage })));
 const SharePage = lazy(() => import('./pages/SharePage').then((m) => ({ default: m.SharePage })));
 const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 
 const NAV_ITEMS = [
   { to: '/', icon: '✨', label: strings.nav.generate },
@@ -46,6 +47,11 @@ export default function App() {
           <IconButton label={t('common.themeToggle')} onClick={toggleTheme}>
             {theme === 'dark' ? '☀️' : '🌙'}
           </IconButton>
+          {me?.is_admin && (
+            <NavLink to="/admin" className={`iconbtn ${location.pathname.startsWith('/admin') ? 'iconbtn--active' : ''}`} aria-label={t('admin.open')} title={t('admin.open')}>
+              🛡️
+            </NavLink>
+          )}
           {me && (
             <>
               <IconButton label={t('profile.open')} onClick={() => setProfileOpen(true)}>
@@ -64,7 +70,7 @@ export default function App() {
       </header>
 
       <main className="shell__main">
-        <Suspense fallback={null}>
+        <Suspense fallback={<div style={{ minHeight: '100dvh' }} aria-hidden />}>
         {meLoading ? null : me ? (
           <Routes>
             <Route path="/" element={<GeneratePage />} />
@@ -73,6 +79,7 @@ export default function App() {
             <Route path="/verlauf" element={<HistoryPage />} />
             <Route path="/einkauf" element={<ShoppingPage />} />
             <Route path="/r/:token" element={<SharePage />} />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="*" element={<GeneratePage />} />
           </Routes>
         ) : (

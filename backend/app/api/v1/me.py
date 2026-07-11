@@ -25,8 +25,11 @@ def me(request: Request, db: DbSession = Depends(get_db)) -> dict:
     user = db.get(User, session.user_id) if session else None
     if session is None or user is None:
         return {"authenticated": False}
+    from app.core.config import get_settings
+
     return {
         "authenticated": True,
+        "is_admin": user.email.lower() in get_settings().admin_emails,
         "id": user.id,
         "email": user.email,
         "name": user.name,
