@@ -1,6 +1,6 @@
 /** Typed API client. Session lives in an httpOnly cookie; CSRF via header. */
 
-import type { AdminInvite, AdminStats, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, InviteItem, GalleryItem, PlanWeek, SubstituteResult } from './types';
+import type { AdminStats, AdminUser, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, GalleryItem, PlanWeek, SubstituteResult } from './types';
 
 let csrfToken = '';
 
@@ -101,7 +101,6 @@ export const api = {
   shoppingClearAll: () => request<{ items: ShoppingItem[] }>('/shopping', { method: 'DELETE' }),
 
   adminStats: (days = 30) => request<AdminStats>(`/admin/stats?days=${days}`),
-  invites: () => request<{ items: InviteItem[] }>('/me/invites'),
   planWeek: (start?: string) => request<PlanWeek>(`/plan${start ? `?start=${start}` : ''}`),
   planAdd: (datum: string, recipe_id: number) =>
     request<{ id: number }>('/plan', { method: 'POST', body: JSON.stringify({ datum, recipe_id }) }),
@@ -121,11 +120,12 @@ export const api = {
     request<{ email: string }>('/admin/allowlist', { method: 'POST', body: JSON.stringify({ email }) }),
   adminAllowlistRemove: (email: string) =>
     request<{ deleted: string }>(`/admin/allowlist/${encodeURIComponent(email)}`, { method: 'DELETE' }),
-  adminInvites: () => request<{ items: AdminInvite[] }>('/admin/invites'),
-  adminInvitesCreate: (count: number) =>
-    request<{ created: string[] }>('/admin/invites', { method: 'POST', body: JSON.stringify({ count }) }),
-  adminInviteRevoke: (code: string) =>
-    request<{ deleted: string }>(`/admin/invites/${encodeURIComponent(code)}`, { method: 'DELETE' }),
+  adminUsers: () => request<{ default_limit: number; items: AdminUser[] }>('/admin/users'),
+  adminSetUserLimit: (id: number, daily_limit: number | null) =>
+    request<{ id: number; daily_limit: number | null }>(`/admin/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ daily_limit }),
+    }),
   shoppingReplace: (items: Pick<ShoppingItem, 'name' | 'menge' | 'einheit' | 'checked'>[]) =>
     request<{ items: ShoppingItem[] }>('/shopping/replace', {
       method: 'POST',

@@ -163,16 +163,15 @@ export interface AllowlistItem {
   created_at: string;
 }
 
-export interface AdminInvite {
-  code: string;
-  used: boolean;
-  used_by: string | null;
+export interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  daily_limit: number | null; // null = uses the global default
+  effective_limit: number;
+  used_today: number;
+  is_admin: boolean;
   created_at: string;
-}
-
-export interface InviteItem {
-  code: string;
-  used: boolean;
 }
 
 export interface GalleryItem {

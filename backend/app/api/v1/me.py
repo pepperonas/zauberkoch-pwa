@@ -1,6 +1,5 @@
 """Current-user endpoints."""
 
-import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
@@ -12,7 +11,7 @@ from fastapi import Request
 
 from app.core.security import _load_session, get_current_session, get_current_user, require_csrf
 from app.db import get_db
-from app.models import Invite, Session as SessionModel, User
+from app.models import Session as SessionModel, User
 from app.schemas.recipe import Preferences
 
 router = APIRouter(prefix="/me")
@@ -65,27 +64,3 @@ def put_preferences(
     user.preferences_json = prefs.model_dump_json()
     db.commit()
     return {"preferences": prefs.model_dump()}
-
-
-INVITES_PER_USER = 5
-# 13 chars over a 31-symbol unambiguous lowercase alphabet ≈ 64.4 bits entropy
-# (codes are lowercased on validation, so the alphabet must be lowercase-safe)
-_CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"
-
-
-def _new_invite_code() -> str:
-    return "zk-" + "".join(secrets.choice(_CODE_ALPHABET) for _ in range(13))
-
-
-@router.get("/invites")
-def my_invites(user: User = Depends(get_current_user), db: DbSession = Depends(get_db)) -> dict:
-    """Every user gets a handful of single-use signup codes (auto-provisioned)."""
-    from sqlalchemy import select as _select
-
-    rows = list(db.execute(_select(Invite).where(Invite.created_by == user.id).order_by(Invite.id)).scalars())
-    while len(rows) < INVITES_PER_USER:
-        invite = Invite(code=_new_invite_code(), created_by=user.id)
-        db.add(invite)
-        db.commit()
-        rows.append(invite)
-    return {"items": [{"code": r.code, "used": r.used_at is not None} for r in rows]}

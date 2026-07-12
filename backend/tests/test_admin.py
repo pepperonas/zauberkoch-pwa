@@ -77,46 +77,45 @@ def test_admin_allowlist_rejects_invalid_email(client, admin):
     assert client.post("/api/v1/admin/allowlist", json={"email": "kein-email"}, headers=admin).status_code == 422
 
 
-def test_admin_invite_create_list_revoke(client, admin):
-    # mint a batch
-    created = client.post("/api/v1/admin/invites", json={"count": 3}, headers=admin).json()["created"]
-    assert len(created) == 3
-    assert all(c.startswith("zk-") and len(c) >= 15 for c in created)
-    assert len(set(created)) == 3  # unique
+def test_admin_users_list_and_per_user_limit(client, admin, db_session, monkeypatch, mock_ai):
+    from app.core.config import get_settings
 
-    items = client.get("/api/v1/admin/invites").json()["items"]
-    codes = {i["code"] for i in items}
-    assert set(created) <= codes
-    assert all(i["used"] is False for i in items if i["code"] in created)
+    # admin generates once so today's usage shows up
+    from tests.test_generation import generate as gen
 
-    # count is clamped to [1, 50]
-    assert len(client.post("/api/v1/admin/invites", json={"count": 999}, headers=admin).json()["created"]) == 50
-    assert len(client.post("/api/v1/admin/invites", json={"count": 0}, headers=admin).json()["created"]) == 1
+    gen(client, admin)
 
-    # revoke an unused code
-    victim = created[0]
-    assert client.delete(f"/api/v1/admin/invites/{victim}", headers=admin).status_code == 200
-    assert victim not in {i["code"] for i in client.get("/api/v1/admin/invites").json()["items"]}
-    assert client.delete(f"/api/v1/admin/invites/{victim}", headers=admin).status_code == 404
+    listing = client.get("/api/v1/admin/users").json()
+    assert listing["default_limit"] == get_settings().daily_limit_per_user
+    me = next(u for u in listing["items"] if u["email"] == "admin@example.com")
+    assert me["is_admin"] is True
+    assert me["used_today"] == 1
+    assert me["daily_limit"] is None  # unset -> uses default
+    assert me["effective_limit"] == get_settings().daily_limit_per_user
 
+    # set an explicit per-user cap
+    r = client.patch(f"/api/v1/admin/users/{me['id']}", json={"daily_limit": 3}, headers=admin)
+    assert r.status_code == 200 and r.json()["daily_limit"] == 3
+    again = next(u for u in client.get("/api/v1/admin/users").json()["items"] if u["id"] == me["id"])
+    assert again["daily_limit"] == 3 and again["effective_limit"] == 3
 
-def test_admin_invite_enables_signup_and_cannot_be_revoked_after_use(client, admin, db_session, monkeypatch):
-    code = client.post("/api/v1/admin/invites", json={"count": 1}, headers=admin).json()["created"][0]
-
-    # a non-allowlisted user signs up with the admin-issued code
-    r = do_login_callback(client, monkeypatch, claims=fake_claims(email="dora@example.com", sub="sub-dora"), invite=code)
-    assert "login_error" not in r.headers["location"]
-    assert client.get("/api/v1/me").json()["email"] == "dora@example.com"
-
-    # back to admin (new session -> fresh CSRF token): the code now shows who
-    # redeemed it and can't be deleted
-    do_login_callback(client, monkeypatch, claims=fake_claims(email="admin@example.com", sub="sub-admin"))
-    hdr = {"X-CSRF-Token": client.get("/api/v1/me").json()["csrf_token"]}
-    row = next(i for i in client.get("/api/v1/admin/invites").json()["items"] if i["code"] == code)
-    assert row["used"] is True and row["used_by"] == "dora@example.com"
-    assert client.delete(f"/api/v1/admin/invites/{code}", headers=hdr).status_code == 409
+    # reset to default (null) + validation
+    assert client.patch(f"/api/v1/admin/users/{me['id']}", json={"daily_limit": None}, headers=admin).json()["daily_limit"] is None
+    assert client.patch(f"/api/v1/admin/users/{me['id']}", json={"daily_limit": 99999}, headers=admin).status_code == 422
+    assert client.patch("/api/v1/admin/users/999999", json={"daily_limit": 5}, headers=admin).status_code == 404
 
 
-def test_admin_invite_endpoints_are_404_for_normal_users(client, logged_in):
+def test_admin_user_limit_enforced_in_generation(client, admin, mock_ai):
+    from tests.test_generation import PARAMS, generate as gen
+
+    admin_id = client.get("/api/v1/me").json()["id"]
+    client.patch(f"/api/v1/admin/users/{admin_id}", json={"daily_limit": 1}, headers=admin)  # cap at 1/day
+
+    gen(client, admin)  # 1st ok (0 -> 1)
+    r = client.post("/api/v1/recipes/generate", json={**PARAMS, "kueche": "Thai"}, headers=admin)
+    assert r.status_code == 429 and "daily_limit_user" in r.text  # 2nd blocked by the per-user cap
+
+
+def test_invite_endpoints_removed(client, admin):
     assert client.get("/api/v1/admin/invites").status_code == 404
-    assert client.post("/api/v1/admin/invites", json={"count": 1}, headers=logged_in).status_code == 404
+    assert client.post("/api/v1/admin/invites", json={"count": 1}, headers=admin).status_code == 404

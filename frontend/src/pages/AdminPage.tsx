@@ -30,8 +30,6 @@ export function AdminPage() {
   const queryClient = useQueryClient();
   const [days, setDays] = useState(30);
   const [email, setEmail] = useState('');
-  const [inviteCount, setInviteCount] = useState(3);
-  const [freshCodes, setFreshCodes] = useState<string[]>([]);
 
   const stats = useQuery({
     queryKey: ['admin', 'stats', days],
@@ -66,32 +64,18 @@ export function AdminPage() {
     },
   });
 
-  const invites = useQuery({
-    queryKey: ['admin', 'invites'],
-    queryFn: () => api.adminInvites(),
+  const users = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: () => api.adminUsers(),
     enabled: Boolean(me?.is_admin),
   });
-  const invalidateInvites = () => void queryClient.invalidateQueries({ queryKey: ['admin', 'invites'] });
-  const createInvites = useMutation({
-    mutationFn: (count: number) => api.adminInvitesCreate(count),
-    onSuccess: (res) => {
-      setFreshCodes(res.created);
-      invalidateInvites();
-      show(strings.admin.inviteCreated(res.created.length));
+  const setLimit = useMutation({
+    mutationFn: ({ id, limit }: { id: number; limit: number | null }) => api.adminSetUserLimit(id, limit),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      show(t('admin.userLimitSaved'));
     },
   });
-  const revokeInvite = useMutation({
-    mutationFn: (code: string) => api.adminInviteRevoke(code),
-    onSuccess: (_, code) => {
-      setFreshCodes((c) => c.filter((x) => x !== code));
-      invalidateInvites();
-      show(t('admin.inviteRevoked'));
-    },
-  });
-  const copyCode = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    show(t('admin.inviteCopied'));
-  };
 
   if (meLoading) return null;
   if (!me?.is_admin) return <Navigate to="/" replace />;
@@ -183,78 +167,44 @@ export function AdminPage() {
       </section>
 
       <section className="section">
-        <h2><Icon name="ticket" size={20} /> {t('admin.invites')}</h2>
+        <h2><Icon name="user" size={20} /> {t('admin.users')}</h2>
         <p className="muted" style={{ font: 'var(--type-body)', margin: 'var(--space-2) 0 var(--space-4)' }}>
-          {t('admin.invitesHint')}
+          {users.data ? strings.admin.usersHint(users.data.default_limit) : t('admin.usersHint0')}
         </p>
-
-        <div className="row" style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-          <div className="stepper">
-            <button className="stepper__btn" onClick={() => setInviteCount((n) => Math.max(1, n - 1))} aria-label="−">−</button>
-            <span className="stepper__value" style={{ height: 'auto' }}>{inviteCount}</span>
-            <button className="stepper__btn" onClick={() => setInviteCount((n) => Math.min(50, n + 1))} aria-label="+">+</button>
-          </div>
-          <Button onClick={() => createInvites.mutate(inviteCount)} disabled={createInvites.isPending}>
-            <Icon name="plus" size={18} /> {strings.admin.inviteGenerate(inviteCount)}
-          </Button>
-        </div>
-
-        {freshCodes.length > 0 && (
-          <div className="card card--outlined" style={{ marginTop: 'var(--space-4)', background: 'var(--c-primary-container)', color: 'var(--c-on-primary-container)' }}>
-            <div className="row row--between">
-              <strong>{t('admin.inviteNew')}</strong>
-              <Button variant="text" onClick={() => void copyCode(freshCodes.join('\n'))}>
-                <Icon name="copy" size={16} /> {t('admin.inviteCopyAll')}
-              </Button>
-            </div>
-            <div style={{ marginTop: 'var(--space-2)' }}>
-              {freshCodes.map((code) => (
-                <button
-                  key={code}
-                  className="row row--between"
-                  style={{ width: '100%', minHeight: 40, textAlign: 'left', color: 'inherit' }}
-                  onClick={() => void copyCode(code)}
-                >
-                  <code style={{ font: 'var(--type-title)' }}>{code}</code>
-                  <Icon name="copy" size={16} />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div style={{ marginTop: 'var(--space-4)' }}>
-          {invites.isLoading && <p className="muted">{t('common.loading')}</p>}
-          {invites.data && invites.data.items.length === 0 && <p className="muted">{t('admin.inviteNone')}</p>}
-          {(invites.data?.items ?? []).map((inv) => (
-            <div key={inv.code} className="row row--between" style={{ minHeight: 'var(--touch-target)' }}>
-              <span style={{ minWidth: 0 }}>
-                <code style={{ opacity: inv.used ? 0.5 : 1, textDecoration: inv.used ? 'line-through' : 'none' }}>
-                  {inv.code}
-                </code>{' '}
+        {users.isLoading && <p className="muted">{t('common.loading')}</p>}
+        {(users.data?.items ?? []).map((u) => {
+          const effective = u.daily_limit ?? users.data!.default_limit;
+          return (
+            <div key={u.id} className="row row--between" style={{ minHeight: 'var(--touch-target)', gap: 'var(--space-3)' }}>
+              <span style={{ minWidth: 0, overflow: 'hidden' }}>
+                <span style={{ display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                  {u.email}{u.is_admin && ' ★'}
+                </span>
                 <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
-                  {inv.used
-                    ? inv.used_by
-                      ? strings.admin.inviteUsedBy(inv.used_by)
-                      : <><Icon name="check" size={12} /> {t('admin.registered')}</>
-                    : t('admin.inviteUnused')}
+                  {strings.admin.userUsage(u.used_today, effective)}
+                  {u.daily_limit == null && ` · ${t('admin.userDefault')}`}
                 </span>
               </span>
-              <span className="row" style={{ gap: 'var(--space-1)' }}>
-                {!inv.used && (
-                  <IconButton label={t('admin.inviteCopied')} onClick={() => void copyCode(inv.code)}>
-                    <Icon name="copy" size={18} />
-                  </IconButton>
-                )}
-                {!inv.used && (
-                  <IconButton label={t('common.delete')} onClick={() => revokeInvite.mutate(inv.code)}>
-                    <Icon name="close" size={18} />
-                  </IconButton>
-                )}
+              <span className="stepper" style={{ flex: 'none' }}>
+                <button
+                  className="stepper__btn"
+                  aria-label="−"
+                  onClick={() => setLimit.mutate({ id: u.id, limit: Math.max(0, effective - 1) })}
+                >
+                  −
+                </button>
+                <span className="stepper__value" style={{ height: 'auto', minWidth: '2.5ch' }}>{effective}</span>
+                <button
+                  className="stepper__btn"
+                  aria-label="+"
+                  onClick={() => setLimit.mutate({ id: u.id, limit: effective + 1 })}
+                >
+                  +
+                </button>
               </span>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </section>
     </div>
   );

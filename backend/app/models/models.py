@@ -31,6 +31,9 @@ class User(Base):
     picture_url: Mapped[str] = mapped_column(String(1024), default="")
     adult_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     preferences_json: Mapped[str] = mapped_column(Text, default="{}")
+    # Per-user daily generation cap. NULL = fall back to the global default
+    # (daily_limit_per_user). New accounts are created with an explicit small value.
+    daily_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     sessions: Mapped[list["Session"]] = relationship(back_populates="user", cascade="all, delete-orphan")

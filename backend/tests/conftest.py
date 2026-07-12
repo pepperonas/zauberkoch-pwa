@@ -41,3 +41,14 @@ def client(db_session):
     app = create_app()
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture(autouse=True)
+def _default_new_user_limit_off(monkeypatch):
+    """Most tests generate many recipes -> give fresh test accounts the global
+    default (daily_limit stays NULL). Tests that check the small-new-user cap
+    set default_new_user_limit explicitly."""
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "default_new_user_limit", None)
+    yield

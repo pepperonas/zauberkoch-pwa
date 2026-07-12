@@ -59,9 +59,29 @@ def test_login_redirects_to_google(client):
 
 
 def test_callback_rejects_unknown_email_when_signup_closed(client, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "open_signup", False)
     r = do_login_callback(client, monkeypatch)
     assert r.status_code == 303
     assert "login_error=not_allowed" in r.headers["location"]
+
+
+def test_open_signup_creates_user_and_starts_at_new_user_limit(client, db_session, monkeypatch):
+    from app.core.config import get_settings
+    from app.models import User
+
+    settings = get_settings()
+    # the test env pins OPEN_SIGNUP=false; enable it here to exercise open signup
+    monkeypatch.setattr(settings, "open_signup", True)
+    monkeypatch.setattr(settings, "default_new_user_limit", 1)  # fresh accounts start small
+    r = do_login_callback(client, monkeypatch, claims=fake_claims(email="newbie@example.com", sub="sub-new"))
+    assert "login_error" not in r.headers["location"]
+
+    user = db_session.query(User).filter_by(email="newbie@example.com").one()
+    assert user.daily_limit == 1
+    usage = client.get("/api/v1/me").json()
+    assert usage["email"] == "newbie@example.com"
 
 
 def test_callback_creates_user_from_allowlist(client, db_session, monkeypatch):

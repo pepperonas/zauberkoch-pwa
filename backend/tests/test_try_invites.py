@@ -1,10 +1,9 @@
-"""Anonymous taster endpoint (/recipes/try) + invite-code signup."""
+"""Anonymous taster endpoint (/recipes/try). Invite-code signup was removed."""
 
 import pytest
 
 from app.core.config import get_settings
 from app.services import ratelimit_ip
-from tests.test_auth import do_login_callback, fake_claims
 from tests.test_generation import PARAMS, logged_in, mock_ai, parse_sse  # noqa: F401
 
 
@@ -59,28 +58,7 @@ def test_try_forces_safe_params(client, mock_ai):
     assert p.regenerate is False
 
 
-def test_no_public_invite_oracle(client):
-    # invite validity must not be probeable without an OAuth flow
-    assert client.get("/api/v1/auth/invite/zk-abcdefghjkmnp").status_code == 404
-
-
-def test_invites_provisioned_and_signup_flow(client, db_session, logged_in, monkeypatch):  # noqa: F811
-    codes = client.get("/api/v1/me/invites").json()["items"]
-    assert len(codes) == 5
-    assert all(not c["used"] for c in codes)
-    code = codes[0]["code"]
-    assert len(code) >= 15  # >= 64 bits of entropy ("zk-" + 13 chars)
-
-    # bob is NOT allowlisted, but carries the invite code
-    r = do_login_callback(client, monkeypatch, claims=fake_claims(email="bob@example.com", sub="sub-bob"), invite=code)
-    assert "login_error" not in r.headers["location"]
-    assert client.get("/api/v1/me").json()["email"] == "bob@example.com"
-
-    # single-use: same code must not work again
-    r = do_login_callback(client, monkeypatch, claims=fake_claims(email="carol@example.com", sub="sub-c"), invite=code)
-    assert "login_error=not_allowed" in r.headers["location"]
-
-    # bob's invite shows as used for alice
-    do_login_callback(client, monkeypatch)  # back to alice
-    used = [c for c in client.get("/api/v1/me/invites").json()["items"] if c["used"]]
-    assert len(used) == 1 and used[0]["code"] == code
+def test_invites_endpoints_are_gone(client, logged_in):  # noqa: F811
+    # invite codes were removed when self-service signup opened
+    assert client.get("/api/v1/me/invites").status_code == 404
+    assert client.get("/api/v1/admin/invites").status_code in (404, 401)

@@ -38,10 +38,11 @@ class Settings(BaseSettings):
     session_ttl_hours: int = 720
 
     # Access & limits
-    open_signup: bool = False
+    open_signup: bool = True  # self-service registration (no invite/allowlist gate)
     zk_dev_login: bool = False  # dev-only fake login (hard-refused in prod)
     zk_admin_emails: str = ""  # comma-separated admin emails
-    daily_limit_per_user: int = 20
+    daily_limit_per_user: int = 20  # fallback for users with no explicit daily_limit
+    default_new_user_limit: int | None = 1  # fresh account's daily cap (None = global default)
     daily_limit_global: int = 200
     daily_limit_anon: int = 15  # global cap for logged-out taster generations
 

@@ -1,5 +1,5 @@
 /** Landing for logged-out users: TRY the magic first (one free generation,
- * hard-capped server-side), then examples + login CTA (with invite codes). */
+ * hard-capped server-side), then examples + login CTA (open self-service signup). */
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
@@ -53,11 +53,9 @@ export function LandingPage() {
   const reduced = useReducedMotion();
   const location = useLocation();
   const loginError = new URLSearchParams(location.search).get('login_error');
-  const [invite, setInvite] = useState('');
 
   const login = () => {
-    const code = invite.trim();
-    window.location.href = code ? `/api/v1/auth/login?invite=${encodeURIComponent(code)}` : '/api/v1/auth/login';
+    window.location.href = '/api/v1/auth/login';
   };
 
   return (
@@ -88,20 +86,6 @@ export function LandingPage() {
             {' · '}
             <a href="/datenschutz" style={{ textDecoration: 'underline' }}>{t('legal.privacy')}</a>)
           </p>
-          <div style={{ marginTop: 'var(--space-4)', maxWidth: 280 }}>
-            <label className="muted" htmlFor="invite" style={{ font: 'var(--type-label-sm)' }}>
-              <Icon name="ticket" size={13} /> {t('landing.inviteLabel')}
-            </label>
-            <input
-              id="invite"
-              className="input"
-              style={{ marginTop: 'var(--space-1)' }}
-              value={invite}
-              onChange={(e) => setInvite(e.target.value)}
-              placeholder={t('landing.invitePlaceholder')}
-              maxLength={16}
-            />
-          </div>
           {loginError && (
             <p style={{ marginTop: 'var(--space-4)', color: 'var(--c-error)' }} role="alert">
               {loginError === 'not_allowed' ? t('auth.notAllowed') : t('auth.loginFailed')}

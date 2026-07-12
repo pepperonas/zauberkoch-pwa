@@ -7,10 +7,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
 from app.core.config import get_settings
-from app.models import RateLimit
+from app.models import RateLimit, User
 
 GLOBAL_SCOPE = "global"
 ANON_SCOPE = "anon"
+
+
+def effective_limit(db: DbSession, user_id: int) -> int:
+    """The user's own daily cap, or the global default when unset (NULL)."""
+    settings = get_settings()
+    dl = db.execute(select(User.daily_limit).where(User.id == user_id)).scalar_one_or_none()
+    return dl if dl is not None else settings.daily_limit_per_user
 
 
 def _today() -> str:
@@ -32,13 +39,13 @@ def _get_or_create(db: DbSession, scope: str, day: str) -> RateLimit:
 
 
 def get_usage(db: DbSession, user_id: int) -> dict:
-    settings = get_settings()
     day = _today()
+    limit = effective_limit(db, user_id)
     user_row = _get_or_create(db, f"user:{user_id}", day)
     return {
         "used_today": user_row.count,
-        "daily_limit": settings.daily_limit_per_user,
-        "remaining": max(settings.daily_limit_per_user - user_row.count, 0),
+        "daily_limit": limit,
+        "remaining": max(limit - user_row.count, 0),
     }
 
 
@@ -46,10 +53,11 @@ def consume_generation(db: DbSession, user_id: int) -> None:
     """Reserve one generation for today or raise 429. Cache hits must NOT call this."""
     settings = get_settings()
     day = _today()
+    limit = effective_limit(db, user_id)
     user_row = _get_or_create(db, f"user:{user_id}", day)
     global_row = _get_or_create(db, GLOBAL_SCOPE, day)
 
-    if user_row.count >= settings.daily_limit_per_user:
+    if user_row.count >= limit:
         raise HTTPException(
             status_code=429,
             detail={

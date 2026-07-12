@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session as DbSession
 from app.core.config import get_settings
 from app.core.security import require_admin, require_csrf
 from app.db import get_db
-from app.models import AllowlistEntry, Generation, Invite, Recipe, User
+from app.models import AllowlistEntry, Generation, RateLimit, Recipe, User
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(require_admin)])
 
@@ -126,66 +126,51 @@ def remove_allowlist(email: str, db: DbSession = Depends(get_db)) -> dict:
     return {"deleted": email.lower()}
 
 
-# ── Invite codes ──────────────────────────────────────────────────────────
-# Admin-issued single-use signup codes (same `invites` table as the per-user
-# codes; distinguished only by created_by = the admin). Signup accepts a valid
-# unused code even when OPEN_SIGNUP is off.
+# ── Users & per-user daily limits ─────────────────────────────────────────
 
 
-def _invite_out(inv: Invite, users: dict[int, str]) -> dict:
+@router.get("/users")
+def list_users(db: DbSession = Depends(get_db)) -> dict:
+    """Registered users with their effective daily cap + today's usage."""
+    settings = get_settings()
+    default = settings.daily_limit_per_user
+    admins = settings.admin_emails
+    day = datetime.now(timezone.utc).date().isoformat()
+    users = db.execute(select(User).order_by(User.created_at.desc())).scalars().all()
+
+    counts = {
+        r.scope: r.count
+        for r in db.execute(select(RateLimit).where(RateLimit.day == day, RateLimit.scope.like("user:%"))).scalars()
+    }
     return {
-        "code": inv.code,
-        "used": inv.used_at is not None,
-        "used_by": users.get(inv.used_by) if inv.used_by else None,
-        "created_at": inv.created_at.isoformat(),
+        "default_limit": default,
+        "items": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "name": u.name,
+                "daily_limit": u.daily_limit,  # null = uses default
+                "effective_limit": u.daily_limit if u.daily_limit is not None else default,
+                "used_today": counts.get(f"user:{u.id}", 0),
+                "is_admin": u.email.lower() in admins,
+                "created_at": u.created_at.isoformat(),
+            }
+            for u in users
+        ],
     }
 
 
-@router.get("/invites")
-def list_invites(db: DbSession = Depends(get_db)) -> dict:
-    """All invite codes, newest first, with the email of who redeemed each."""
-    rows = db.execute(select(Invite).order_by(Invite.id.desc())).scalars().all()
-    users = {u.id: u.email for u in db.execute(select(User.id, User.email)).all()}
-    return {"items": [_invite_out(r, users) for r in rows]}
+class UserLimitBody(BaseModel):
+    daily_limit: int | None = None  # null = reset to the global default
 
 
-class InviteCreateBody(BaseModel):
-    count: int = 1
-
-
-@router.post("/invites", dependencies=[Depends(require_csrf)])
-def create_invites(
-    body: InviteCreateBody,
-    admin: User = Depends(require_admin),
-    db: DbSession = Depends(get_db),
-) -> dict:
-    """Mint N fresh single-use codes. Returns them once for the admin to copy."""
-    from app.api.v1.me import _new_invite_code
-
-    count = max(1, min(body.count, 50))
-    created: list[str] = []
-    for _ in range(count):
-        # retry on the (astronomically unlikely) unique-code collision
-        for _attempt in range(5):
-            code = _new_invite_code()
-            if db.execute(select(Invite.id).where(Invite.code == code)).scalar_one_or_none() is None:
-                db.add(Invite(code=code, created_by=admin.id))
-                created.append(code)
-                break
+@router.patch("/users/{user_id}", dependencies=[Depends(require_csrf)])
+def set_user_limit(user_id: int, body: UserLimitBody, db: DbSession = Depends(get_db)) -> dict:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Nutzer nicht gefunden."})
+    if body.daily_limit is not None and not (0 <= body.daily_limit <= 1000):
+        raise HTTPException(status_code=422, detail={"code": "invalid", "message": "Limit 0–1000."})
+    user.daily_limit = body.daily_limit
     db.commit()
-    return {"created": created}
-
-
-@router.delete("/invites/{code}", dependencies=[Depends(require_csrf)])
-def revoke_invite(code: str, db: DbSession = Depends(get_db)) -> dict:
-    inv = db.execute(select(Invite).where(Invite.code == code)).scalar_one_or_none()
-    if inv is None:
-        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Code nicht gefunden."})
-    if inv.used_at is not None:
-        raise HTTPException(
-            status_code=409,
-            detail={"code": "already_used", "message": "Bereits eingelöste Codes können nicht gelöscht werden."},
-        )
-    db.delete(inv)
-    db.commit()
-    return {"deleted": code}
+    return {"id": user.id, "daily_limit": user.daily_limit}

@@ -2,9 +2,8 @@
  * default servings — merged into every generation server-side. */
 
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 
-import { strings, t } from '../i18n';
+import { t } from '../i18n';
 import { api } from '../lib/api';
 import type { Preferences } from '../lib/types';
 import { useApp } from '../state/app';
@@ -29,8 +28,6 @@ export function ProfileSheet({ open, onClose }: Props) {
   useEffect(() => {
     if (open && me) setPrefs({ ...me.preferences });
   }, [open, me]);
-
-  const invites = useQuery({ queryKey: ['invites'], queryFn: () => api.invites(), enabled: open });
 
   if (!prefs) return <Sheet open={false} onClose={onClose} label={t('profile.title')}>{null}</Sheet>;
 
@@ -58,21 +55,6 @@ export function ProfileSheet({ open, onClose }: Props) {
     refreshMe();
     onClose();
     show(t('profile.saved'));
-  };
-
-  const shareInvite = async (code: string) => {
-    const text = strings.profile.inviteShareText(code);
-    if (navigator.share) {
-      try {
-        await navigator.share({ text });
-        return;
-      } catch {
-        /* cancelled */
-      }
-    } else {
-      await navigator.clipboard.writeText(text);
-      show(t('profile.inviteCopied'));
-    }
   };
 
   // On narrow screens the header logout is hidden — this is the fallback.
@@ -174,25 +156,6 @@ export function ProfileSheet({ open, onClose }: Props) {
               +
             </button>
           </div>
-        </div>
-
-        <div>
-          <span className="wiz__row-label"><Icon name="ticket" size={15} /> {t('profile.invites')}</span>
-          <p className="muted" style={{ font: 'var(--type-label-sm)', margin: 'var(--space-1) 0 var(--space-2)' }}>
-            {t('profile.invitesHint')}
-          </p>
-          {(invites.data?.items ?? []).map((inv) => (
-            <div key={inv.code} className="row row--between" style={{ minHeight: 44 }}>
-              <code style={{ opacity: inv.used ? 0.45 : 1, textDecoration: inv.used ? 'line-through' : 'none' }}>
-                {inv.code}
-              </code>
-              {inv.used ? (
-                <span className="muted" style={{ font: 'var(--type-label-sm)' }}>{t('profile.inviteUsed')}</span>
-              ) : (
-                <Button variant="text" onClick={() => void shareInvite(inv.code)}><Icon name="share" size={18} /> {t('recipe.share')}</Button>
-              )}
-            </div>
-          ))}
         </div>
 
         <Button onClick={() => void save()}>{t('common.save')}</Button>

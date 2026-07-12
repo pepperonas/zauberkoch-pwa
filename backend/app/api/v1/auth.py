@@ -21,7 +21,7 @@ from app.core.security import (
     unsign_payload,
 )
 from app.db import get_db
-from app.models import AllowlistEntry, Invite, Session as SessionModel, User
+from app.models import AllowlistEntry, Session as SessionModel, User
 from app.services import google_oauth
 from app.services.ratelimit_ip import check_ip_limit
 
@@ -34,14 +34,14 @@ def _frontend_url(path: str = "/") -> str:
 
 
 @router.get("/login")
-def login(request: Request, invite: str = "") -> Response:
+def login(request: Request) -> Response:
     check_ip_limit(request, scope="auth", limit=20, window_s=60)
     state = secrets.token_urlsafe(24)
     verifier, challenge = google_oauth.make_pkce()
     response = RedirectResponse(google_oauth.build_auth_url(state, challenge), status_code=307)
     response.set_cookie(
         STATE_COOKIE,
-        sign_payload({"state": state, "verifier": verifier, "invite": invite.strip()[:16]}),
+        sign_payload({"state": state, "verifier": verifier}),
         max_age=600,
         httponly=True,
         samesite="lax",
@@ -88,30 +88,15 @@ def callback(
     email = claims["email"].lower()
     user = db.execute(select(User).where(User.google_sub == claims["sub"])).scalar_one_or_none()
 
-    invite_row = None
     if user is None:
-        # New signup: allowlist OR a valid unused invite code (or open signup)
+        # New signup. Open by default; if OPEN_SIGNUP is off, the allowlist gates.
         if not settings.open_signup:
             allowed = db.execute(select(AllowlistEntry).where(AllowlistEntry.email == email)).scalar_one_or_none()
             if allowed is None:
-                code = (stashed.get("invite") or "").strip().lower()
-                if code:
-                    invite_row = db.execute(
-                        select(Invite).where(Invite.code == code, Invite.used_at.is_(None))
-                    ).scalar_one_or_none()
-                if invite_row is None:
-                    return fail("not_allowed")
-                # invited users become allowlisted so future logins just work
-                db.add(AllowlistEntry(email=email))
-        user = User(google_sub=claims["sub"], email=email)
+                return fail("not_allowed")
+        user = User(google_sub=claims["sub"], email=email, daily_limit=settings.default_new_user_limit)
         db.add(user)
         db.flush()
-        if invite_row is not None:
-            from datetime import datetime, timezone
-
-            invite_row.used_by = user.id
-            invite_row.used_at = datetime.now(timezone.utc)
-            logger.info("invite %s consumed by user=%s", invite_row.code, user.id)
 
     user.email = email
     user.name = claims.get("name", "") or user.name
