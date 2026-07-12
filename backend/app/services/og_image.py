@@ -16,13 +16,13 @@ from app.core.config import get_settings
 logger = logging.getLogger("zauberkoch.og")
 
 W, H = 1200, 630
-STYLE_VERSION = 3  # bump to invalidate cached PNGs after a redesign
+STYLE_VERSION = 4  # bump to invalidate cached PNGs after a redesign
 FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 MOTIF_DIR = Path(__file__).resolve().parent.parent / "assets" / "motifs"
 
 # Mode palettes (match frontend tokens.css)
 PALETTES = {
-    "kochen": {"bg": (255, 248, 244), "primary": (150, 73, 0), "container": (255, 220, 194), "on": (34, 26, 19)},
+    "kochen": {"bg": (247, 251, 241), "primary": (46, 108, 52), "container": (177, 240, 178), "on": (24, 29, 22)},
     "cocktail": {"bg": (253, 247, 255), "primary": (130, 49, 180), "container": (242, 218, 255), "on": (29, 26, 32)},
 }
 
