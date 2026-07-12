@@ -188,3 +188,43 @@ async def substitute_options(recipe: dict, zutat: str) -> dict:
         messages=[{"role": "user", "content": prompt}],
     )
     return _json.loads("".join(b.text for b in message.content if b.type == "text"))
+
+
+_SCAN_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["zutaten"],
+    "properties": {"zutaten": {"type": "array", "items": {"type": "string"}}},
+}
+
+SCAN_PROMPT = (
+    "Auf dem Foto ist der Inhalt eines Kühlschranks oder Vorratsschranks zu sehen. "
+    "Liste alle klar erkennbaren Lebensmittel/Zutaten als kurze deutsche Begriffe auf "
+    "(z. B. „Eier“, „Paprika“, „Milch“). Keine Marken, keine Vermutungen bei Unkenntlichem, "
+    "maximal 20 Einträge."
+)
+
+
+async def fridge_scan(image_b64: str, media_type: str) -> dict:
+    """Vision: photo -> list of recognizable ingredients (small, capped call)."""
+    import json as _json
+
+    settings = get_settings()
+    message = await get_client().messages.create(
+        model=settings.anthropic_model,
+        max_tokens=500,
+        thinking={"type": "disabled"},
+        output_config={"format": {"type": "json_schema", "schema": _SCAN_SCHEMA}},
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
+                    {"type": "text", "text": SCAN_PROMPT},
+                ],
+            }
+        ],
+    )
+    data = _json.loads("".join(b.text for b in message.content if b.type == "text"))
+    data["zutaten"] = [" ".join(z.split())[:40] for z in data.get("zutaten", []) if z.strip()][:20]
+    return data

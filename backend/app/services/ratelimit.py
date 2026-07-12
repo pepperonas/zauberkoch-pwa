@@ -91,3 +91,16 @@ def consume_anon(db: DbSession) -> None:
     anon_row.count += 1
     global_row.count += 1
     db.commit()
+
+
+def consume_scoped(db: DbSession, scope: str, limit: int, message: str) -> None:
+    """Generic persistent daily budget (e.g. fridge scans per user)."""
+    day = _today()
+    row = _get_or_create(db, scope, day)
+    if row.count >= limit:
+        raise HTTPException(
+            status_code=429,
+            detail={"code": "daily_limit_scoped", "message": message, "retry_after": _seconds_until_midnight_utc()},
+        )
+    row.count += 1
+    db.commit()

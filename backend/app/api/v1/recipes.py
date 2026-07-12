@@ -597,3 +597,33 @@ async def substitute(
     except Exception:
         logger.exception("substitute failed")
         raise HTTPException(status_code=502, detail={"code": "substitute_failed", "message": "Gerade nicht möglich."})
+
+
+class FridgeScanBody(BaseModel):
+    image: str = Field(min_length=100, max_length=6_000_000)  # base64, ~4.5 MB binary
+    media_type: Literal["image/jpeg", "image/png", "image/webp"] = "image/jpeg"
+
+
+FRIDGE_SCANS_PER_DAY = 5
+
+
+@router.post("/fridge-scan", dependencies=[Depends(require_csrf)])
+async def fridge_scan(
+    body: FridgeScanBody,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    """Photo of the fridge -> recognizable ingredients (vision, 5/day/user)."""
+    check_ip_limit(request, scope="scan", limit=10, window_s=60)
+    ratelimit.consume_scoped(
+        db,
+        scope=f"scan:{user.id}",
+        limit=FRIDGE_SCANS_PER_DAY,
+        message="Foto-Scan-Limit für heute erreicht (5 pro Tag).",
+    )
+    try:
+        return await ai.fridge_scan(body.image, body.media_type)
+    except Exception:
+        logger.exception("fridge scan failed")
+        raise HTTPException(status_code=502, detail={"code": "scan_failed", "message": "Scan gerade nicht möglich."})

@@ -20,6 +20,7 @@ import { Sheet } from '../components/ui/Sheet';
 import { useSnackbar } from '../components/ui/Snackbar';
 import { useShoppingUndo } from '../state/useShoppingUndo';
 import { strings, t } from '../i18n';
+import { downscaleToJpegBase64 } from '../lib/imageScale';
 import { api } from '../lib/api';
 import type { GenerateParams, Modus, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
@@ -183,6 +184,29 @@ export function GeneratePage() {
     const item = fridgeInput.trim();
     if (item && !fridge.includes(item) && fridge.length < 30) setFridge([...fridge, item]);
     setFridgeInput('');
+  };
+
+  const [scanning, setScanning] = useState(false);
+  const scanInputRef = useRef<HTMLInputElement | null>(null);
+  const onScanFile = async (file: File | undefined) => {
+    if (!file) return;
+    setScanning(true);
+    try {
+      const image = await downscaleToJpegBase64(file);
+      const res = await api.fridgeScan(image);
+      const fresh = res.zutaten.filter((z) => !fridge.some((f) => f.toLowerCase() === z.toLowerCase()));
+      if (fresh.length > 0) {
+        setFridge((prev) => [...prev, ...fresh].slice(0, 30));
+        show(strings.wizard.fridgeScanFound(fresh.length));
+      } else {
+        show(t('wizard.fridgeScanNothing'));
+      }
+    } catch {
+      show(t('wizard.fridgeScanFailed'));
+    } finally {
+      setScanning(false);
+      if (scanInputRef.current) scanInputRef.current.value = '';
+    }
   };
 
   /* ---------- render: streaming / result ---------- */
@@ -446,6 +470,19 @@ export function GeneratePage() {
                       placeholder={t('wizard.fridgePlaceholder')}
                       maxLength={60}
                     />
+                    <div style={{ marginTop: 'var(--space-3)' }}>
+                      <Button variant="outlined" onClick={() => scanInputRef.current?.click()} disabled={scanning}>
+                        📷 {scanning ? t('wizard.fridgeScanning') : t('wizard.fridgeScan')}
+                      </Button>
+                      <input
+                        ref={scanInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        hidden
+                        onChange={(e) => void onScanFile(e.target.files?.[0])}
+                      />
+                    </div>
                     {fridge.length > 0 && (
                       <div className="wiz__fridge-list">
                         {fridge.map((item) => (

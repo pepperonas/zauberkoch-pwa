@@ -107,6 +107,8 @@ export const api = {
   planRemove: (id: number) => request<{ deleted: number }>(`/plan/${id}`, { method: 'DELETE' }),
   planToShopping: (start: string) =>
     request<{ added_recipes: number }>('/plan/to-shopping', { method: 'POST', body: JSON.stringify({ start }) }),
+  fridgeScan: (image: string, media_type = 'image/jpeg') =>
+    request<{ zutaten: string[] }>('/recipes/fridge-scan', { method: 'POST', body: JSON.stringify({ image, media_type }) }),
   substitute: (recipeId: number, zutat: string) =>
     request<SubstituteResult>(`/recipes/${recipeId}/substitute`, { method: 'POST', body: JSON.stringify({ zutat }) }),
   sharePublic: (id: number, pub: boolean) =>

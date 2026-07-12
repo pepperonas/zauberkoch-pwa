@@ -58,3 +58,25 @@ def test_substitute_returns_alternatives(client, logged_in, mock_ai, monkeypatch
     r = client.post(f"/api/v1/recipes/{recipe_id}/substitute", json={"zutat": "Parmesan"}, headers=logged_in)
     assert r.status_code == 200
     assert r.json()["alternativen"][0]["name"] == "Pecorino"
+
+
+def test_fridge_scan_flow(client, logged_in, monkeypatch):  # noqa: F811
+    from app.api.v1 import recipes as recipes_module
+    from app.core.config import get_settings  # noqa: F401
+
+    async def fake_scan(image, media_type):
+        assert media_type == "image/jpeg"
+        return {"zutaten": ["Eier", "Paprika", "Milch"]}
+
+    monkeypatch.setattr(recipes_module.ai, "fridge_scan", fake_scan)
+    img = "x" * 200
+    r = client.post("/api/v1/recipes/fridge-scan", json={"image": img}, headers=logged_in)
+    assert r.status_code == 200
+    assert r.json()["zutaten"] == ["Eier", "Paprika", "Milch"]
+
+    # persistent daily cap: 5 per user
+    for _ in range(4):
+        assert client.post("/api/v1/recipes/fridge-scan", json={"image": img}, headers=logged_in).status_code == 200
+    r = client.post("/api/v1/recipes/fridge-scan", json={"image": img}, headers=logged_in)
+    assert r.status_code == 429
+    assert r.json()["error"]["code"] == "daily_limit_scoped"
