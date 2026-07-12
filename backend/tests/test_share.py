@@ -66,6 +66,37 @@ def test_adopt_copies_recipe(client, db_session, logged_in, mock_ai, monkeypatch
     assert detail["recipe"]["titel"] == "Pasta al Limone"
 
 
+def test_og_motif_assets_and_matcher():
+    from app.services.og_image import MOTIF_DIR, motif_for_recipe
+
+    # every motif the matcher can return must have an exported PNG
+    names = {n for n, _ in __import__("app.services.og_image", fromlist=["x"])._GLASS_CHECKS}
+    names |= {n for n, _ in __import__("app.services.og_image", fromlist=["x"])._DISH_CHECKS}
+    for name in names:
+        assert (MOTIF_DIR / f"{name}.png").exists(), f"missing motif asset: {name}"
+
+    assert motif_for_recipe({"titel": "Jungle Bird", "glas": "Tiki-Becher"}, "cocktail") == "tiki"
+    assert motif_for_recipe({"titel": "Espresso Martini", "glas": "Cocktailschale"}, "cocktail") == "coupe"
+    assert motif_for_recipe({"titel": "Gambas al Ajillo mit knusprigem Brot"}, "kochen") == "fisch"
+    assert motif_for_recipe({"titel": "Spaghetti alle Vongole"}, "kochen") == "pasta"
+    assert motif_for_recipe({"titel": "Irgendwas"}, "kochen") == "bowl"
+
+
+def test_og_wrap_respects_line_budget():
+    """max_lines=1 used to leak ALL lines (break condition never fired)."""
+    from PIL import Image, ImageDraw
+
+    from app.services.og_image import _font, _wrap
+
+    d = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    f = _font("Inter.ttf", 33, 400)
+    long = "Klassiker aus Neapel mit Muscheln Weißwein Knoblauch und ganz viel Petersilie obendrauf"
+    assert len(_wrap(d, long, f, 300, 1)) == 1
+    assert _wrap(d, long, f, 300, 1)[0].endswith("…")
+    assert len(_wrap(d, long, f, 300, 2)) == 2
+    assert _wrap(d, long, f, 300, 0) == []
+
+
 def test_og_png_renders(client, logged_in, mock_ai):  # noqa: F811
     _, share = _shared_recipe(client, logged_in)
     r = client.get(f"/api/v1/share/{share['share_token']}/og.png")

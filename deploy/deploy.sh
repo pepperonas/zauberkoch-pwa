@@ -33,7 +33,12 @@ if [[ "$TARGET" == "frontend" || "$TARGET" == "all" ]]; then
   log "Frontend-Build"
   (cd "$REPO/frontend" && npm run build)
   log "Frontend-Sync"
-  rsync -avz --delete "$REPO/frontend/dist/" "$VPS:/var/www/zauberkoch.de/"
+  # assets/ is synced WITHOUT --delete: sessions started before the deploy
+  # still lazy-load old hashed chunks — deleting them blanks their next
+  # navigation. Old chunks are pruned after 14 days instead.
+  rsync -avz --delete --exclude 'assets' "$REPO/frontend/dist/" "$VPS:/var/www/zauberkoch.de/"
+  rsync -avz "$REPO/frontend/dist/assets/" "$VPS:/var/www/zauberkoch.de/assets/"
+  ssh "$VPS" 'find /var/www/zauberkoch.de/assets -type f -mtime +14 -delete'
 fi
 
 log "Healthcheck"

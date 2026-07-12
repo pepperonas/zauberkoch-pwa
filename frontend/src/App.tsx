@@ -10,21 +10,42 @@ import { spring } from './motion/springs';
 import { useApp } from './state/app';
 import './App.css';
 
-// Route-based code splitting: each page loads on demand
-const GeneratePage = lazy(() => import('./pages/GeneratePage').then((m) => ({ default: m.GeneratePage })));
-const RecipeDetailPage = lazy(() => import('./pages/RecipeDetailPage').then((m) => ({ default: m.RecipeDetailPage })));
-const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then((m) => ({ default: m.FavoritesPage })));
-const HistoryPage = lazy(() => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })));
-const ShoppingPage = lazy(() => import('./pages/ShoppingPage').then((m) => ({ default: m.ShoppingPage })));
-const SharePage = lazy(() => import('./pages/SharePage').then((m) => ({ default: m.SharePage })));
-const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
-const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+// Route-based code splitting: each page loads on demand.
+// lazyPage self-heals stale sessions: after a deploy the old hashed chunks
+// are eventually pruned -> dynamic import 404s -> reload ONCE to pick up the
+// fresh shell (guarded per chunk so a real outage can't reload-loop).
+function lazyPage<T extends React.ComponentType>(name: string, factory: () => Promise<{ default: T }>) {
+  return lazy(async () => {
+    const guard = `zk-chunk-reload-${name}`;
+    try {
+      const mod = await factory();
+      sessionStorage.removeItem(guard);
+      return mod;
+    } catch (err) {
+      if (!sessionStorage.getItem(guard)) {
+        sessionStorage.setItem(guard, '1');
+        window.location.reload();
+        return { default: (() => null) as unknown as T };
+      }
+      throw err;
+    }
+  });
+}
+
+const GeneratePage = lazyPage('generate', () => import('./pages/GeneratePage').then((m) => ({ default: m.GeneratePage })));
+const RecipeDetailPage = lazyPage('detail', () => import('./pages/RecipeDetailPage').then((m) => ({ default: m.RecipeDetailPage })));
+const FavoritesPage = lazyPage('favorites', () => import('./pages/FavoritesPage').then((m) => ({ default: m.FavoritesPage })));
+const HistoryPage = lazyPage('history', () => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })));
+const ShoppingPage = lazyPage('shopping', () => import('./pages/ShoppingPage').then((m) => ({ default: m.ShoppingPage })));
+const SharePage = lazyPage('share', () => import('./pages/SharePage').then((m) => ({ default: m.SharePage })));
+const LandingPage = lazyPage('landing', () => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
+const AdminPage = lazyPage('admin', () => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 // Lazy on purpose: keeps motion-dom's full engine out of the entry chunk
 // (a component imported by the entry hoists its whole dep graph there).
-const GenerationPill = lazy(() =>
+const GenerationPill = lazyPage('genpill', () =>
   import('./components/GenerationPill').then((m) => ({ default: m.GenerationPill })),
 );
-const GenerationBar = lazy(() =>
+const GenerationBar = lazyPage('genbar', () =>
   import('./components/GenerationPill').then((m) => ({ default: m.GenerationBar })),
 );
 

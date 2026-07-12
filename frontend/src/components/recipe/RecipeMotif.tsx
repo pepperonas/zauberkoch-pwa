@@ -52,7 +52,7 @@ export function motifForRecipe(item: MatchInput): Motif {
   if (/bowl|poke|buddha|curry|risotto|porridge|dal/.test(hay)) return 'bowl';
   if (/dessert|kuchen|torte|tiramisu|mousse|pudding|brownie|cheesecake|crumble|panna cotta|sorbet/.test(hay)) return 'dessert';
   if (/salat|caesar|caprese|tabouleh|slaw/.test(hay)) return 'salat';
-  if (/fisch|lachs|forelle|dorade|thunfisch|garnele|scampi|muschel|kabeljau|zander|pulpo/.test(hay)) return 'fisch';
+  if (/fisch|lachs|forelle|dorade|thunfisch|garnele|gamba|shrimp|scampi|muschel|kabeljau|zander|pulpo|oktopus|tintenfisch/.test(hay)) return 'fisch';
   if (/steak|braten|filet|kotelett|schnitzel|rind|lamm|entrecôte|ribs|grill|bbq|hähnchen|fleisch|frikadelle|köfte/.test(hay)) return 'steak';
   if (/pfanne|wok|stir|geschnetzelt|shakshuka|rührei/.test(hay)) return 'pfanne';
   return 'bowl'; // bowls, curry, reis, risotto + default
