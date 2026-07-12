@@ -94,6 +94,8 @@ def build_user_prompt(params: GenerateParams) -> str:
             (p.vegetarisch and not p.vegan, "vegetarisch"),
             (p.glutenfrei, "glutenfrei"),
             (p.laktosefrei, "laktosefrei"),
+            (p.proteinreich, "extrem proteinreich (High-Protein: mind. 40 g Eiweiß pro Portion, Proteinquelle im Zentrum)"),
+            (p.ketogen, "ketogen (kein Zucker und keine zuckerhaltigen Zutaten, unter 20 g Kohlenhydrate pro Portion, fettbetont)"),
         ]
         if flag
     ]

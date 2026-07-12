@@ -61,6 +61,8 @@ export interface GenerateParams {
   vegan?: boolean;
   glutenfrei?: boolean;
   laktosefrei?: boolean;
+  proteinreich?: boolean;
+  ketogen?: boolean;
   max_zeit_min?: number | null;
   schwierigkeit?: Schwierigkeit | null;
   personen?: number;
@@ -77,6 +79,8 @@ export interface Preferences {
   vegan: boolean;
   glutenfrei: boolean;
   laktosefrei: boolean;
+  proteinreich?: boolean;
+  ketogen?: boolean;
   vermeiden: string[];
   standard_personen: number;
   /** Personalized wizard cuisine chips (empty = app defaults). */

@@ -51,6 +51,8 @@ export function GeneratePage() {
   const [vegan, setVegan] = useState(false);
   const [glutenfrei, setGlutenfrei] = useState(false);
   const [laktosefrei, setLaktosefrei] = useState(false);
+  const [proteinreich, setProteinreich] = useState(false);
+  const [ketogen, setKetogen] = useState(false);
   const [maxZeit, setMaxZeit] = useState<number | null>(null);
   const [schwierigkeit, setSchwierigkeit] = useState<Schwierigkeit | null>(null);
   const [personen, setPersonen] = useState(me?.preferences?.standard_personen ?? 2);
@@ -104,6 +106,8 @@ export function GeneratePage() {
       vegan,
       glutenfrei,
       laktosefrei,
+      proteinreich,
+      ketogen,
       max_zeit_min: maxZeit,
       schwierigkeit,
       personen,
@@ -113,7 +117,7 @@ export function GeneratePage() {
       ...overrides,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, kueche, kuecheFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
+    [mode, kueche, kuecheFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, proteinreich, ketogen, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
   );
 
   const invalidateRecipes = useCallback(
@@ -497,6 +501,14 @@ export function GeneratePage() {
           <div className="wiz__row">
             <span className="wiz__row-label">{t('wizard.lactoseFree')}</span>
             <Switch checked={laktosefrei} onChange={setLaktosefrei} label={t('wizard.lactoseFree')} />
+          </div>
+          <div className="wiz__row">
+            <span className="wiz__row-label">{t('wizard.highProtein')}</span>
+            <Switch checked={proteinreich} onChange={setProteinreich} label={t('wizard.highProtein')} />
+          </div>
+          <div className="wiz__row">
+            <span className="wiz__row-label">{t('wizard.keto')}</span>
+            <Switch checked={ketogen} onChange={setKetogen} label={t('wizard.keto')} />
           </div>
           <div>
             <span className="wiz__row-label">{t('wizard.maxTime')}</span>

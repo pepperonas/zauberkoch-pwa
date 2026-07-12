@@ -32,13 +32,18 @@ def test_user_prompt_maps_all_constraints():
         geschmack=["scharf", "frisch"],
         vegan=True,
         glutenfrei=True,
+        proteinreich=True,
+        ketogen=True,
         max_zeit_min=30,
         schwierigkeit="einfach",
         personen=4,
         vorhandene_zutaten=["Kokosmilch", "Limetten"],
     )
     prompt = recipe_v2.build_user_prompt(params)
-    for expected in ["Thai", "scharf", "frisch", "vegan", "glutenfrei", "30 Minuten", "einfach", "4", "Kokosmilch"]:
+    for expected in [
+        "Thai", "scharf", "frisch", "vegan", "glutenfrei", "30 Minuten", "einfach", "4", "Kokosmilch",
+        "High-Protein", "40 g Eiweiß", "ketogen", "20 g Kohlenhydrate",
+    ]:
         assert expected in prompt
     assert "vegetarisch" not in prompt  # vegan subsumes it
 

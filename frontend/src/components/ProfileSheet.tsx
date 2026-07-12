@@ -75,12 +75,14 @@ export function ProfileSheet({ open, onClose }: Props) {
             ['vegan', t('wizard.vegan')],
             ['glutenfrei', t('wizard.glutenFree')],
             ['laktosefrei', t('wizard.lactoseFree')],
+            ['proteinreich', t('wizard.highProtein')],
+            ['ketogen', t('wizard.keto')],
           ] as const
         ).map(([key, label]) => (
           <div className="wiz__row" key={key}>
             <span className="wiz__row-label">{label}</span>
             <Switch
-              checked={prefs[key]}
+              checked={!!prefs[key]}
               onChange={(v) => set({ [key]: v, ...(key === 'vegan' && v ? { vegetarisch: true } : {}) })}
               label={label}
             />

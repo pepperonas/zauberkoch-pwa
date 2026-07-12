@@ -85,6 +85,8 @@ class GenerateParams(BaseModel):
     vegan: bool = False
     glutenfrei: bool = False
     laktosefrei: bool = False
+    proteinreich: bool = False  # high-protein
+    ketogen: bool = False  # keto: no sugar, very low carb
     max_zeit_min: int | None = Field(default=None, ge=5, le=600)
     schwierigkeit: Literal["einfach", "mittel", "anspruchsvoll"] | None = None
     personen: int = Field(default=2, ge=1, le=12)
@@ -123,6 +125,8 @@ class Preferences(BaseModel):
     vegan: bool = False
     glutenfrei: bool = False
     laktosefrei: bool = False
+    proteinreich: bool = False  # high-protein
+    ketogen: bool = False  # keto: no sugar, very low carb
     vermeiden: list[str] = Field(default=[], max_length=20)
     standard_personen: int = Field(default=2, ge=1, le=12)
     # Personalized cuisine chips for the wizard (empty = app defaults). UI-only:

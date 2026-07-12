@@ -41,6 +41,8 @@ export const de = {
     vegan: 'Vegan',
     glutenFree: 'Glutenfrei',
     lactoseFree: 'Laktosefrei',
+    highProtein: 'High-Protein (extrem proteinreich)',
+    keto: 'Ketogen (zuckerfrei & Low-Carb)',
     maxTime: 'Max. Zeit',
     minutes: 'Min.',
     difficulty: 'Schwierigkeit',

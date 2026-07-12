@@ -104,6 +104,8 @@ async def generate(
             "vegan": params.vegan or prefs.vegan,
             "glutenfrei": params.glutenfrei or prefs.glutenfrei,
             "laktosefrei": params.laktosefrei or prefs.laktosefrei,
+            "proteinreich": params.proteinreich or prefs.proteinreich,
+            "ketogen": params.ketogen or prefs.ketogen,
             "vermeiden": sorted({*params.vermeiden, *prefs.vermeiden}),
             "vermeiden_titel": [],
         }
