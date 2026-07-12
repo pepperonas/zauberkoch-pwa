@@ -8,6 +8,7 @@ import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 import type { Preferences } from '../lib/types';
 import { useApp } from '../state/app';
+import { Icon } from './icons';
 import { Button, Chip, Switch } from './ui';
 import { Sheet } from './ui/Sheet';
 import { useSnackbar } from './ui/Snackbar';
@@ -122,7 +123,7 @@ export function ProfileSheet({ open, onClose }: Props) {
             <div className="chips" style={{ marginTop: 'var(--space-3)' }}>
               {prefs.vermeiden.map((item) => (
                 <Chip key={item} selected onToggle={() => set({ vermeiden: prefs.vermeiden.filter((x) => x !== item) })}>
-                  {item} ✕
+                  {item} <Icon name="close" size={13} />
                 </Chip>
               ))}
             </div>
@@ -147,7 +148,7 @@ export function ProfileSheet({ open, onClose }: Props) {
             <div className="chips" style={{ marginTop: 'var(--space-3)' }}>
               {pantry.map((item) => (
                 <Chip key={item} selected onToggle={() => set({ vorraete: pantry.filter((x) => x !== item) })}>
-                  {item} ✕
+                  {item} <Icon name="close" size={13} />
                 </Chip>
               ))}
             </div>
@@ -176,7 +177,7 @@ export function ProfileSheet({ open, onClose }: Props) {
         </div>
 
         <div>
-          <span className="wiz__row-label">🎟️ {t('profile.invites')}</span>
+          <span className="wiz__row-label"><Icon name="ticket" size={15} /> {t('profile.invites')}</span>
           <p className="muted" style={{ font: 'var(--type-label-sm)', margin: 'var(--space-1) 0 var(--space-2)' }}>
             {t('profile.invitesHint')}
           </p>
@@ -188,14 +189,14 @@ export function ProfileSheet({ open, onClose }: Props) {
               {inv.used ? (
                 <span className="muted" style={{ font: 'var(--type-label-sm)' }}>{t('profile.inviteUsed')}</span>
               ) : (
-                <Button variant="text" onClick={() => void shareInvite(inv.code)}>📤 {t('recipe.share')}</Button>
+                <Button variant="text" onClick={() => void shareInvite(inv.code)}><Icon name="share" size={18} /> {t('recipe.share')}</Button>
               )}
             </div>
           ))}
         </div>
 
         <Button onClick={() => void save()}>{t('common.save')}</Button>
-        <Button variant="text" onClick={() => void logout()}>⏻ {t('auth.logout')}</Button>
+        <Button variant="text" onClick={() => void logout()}><Icon name="power" size={18} /> {t('auth.logout')}</Button>
       </div>
     </Sheet>
   );

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { Icon } from '../components/icons';
 import { motifForRecipe, RecipeMotif } from '../components/recipe/RecipeMotif';
 import { Button, IconButton } from '../components/ui';
 import { Sheet } from '../components/ui/Sheet';
@@ -60,7 +61,7 @@ export function PlanPage() {
 
   return (
     <div>
-      <h1 className="page__title">📅 {t('plan.title')}</h1>
+      <h1 className="page__title"><Icon name="calendar" size={22} /> {t('plan.title')}</h1>
 
       <div className="row row--between" style={{ marginBottom: 'var(--space-4)' }}>
         <IconButton label="‹" onClick={() => monday && setStart(addDays(monday, -7))}>‹</IconButton>
@@ -93,7 +94,7 @@ export function PlanPage() {
                     {entry.titel}
                   </span>
                 </span>
-                <IconButton label={t('common.delete')} onClick={() => void remove(entry)}>✕</IconButton>
+                <IconButton label={t('common.delete')} onClick={() => void remove(entry)}><Icon name="close" size={18} /></IconButton>
               </div>
             ))}
           </motion.div>
@@ -103,7 +104,7 @@ export function PlanPage() {
       {hasEntries && (
         <div className="actions" style={{ marginTop: 'var(--space-5)' }}>
           <Button big onClick={weekToShopping}>
-            🛒 {t('plan.toShopping')}
+            <Icon name="cart" size={20} /> {t('plan.toShopping')}
           </Button>
         </div>
       )}
@@ -156,7 +157,7 @@ function RecipePicker({ day, onClose, onPicked }: { day: string | null; onClose:
             <span style={{ minWidth: 0 }}>
               <span style={{ display: 'block' }}>{item.titel}</span>
               <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
-                {item.mode === 'cocktail' ? '🍸 ' : ''}{item.kueche}
+                {item.mode === 'cocktail' ? <><Icon name="cocktail" size={12} />{' '}</> : null}{item.kueche}
               </span>
             </span>
           </motion.button>

@@ -1,4 +1,4 @@
-/** 👍/👎 feedback per recipe — the data behind prompt iteration.
+/** Thumbs-up/-down feedback per recipe — the data behind prompt iteration.
  * Thumbs down opens quick reason chips; everything lands in the backend log. */
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { strings, t } from '../../i18n';
 import { api } from '../../lib/api';
 import { springBouncy } from '../../motion/springs';
+import { Icon } from '../icons';
 import { IconButton } from '../ui';
 import { useSnackbar } from '../ui/Snackbar';
 
@@ -31,17 +32,17 @@ export function FeedbackBar({ recipeId, initial = null }: Props) {
   return (
     <div className="row" style={{ flexWrap: 'wrap', marginTop: 'var(--space-5)' }}>
       <span className="muted">{t('feedback.question')}</span>
-      <IconButton label="👍" active={value === 1} onClick={() => void send(1)}>
-        👍
+      <IconButton label={t('feedback.up')} active={value === 1} onClick={() => void send(1)}>
+        <Icon name="thumbUp" size={20} />
       </IconButton>
       <IconButton
-        label="👎"
+        label={t('feedback.down')}
         active={value === -1}
         onClick={() => {
           setAskReason(true);
         }}
       >
-        👎
+        <Icon name="thumbDown" size={20} />
       </IconButton>
       <AnimatePresence>
         {askReason && (

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
+import { Icon, type IconName } from '../components/icons';
 import { ConjureStage } from '../components/recipe/ConjureStage';
 import { CuisineHero } from '../components/recipe/CuisineHero';
 import { motifForRecipe, RecipeMotif } from '../components/recipe/RecipeMotif';
@@ -28,7 +29,7 @@ const EXAMPLES = [
     mode: 'kochen' as const,
     titel: 'Spaghetti alle Vongole',
     teaser: 'Klassiker aus Neapel: Muscheln, Weißwein, Knoblauch und Petersilie treffen auf perfekt al dente Spaghetti — frisch, salzig, in 25 Minuten fertig.',
-    stats: ['🕐 30 Min.', '📶 mittel'],
+    stats: [{ icon: 'clock', text: '30 Min.' }, { icon: 'gauge', text: 'mittel' }] as { icon: IconName; text: string }[],
   },
   {
     href: '/r/_LCP3L_O-LuV',
@@ -36,7 +37,7 @@ const EXAMPLES = [
     mode: 'kochen' as const,
     titel: 'Massaman-Curry mit Rindfleisch',
     teaser: 'Mildscharf und cremig: geröstete Gewürze, zart geschmortes Rind und ein Hauch Tamarinde — die Klassik aus dem Süden Thailands.',
-    stats: ['🕐 1,5 h', '📶 mittel'],
+    stats: [{ icon: 'clock', text: '1,5 h' }, { icon: 'gauge', text: 'mittel' }] as { icon: IconName; text: string }[],
   },
   {
     href: '/r/BWyqyP7jL0lI',
@@ -44,7 +45,7 @@ const EXAMPLES = [
     mode: 'cocktail' as const,
     titel: 'Gin Sour Royal',
     teaser: 'Feiner Eiweiß-Schaum, spritzige Zitrusnote, ein Hauch Wacholder — frisch, sauer, perfekt austariert.',
-    stats: ['🍸 2 Drinks', '🥃 Coupette'],
+    stats: [{ icon: 'cocktail', text: '2 Drinks' }, { icon: 'glass', text: 'Coupette' }] as { icon: IconName; text: string }[],
   },
 ];
 
@@ -77,7 +78,7 @@ export function LandingPage() {
             </Button>
             {import.meta.env.DEV && (
               <Button variant="text" onClick={() => (window.location.href = '/api/v1/auth/dev-login')}>
-                🛠 {t('auth.devLogin')}
+                <Icon name="tools" size={18} /> {t('auth.devLogin')}
               </Button>
             )}
           </div>
@@ -89,7 +90,7 @@ export function LandingPage() {
           </p>
           <div style={{ marginTop: 'var(--space-4)', maxWidth: 280 }}>
             <label className="muted" htmlFor="invite" style={{ font: 'var(--type-label-sm)' }}>
-              🎟️ {t('landing.inviteLabel')}
+              <Icon name="ticket" size={13} /> {t('landing.inviteLabel')}
             </label>
             <input
               id="invite"
@@ -132,7 +133,7 @@ export function LandingPage() {
               <p className="muted">{ex.teaser}</p>
               <div className="hero__stats">
                 {ex.stats.map((s) => (
-                  <span key={s} className="stat">{s}</span>
+                  <span key={s.text} className="stat"><Icon name={s.icon} size={15} /> {s.text}</span>
                 ))}
               </div>
             </motion.a>
@@ -142,7 +143,7 @@ export function LandingPage() {
 
       <div style={{ textAlign: 'center', marginTop: 'var(--space-8)' }}>
         <Button big variant="tonal" onClick={login}>
-          🪄 {t('landing.cta')}
+          <Icon name="wand" size={20} /> {t('landing.cta')}
         </Button>
       </div>
       <p className="muted" style={{ textAlign: 'center', marginTop: 'var(--space-4)', font: 'var(--type-label)' }}>
@@ -166,8 +167,8 @@ function GalleryCard({ item, index, highlight }: { item: GalleryItem; index: num
       whileTap={reduced ? undefined : { scale: 0.98 }}
     >
       <span className="hero__kueche">
-        {highlight ? `⭐ ${t('landing.dailyTitle')} · ` : ''}
-        {item.mode === 'cocktail' ? '🍸 ' : ''}
+        {highlight ? <><Icon name="star" size={13} /> {t('landing.dailyTitle')} · </> : null}
+        {item.mode === 'cocktail' ? <><Icon name="cocktail" size={13} />{' '}</> : null}
         {item.kueche}
       </span>
       <div className="recipecard__body">
@@ -175,8 +176,8 @@ function GalleryCard({ item, index, highlight }: { item: GalleryItem; index: num
           <h3 style={{ margin: 'var(--space-2) 0' }}>{item.titel}</h3>
           <p className="muted" style={{ font: 'var(--type-body)' }}>{item.teaser}</p>
           <div className="hero__stats">
-            {item.zeit_gesamt != null && <span className="stat">🕐 {fmtMin(item.zeit_gesamt)}</span>}
-            {item.schwierigkeit && <span className="stat">📶 {item.schwierigkeit}</span>}
+            {item.zeit_gesamt != null && <span className="stat"><Icon name="clock" size={15} /> {fmtMin(item.zeit_gesamt)}</span>}
+            {item.schwierigkeit && <span className="stat"><Icon name="gauge" size={15} /> {item.schwierigkeit}</span>}
           </div>
         </div>
         <RecipeMotif motif={motifForRecipe({ ...item, tags: item.tags })} seed={item.titel} className="recipecard__motif" />
@@ -193,7 +194,7 @@ function Discover() {
   if (!dailyItem && rest.length === 0) return null;
   return (
     <section className="section">
-      <h2>🌍 {t('landing.discoverTitle')}</h2>
+      <h2><Icon name="globe" size={20} /> {t('landing.discoverTitle')}</h2>
       <div className="stack" style={{ marginTop: 'var(--space-4)' }}>
         {dailyItem && <GalleryCard item={dailyItem} index={0} highlight />}
         {rest.map((item, i) => (
@@ -261,7 +262,7 @@ function TryWizard({ onLogin }: { onLogin: () => void }) {
 
   return (
     <section className="section">
-      <h2>✨ {t('landing.tryTitle')}</h2>
+      <h2><Icon name="sparkles" size={20} /> {t('landing.tryTitle')}</h2>
       <p className="muted" style={{ marginTop: 'var(--space-2)' }}>{t('landing.tryHint')}</p>
 
       {phase === 'idle' && (
@@ -285,7 +286,7 @@ function TryWizard({ onLogin }: { onLogin: () => void }) {
             ))}
           </div>
           <div>
-            <Button big onClick={start}>🪄 {t('landing.tryButton')}</Button>
+            <Button big onClick={start}><Icon name="wand" size={20} /> {t('landing.tryButton')}</Button>
           </div>
         </div>
       )}

@@ -5,6 +5,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { Icon } from '../components/icons';
 import { RecipeView } from '../components/recipe/RecipeView';
 import { Button } from '../components/ui';
 import { useSnackbar } from '../components/ui/Snackbar';
@@ -30,10 +31,10 @@ export function SharePage() {
   if (!shared.data) {
     return (
       <div className="limitbox">
-        <div className="limitbox__emoji" aria-hidden>🔗</div>
+        <div className="limitbox__emoji" aria-hidden><Icon name="link" size={52} /></div>
         <h2>{t('shared.notFound')}</h2>
         <div style={{ marginTop: 'var(--space-6)' }}>
-          <Button variant="tonal" onClick={() => navigate('/')}>🧑‍🍳 Zauberkoch</Button>
+          <Button variant="tonal" onClick={() => navigate('/')}><Icon name="logo" size={18} /> Zauberkoch</Button>
         </div>
       </div>
     );
@@ -50,7 +51,7 @@ export function SharePage() {
 
   return (
     <div>
-      <p className="hero__kueche" style={{ margin: 'var(--space-4) 0' }}>🔗 {t('shared.badge')}</p>
+      <p className="hero__kueche" style={{ margin: 'var(--space-4) 0' }}><Icon name="link" size={14} /> {t('shared.badge')}</p>
       <RecipeView
         data={{
           meta: recipe,
@@ -64,10 +65,10 @@ export function SharePage() {
         mode={mode}
         actions={
           me ? (
-            <Button big onClick={() => void adopt()}>➕ {t('shared.adopt')}</Button>
+            <Button big onClick={() => void adopt()}><Icon name="plus" size={20} /> {t('shared.adopt')}</Button>
           ) : (
             <Button big onClick={() => (window.location.href = '/api/v1/auth/login')}>
-              🪄 {t('shared.loginCta')}
+              <Icon name="wand" size={20} /> {t('shared.loginCta')}
             </Button>
           )
         }

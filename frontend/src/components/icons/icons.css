@@ -1,0 +1,7 @@
+/* Icon baseline alignment — icons sit inline with text everywhere
+   (buttons, chips, stats), so anchor them to the text baseline. */
+.zki {
+  display: inline-block;
+  vertical-align: -0.19em;
+  flex: none;
+}

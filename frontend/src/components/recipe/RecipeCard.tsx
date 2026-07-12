@@ -9,6 +9,7 @@ import { t } from '../../i18n';
 import { api } from '../../lib/api';
 import type { RecipeListItem } from '../../lib/types';
 import { riseIn, spring, stagger } from '../../motion/springs';
+import { Icon } from '../icons';
 import { useSnackbar } from '../ui/Snackbar';
 import { motifForRecipe, RecipeMotif } from './RecipeMotif';
 import { fmtMin } from './RecipeView';
@@ -57,7 +58,7 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
     >
       <div className="row row--between">
         <span className="hero__kueche">
-          {item.mode === 'cocktail' ? '🍸 ' : ''}
+          {item.mode === 'cocktail' ? <><Icon name="cocktail" size={14} />{' '}</> : null}
           {item.kueche}
         </span>
         <motion.button
@@ -68,7 +69,7 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
           whileTap={reduced ? undefined : { scale: 1.25, rotate: 12 }}
           transition={spring}
         >
-          {item.is_favorite ? '⭐' : '☆'}
+          <Icon name={item.is_favorite ? 'star' : 'starOff'} size={22} />
         </motion.button>
       </div>
       <div className="recipecard__body">
@@ -76,8 +77,8 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
           <h3 style={{ margin: 'var(--space-2) 0' }}>{item.titel}</h3>
           <p className="muted" style={{ font: 'var(--type-body)' }}>{item.teaser}</p>
           <div className="hero__stats">
-            {item.zeit_gesamt != null && <span className="stat">🕐 {fmtMin(item.zeit_gesamt)}</span>}
-            {item.schwierigkeit && <span className="stat">📶 {item.schwierigkeit}</span>}
+            {item.zeit_gesamt != null && <span className="stat"><Icon name="clock" size={15} /> {fmtMin(item.zeit_gesamt)}</span>}
+            {item.schwierigkeit && <span className="stat"><Icon name="gauge" size={15} /> {item.schwierigkeit}</span>}
           </div>
         </div>
         <RecipeMotif motif={motifForRecipe(item)} seed={item.titel} className="recipecard__motif" />

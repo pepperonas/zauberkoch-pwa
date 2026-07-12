@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+import { Icon } from '../components/icons';
 import { RecipeCard } from '../components/recipe/RecipeCard';
 import { Chip } from '../components/ui';
 import { t } from '../i18n';
@@ -28,10 +29,10 @@ export function FavoritesPage() {
         <div className="chips">
           <Chip selected={mode === ''} onToggle={() => setMode('')}>{t('favorites.filterAll')}</Chip>
           <Chip selected={mode === 'kochen'} onToggle={() => setMode(mode === 'kochen' ? '' : 'kochen')}>
-            🍳 {t('wizard.modeKochen')}
+            <Icon name="pan" size={13} /> {t('wizard.modeKochen')}
           </Chip>
           <Chip selected={mode === 'cocktail'} onToggle={() => setMode(mode === 'cocktail' ? '' : 'cocktail')}>
-            🍸 {t('wizard.modeCocktail')}
+            <Icon name="cocktail" size={13} /> {t('wizard.modeCocktail')}
           </Chip>
           {kuechen.map((k) => (
             <Chip key={k} selected={kueche === k} onToggle={() => setKueche(kueche === k ? '' : k)}>

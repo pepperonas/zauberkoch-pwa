@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { t } from '../../i18n';
 import { api } from '../../lib/api';
+import { Icon } from '../icons';
 import { Button, Switch } from '../ui';
 import { Dialog } from '../ui/Dialog';
 import { useSnackbar } from '../ui/Snackbar';
@@ -94,14 +95,14 @@ export function ShareDialog({ open, onClose, recipeId, titel, publicListed = fal
         <p className="muted">{t('recipe.shareText')}</p>
         <input className="input" readOnly value={loading ? t('common.loading') : url} aria-label="Share-Link" onFocus={(e) => e.target.select()} />
         <div className="row" style={{ flexWrap: 'wrap' }}>
-          <Button onClick={() => void nativeShare()} disabled={!url}>📤 {t('recipe.shareNative')}</Button>
-          <Button variant="outlined" onClick={() => void copyLink()} disabled={!url}>📋 {t('recipe.shareCopyLink')}</Button>
-          <Button variant="outlined" onClick={() => void shareStory()} disabled={!url}>🖼️ {t('recipe.shareStory')}</Button>
-          <Button variant="danger" onClick={() => void revoke()} disabled={!url}>🚫 {t('recipe.shareRevoke')}</Button>
+          <Button onClick={() => void nativeShare()} disabled={!url}><Icon name="share" size={18} /> {t('recipe.shareNative')}</Button>
+          <Button variant="outlined" onClick={() => void copyLink()} disabled={!url}><Icon name="copy" size={18} /> {t('recipe.shareCopyLink')}</Button>
+          <Button variant="outlined" onClick={() => void shareStory()} disabled={!url}><Icon name="image" size={18} /> {t('recipe.shareStory')}</Button>
+          <Button variant="danger" onClick={() => void revoke()} disabled={!url}><Icon name="ban" size={18} /> {t('recipe.shareRevoke')}</Button>
         </div>
         <div className="row row--between" style={{ minHeight: 'var(--touch-target)' }}>
           <span style={{ minWidth: 0 }}>
-            <span style={{ display: 'block' }}>🌍 {t('recipe.sharePublic')}</span>
+            <span style={{ display: 'block' }}><Icon name="globe" size={16} /> {t('recipe.sharePublic')}</span>
             <span className="muted" style={{ font: 'var(--type-label-sm)' }}>{t('recipe.sharePublicHint')}</span>
           </span>
           <Switch checked={isPublic} onChange={(v) => void togglePublic(v)} label={t('recipe.sharePublic')} />

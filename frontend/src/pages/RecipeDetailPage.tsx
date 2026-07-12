@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { Icon } from '../components/icons';
 import { CookMode } from '../components/recipe/CookMode';
 import { FeedbackBar } from '../components/recipe/FeedbackBar';
 import { RecipeView } from '../components/recipe/RecipeView';
@@ -93,7 +94,7 @@ export function RecipeDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
-              ✓ {feedback}
+              <Icon name="check" size={14} /> {feedback}
             </motion.span>
           )}
         </AnimatePresence>
@@ -115,25 +116,25 @@ export function RecipeDetailPage() {
         actions={
           <>
             <Button variant={isFav ? 'tonal' : 'outlined'} onClick={toggleFavorite} aria-pressed={isFav}>
-              {isFav ? '⭐' : '☆'} {t('recipe.favorite')}
+              <Icon name={isFav ? 'star' : 'starOff'} size={18} /> {t('recipe.favorite')}
             </Button>
-            <Button variant="outlined" onClick={() => void toShopping()}>🛒 {t('recipe.toShoppingList')}</Button>
-            <Button variant="outlined" onClick={() => setShareOpen(true)}>📤 {t('recipe.share')}</Button>
-            <Button variant="outlined" onClick={() => void copy()}>📋 {t('recipe.copy')}</Button>
+            <Button variant="outlined" onClick={() => void toShopping()}><Icon name="cart" size={18} /> {t('recipe.toShoppingList')}</Button>
+            <Button variant="outlined" onClick={() => setShareOpen(true)}><Icon name="share" size={18} /> {t('recipe.share')}</Button>
+            <Button variant="outlined" onClick={() => void copy()}><Icon name="copy" size={18} /> {t('recipe.copy')}</Button>
             {recipe.schritte.length > 0 && (
-              <Button onClick={() => setCookOpen(true)}>👨‍🍳 {t('recipe.cookMode')}</Button>
+              <Button onClick={() => setCookOpen(true)}><Icon name="chefhat" size={18} /> {t('recipe.cookMode')}</Button>
             )}
             <Button
               variant="tonal"
               onClick={() => navigate('/', { state: { adaptId: recipeId, openAdapt: true } })}
             >
-              ✨ {t('adapt.button')}
+              <Icon name="sparkles" size={18} /> {t('adapt.button')}
             </Button>
             <Button
               variant="outlined"
               onClick={() => void api.markCooked(recipeId).then((r) => { setGekocht(r.gekocht_count); show(t('notes.cooked')); })}
             >
-              ✅ {(gekocht ?? detail.data.gekocht_count) > 0
+              <Icon name="checkCircle" size={18} /> {(gekocht ?? detail.data.gekocht_count) > 0
                 ? strings.notes.cookedCount(gekocht ?? detail.data.gekocht_count)
                 : t('notes.cooked')}
             </Button>
@@ -143,7 +144,7 @@ export function RecipeDetailPage() {
 
       <section className="section">
         <label className="muted" htmlFor="notiz" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
-          📝 {t('notes.label')}
+          <Icon name="note" size={15} /> {t('notes.label')}
         </label>
         <textarea
           id="notiz"

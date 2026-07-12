@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { strings, t } from '../../i18n';
+import { Icon } from '../icons';
 import { Button } from '../ui';
 import { Sheet } from '../ui/Sheet';
 import '../../pages/wizard.css';
@@ -31,7 +32,7 @@ export function AdaptSheet({ open, onClose, onAdapt }: Props) {
         <div className="chips">
           {strings.adapt.chips.map((chip) => (
             <button key={chip} className="chip" onClick={() => run(chip)}>
-              ✨ {chip}
+              <Icon name="sparkles" size={13} /> {chip}
             </button>
           ))}
         </div>
@@ -44,7 +45,7 @@ export function AdaptSheet({ open, onClose, onAdapt }: Props) {
           maxLength={200}
         />
         <Button onClick={() => run(input)} disabled={input.trim().length < 2}>
-          {t('adapt.go')}
+          {t('adapt.go')} <Icon name="sparkles" size={18} />
         </Button>
       </div>
     </Sheet>

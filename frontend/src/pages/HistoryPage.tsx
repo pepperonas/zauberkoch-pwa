@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+import { Icon } from '../components/icons';
 import { RecipeCard } from '../components/recipe/RecipeCard';
 import { Chip } from '../components/ui';
 import { t } from '../i18n';
@@ -34,10 +35,10 @@ export function HistoryPage() {
         <div className="chips">
           <Chip selected={mode === ''} onToggle={() => setMode('')}>{t('favorites.filterAll')}</Chip>
           <Chip selected={mode === 'kochen'} onToggle={() => setMode(mode === 'kochen' ? '' : 'kochen')}>
-            🍳 {t('wizard.modeKochen')}
+            <Icon name="pan" size={13} /> {t('wizard.modeKochen')}
           </Chip>
           <Chip selected={mode === 'cocktail'} onToggle={() => setMode(mode === 'cocktail' ? '' : 'cocktail')}>
-            🍸 {t('wizard.modeCocktail')}
+            <Icon name="cocktail" size={13} /> {t('wizard.modeCocktail')}
           </Chip>
         </div>
         {recipes.isLoading ? (

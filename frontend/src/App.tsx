@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { lazy, Suspense, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
+import { Icon, type IconName } from './components/icons';
 import { ProfileSheet } from './components/ProfileSheet';
 import { IconButton } from './components/ui';
 import { strings, t } from './i18n';
@@ -53,12 +54,12 @@ const GenerationBar = lazyPage('genbar', () =>
   import('./components/GenerationPill').then((m) => ({ default: m.GenerationBar })),
 );
 
-const NAV_ITEMS = [
-  { to: '/', icon: '✨', label: strings.nav.generate },
-  { to: '/plan', icon: '📅', label: strings.nav.plan },
-  { to: '/favoriten', icon: '⭐', label: strings.nav.favorites },
-  { to: '/verlauf', icon: '🕘', label: strings.nav.history },
-  { to: '/einkauf', icon: '🛒', label: strings.nav.shopping },
+const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
+  { to: '/', icon: 'sparkles', label: strings.nav.generate },
+  { to: '/plan', icon: 'calendar', label: strings.nav.plan },
+  { to: '/favoriten', icon: 'star', label: strings.nav.favorites },
+  { to: '/verlauf', icon: 'history', label: strings.nav.history },
+  { to: '/einkauf', icon: 'cart', label: strings.nav.shopping },
 ];
 
 export default function App() {
@@ -76,7 +77,7 @@ export default function App() {
       <header className="shell__header">
         {/* SPA link — a real <a href> would hard-reload and kill a running generation */}
         <Link to="/" className="shell__logo">
-          <span aria-hidden>🧑‍🍳</span> <span className="shell__logo-text">{t('app.name')}</span>
+          <Icon name="logo" size={28} /> <span className="shell__logo-text">{t('app.name')}</span>
         </Link>
         <div className="row shell__actions">
           <IconButton
@@ -86,11 +87,11 @@ export default function App() {
               toggleTheme({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
             }}
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={24} />
           </IconButton>
           {me?.is_admin && (
             <NavLink to="/admin" className={`iconbtn ${location.pathname.startsWith('/admin') ? 'iconbtn--active' : ''}`} aria-label={t('admin.open')} title={t('admin.open')}>
-              🛡️
+              <Icon name="shield" size={24} />
             </NavLink>
           )}
           {me && (
@@ -99,11 +100,11 @@ export default function App() {
                 {me.picture_url ? (
                   <img className="avatar" src={me.picture_url} alt={me.name || me.email} referrerPolicy="no-referrer" />
                 ) : (
-                  '👤'
+                  <Icon name="user" size={24} />
                 )}
               </IconButton>
               <IconButton className="shell__logout" label={t('auth.logout')} onClick={() => void handleLogout()}>
-                ⏻
+                <Icon name="power" size={24} />
               </IconButton>
             </>
           )}
@@ -172,7 +173,7 @@ export default function App() {
                 <NavLink key={item.to} to={item.to} className={`nav__item ${active ? 'nav__item--active' : ''}`}>
                   {active && <motion.span className="nav__pill" layoutId="nav-pill" transition={spring} />}
                   <span className="nav__icon" aria-hidden>
-                    {item.icon}
+                    <Icon name={item.icon} size={24} />
                   </span>
                   <span>{item.label}</span>
                 </NavLink>

@@ -54,6 +54,9 @@
 
   --touch-target: 48px;
 
+  /* Brand-icon accent (wand tip, logo spark) — same warm gold in every scheme */
+  --icon-gold: #f0b429;
+
   /* Color-morph transition — mode/theme switches animate these */
   --morph-duration: 600ms;
   --morph-ease: cubic-bezier(.3, 0, 0, 1);

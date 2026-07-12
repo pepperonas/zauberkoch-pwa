@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { strings, t } from '../../i18n';
 import type { Modus, Schritt } from '../../lib/types';
 import { spring, springSnappy } from '../../motion/springs';
+import { Icon } from '../icons';
 import { Button, IconButton } from '../ui';
 import './recipe.css';
 
@@ -64,7 +65,7 @@ function timerDone() {
     /* audio unavailable */
   }
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('⏲ Zauberkoch', { body: 'Timer abgelaufen!' });
+    new Notification('Zauberkoch', { body: 'Timer abgelaufen!' });
   }
 }
 
@@ -224,11 +225,11 @@ export function CookMode({ schritte, mode, onClose }: Props) {
               active={voice}
               onClick={() => (voice ? stopVoice() : startVoice())}
             >
-              🎤
+              <Icon name="mic" size={22} />
             </IconButton>
           )}
           <IconButton label={t('cook.exit')} onClick={onClose}>
-            ✕
+            <Icon name="close" size={22} />
           </IconButton>
         </span>
       </div>
@@ -243,8 +244,8 @@ export function CookMode({ schritte, mode, onClose }: Props) {
             transition={spring}
             style={{ textAlign: 'center' }}
           >
-            <div style={{ fontSize: '4rem' }} aria-hidden>
-              {mode === 'cocktail' ? '🍸' : '🎉'}
+            <div aria-hidden>
+              <Icon name={mode === 'cocktail' ? 'cocktail' : 'party'} size={72} />
             </div>
             <h1 className="cook__titel">{mode === 'cocktail' ? t('cook.cheers') : t('cook.done')}</h1>
             <div className="cook__nav">

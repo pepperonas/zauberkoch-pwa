@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { CuisineSheet } from '../components/CuisineSheet';
+import { Icon } from '../components/icons';
 import { AdaptSheet } from '../components/recipe/AdaptSheet';
 import { ConjureStage, SparkBurst } from '../components/recipe/ConjureStage';
 import { CookMode } from '../components/recipe/CookMode';
@@ -220,7 +221,7 @@ export function GeneratePage() {
       <div>
         <div className="stream__toolbar">
           {gen.phase === 'streaming' ? (
-            <Button variant="text" onClick={cancelGeneration}>✕ {t('common.cancel')}</Button>
+            <Button variant="text" onClick={cancelGeneration}><Icon name="close" size={18} /> {t('common.cancel')}</Button>
           ) : (
             <Button variant="text" onClick={cancelGeneration}>← {t('stream.newRecipe')}</Button>
           )}
@@ -252,32 +253,32 @@ export function GeneratePage() {
             gen.phase === 'done' && !error ? (
               <>
                 <Button variant={gen.isFavorite ? 'tonal' : 'outlined'} onClick={() => void toggleFavorite()}>
-                  {gen.isFavorite ? '⭐' : '☆'} {t('recipe.favorite')}
+                  <Icon name={gen.isFavorite ? 'star' : 'starOff'} size={18} /> {t('recipe.favorite')}
                 </Button>
                 {recipeId != null && (
                   <Button
                     variant="outlined"
                     onClick={() => void withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(recipeId))}
                   >
-                    🛒 {t('recipe.toShoppingList')}
+                    <Icon name="cart" size={18} /> {t('recipe.toShoppingList')}
                   </Button>
                 )}
                 {recipeId != null && (
                   <Button variant="outlined" onClick={() => setShareOpen(true)}>
-                    📤 {t('recipe.share')}
+                    <Icon name="share" size={18} /> {t('recipe.share')}
                   </Button>
                 )}
                 {data.schritte.length > 0 && (
-                  <Button onClick={() => setCookOpen(true)}>👨‍🍳 {t('recipe.cookMode')}</Button>
+                  <Button onClick={() => setCookOpen(true)}><Icon name="chefhat" size={18} /> {t('recipe.cookMode')}</Button>
                 )}
                 {recipeId != null && (
                   <Button variant="tonal" onClick={() => { setAdaptTarget(recipeId); setAdaptOpen(true); }}>
-                    ✨ {t('adapt.button')}
+                    <Icon name="sparkles" size={18} /> {t('adapt.button')}
                   </Button>
                 )}
                 {gen.canRegenerate && (
                   <Button variant="text" onClick={regenerateGeneration}>
-                    🎲 {t('stream.regenerate')}
+                    <Icon name="dice" size={18} /> {t('stream.regenerate')}
                   </Button>
                 )}
               </>
@@ -310,7 +311,7 @@ export function GeneratePage() {
   if (gen.phase === 'limit') {
     return (
       <div className="limitbox">
-        <div className="limitbox__emoji" aria-hidden>😴</div>
+        <div className="limitbox__emoji" aria-hidden><Icon name="snooze" size={52} /></div>
         <h2>{t('stream.limitReached')}</h2>
         <p className="muted" style={{ marginTop: 'var(--space-3)' }}>{gen.error?.message}</p>
         <div style={{ marginTop: 'var(--space-6)' }}>
@@ -328,8 +329,8 @@ export function GeneratePage() {
       <div className="wiz__mode">
         <Segmented<Modus>
           options={[
-            { value: 'kochen', label: `🍳 ${t('wizard.modeKochen')}` },
-            { value: 'cocktail', label: `🍸 ${t('wizard.modeCocktail')}` },
+            { value: 'kochen', label: <><Icon name="pan" size={17} /> {t('wizard.modeKochen')}</> },
+            { value: 'cocktail', label: <><Icon name="cocktail" size={17} /> {t('wizard.modeCocktail')}</> },
           ]}
           value={mode}
           onChange={handleModeChange}
@@ -392,7 +393,7 @@ export function GeneratePage() {
                   </Chip>
                 ))}
                 <Chip selected={false} onToggle={() => setCuisineEditOpen(true)}>
-                  ✏️ {t('wizard.cuisineEdit')}
+                  <Icon name="edit" size={13} /> {t('wizard.cuisineEdit')}
                 </Chip>
               </div>
               <div className="wiz__free">
@@ -465,7 +466,7 @@ export function GeneratePage() {
               ) : (
                 <>
                   <Button variant="tonal" onClick={() => setConstraintsOpen(true)}>
-                    ⚙️ {t('wizard.constraints')}
+                    <Icon name="settings" size={18} /> {t('wizard.constraints')}
                   </Button>
                   <div>
                     <span className="wiz__row-label">{t('wizard.fridgeTitle')}</span>
@@ -500,7 +501,7 @@ export function GeneratePage() {
                     />
                     <div style={{ marginTop: 'var(--space-3)' }}>
                       <Button variant="outlined" onClick={() => scanInputRef.current?.click()} disabled={scanning}>
-                        📷 {scanning ? t('wizard.fridgeScanning') : t('wizard.fridgeScan')}
+                        <Icon name="camera" size={18} /> {scanning ? t('wizard.fridgeScanning') : t('wizard.fridgeScan')}
                       </Button>
                       <input
                         ref={scanInputRef}
@@ -515,7 +516,7 @@ export function GeneratePage() {
                       <div className="wiz__fridge-list">
                         {fridge.map((item) => (
                           <Chip key={item} selected onToggle={() => setFridge(fridge.filter((x) => x !== item))}>
-                            {item} ✕
+                            {item} <Icon name="close" size={13} />
                           </Chip>
                         ))}
                       </div>
@@ -537,13 +538,13 @@ export function GeneratePage() {
         {step < 2 ? (
           <Button onClick={() => setStep(step + 1)}>{t('wizard.next')} →</Button>
         ) : (
-          <Button big onClick={() => generate()}>🪄 {t('wizard.generate')}</Button>
+          <Button big onClick={() => generate()}><Icon name="wand" size={20} /> {t('wizard.generate')}</Button>
         )}
       </div>
 
       <div className="wiz__surprise">
         <Button variant="outlined" onClick={() => generate({ ueberrasch_mich: true, kueche: '', kueche_freitext: '', drink_typ: '' })}>
-          🎁 {t('wizard.surpriseMe')}
+          <Icon name="gift" size={18} /> {t('wizard.surpriseMe')}
         </Button>
       </div>
 

@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { strings, t } from '../i18n';
 import { spring } from '../motion/springs';
 import { useGeneration } from '../state/generation';
+import { Icon } from './icons';
 
 /** Indeterminate progress bar at the header's bottom edge while a generation
  * streams in the background. Springs in from the left (transform-only);
@@ -70,7 +71,7 @@ export function GenerationPill() {
                 animate={reduced ? undefined : { rotate: [0, -12, 12, 0] }}
                 transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
               >
-                🪄
+                <Icon name="wand" size={20} />
               </motion.span>
               <span className="genpill__label">
                 {t('stream.pillBrewing')}
@@ -83,7 +84,9 @@ export function GenerationPill() {
             </>
           ) : (
             <>
-              <span className="genpill__icon" aria-hidden>{failed ? '⚠️' : '✨'}</span>
+              <span className="genpill__icon" aria-hidden>
+                <Icon name={failed ? 'warning' : 'sparkles'} size={20} />
+              </span>
               <span className="genpill__label">{failed ? t('stream.pillFailed') : t('stream.pillReady')}</span>
             </>
           )}

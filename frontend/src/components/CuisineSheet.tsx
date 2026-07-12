@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 import { useApp } from '../state/app';
+import { Icon } from './icons';
 import { Button, Chip } from './ui';
 import { Sheet } from './ui/Sheet';
 import { useSnackbar } from './ui/Snackbar';
@@ -86,7 +87,7 @@ export function CuisineSheet({ open, onClose, onSaved }: Props) {
           <div className="chips" style={{ marginTop: 'var(--space-2)' }}>
             {selection.map((name) => (
               <Chip key={name} selected onToggle={() => remove(name)}>
-                {name} ✕
+                {name} <Icon name="close" size={13} />
               </Chip>
             ))}
           </div>
@@ -110,7 +111,9 @@ export function CuisineSheet({ open, onClose, onSaved }: Props) {
 
         {filteredRegions.map((region) => (
           <div key={region.name}>
-            <span className="wiz__row-label">{region.name}</span>
+            <span className="wiz__row-label">
+              <Icon name={region.icon} size={15} /> {region.name}
+            </span>
             <div className="chips" style={{ marginTop: 'var(--space-2)' }}>
               {region.items.map((name) => (
                 <Chip key={name} selected={selectedLower.has(name.toLowerCase())} onToggle={() => toggle(name)}>

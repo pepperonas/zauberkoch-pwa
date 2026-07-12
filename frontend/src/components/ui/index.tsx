@@ -4,6 +4,7 @@ import { motion, useReducedMotion, type HTMLMotionProps } from 'motion/react';
 import type { ReactNode } from 'react';
 
 import { pressScale, spring, springBouncy, springSnappy } from '../../motion/springs';
+import { Icon } from '../icons';
 import './ui.css';
 
 /* ---------- Button ---------- */
@@ -73,7 +74,7 @@ export function Chip({ selected, onToggle, children }: ChipProps) {
       animate={reduced ? undefined : { scale: selected ? [1, 1.08, 1] : 1 }}
       transition={springBouncy}
     >
-      {selected ? '✓ ' : ''}
+      {selected ? <><Icon name="check" size={13} />{' '}</> : null}
       {children}
     </motion.button>
   );
@@ -82,7 +83,7 @@ export function Chip({ selected, onToggle, children }: ChipProps) {
 /* ---------- Segmented button with sliding thumb ---------- */
 
 interface SegmentedProps<T extends string> {
-  options: { value: T; label: string }[];
+  options: { value: T; label: ReactNode }[];
   value: T;
   onChange: (value: T) => void;
 }

@@ -99,23 +99,28 @@ export const de = {
   /** Catalog for the cuisine editor — grouped by region, ~110 entries. */
   cuisineRegions: [
     {
-      name: '🇪🇺 Europa',
+      name: 'Europa',
+      icon: 'landmark' as const,
       items: ['Italienisch', 'Französisch', 'Deutsch', 'Spanisch', 'Portugiesisch', 'Griechisch', 'Türkisch', 'Österreichisch', 'Schweizerisch', 'Polnisch', 'Tschechisch', 'Ungarisch', 'Kroatisch', 'Serbisch', 'Rumänisch', 'Bulgarisch', 'Britisch', 'Irisch', 'Niederländisch', 'Belgisch', 'Dänisch', 'Schwedisch', 'Norwegisch', 'Finnisch', 'Isländisch', 'Russisch', 'Ukrainisch', 'Georgisch', 'Baskisch', 'Sizilianisch', 'Alpenküche'],
     },
     {
-      name: '🌏 Asien',
+      name: 'Asien',
+      icon: 'globe' as const,
       items: ['Japanisch', 'Thai', 'Indisch', 'Koreanisch', 'Chinesisch', 'Kantonesisch', 'Sichuan', 'Taiwanisch', 'Vietnamesisch', 'Indonesisch', 'Malaysisch', 'Singapurisch', 'Philippinisch', 'Kambodschanisch', 'Laotisch', 'Burmesisch', 'Nepalesisch', 'Tibetisch', 'Sri-lankisch', 'Südindisch', 'Punjabi', 'Bengalisch', 'Pakistanisch', 'Afghanisch', 'Usbekisch', 'Kasachisch', 'Mongolisch'],
     },
     {
-      name: '🕌 Nahost & Afrika',
+      name: 'Nahost & Afrika',
+      icon: 'dome' as const,
       items: ['Levante', 'Libanesisch', 'Israelisch', 'Syrisch', 'Persisch', 'Arabisch', 'Jemenitisch', 'Irakisch', 'Marokkanisch', 'Tunesisch', 'Algerisch', 'Ägyptisch', 'Äthiopisch', 'Eritreisch', 'Kenianisch', 'Nigerianisch', 'Senegalesisch', 'Ghanaisch', 'Südafrikanisch'],
     },
     {
-      name: '🌎 Amerika',
+      name: 'Amerika',
+      icon: 'compass' as const,
       items: ['Mexikanisch', 'Peruanisch', 'Tex-Mex', 'Kalifornisch', 'Südstaaten (Soul Food)', 'Cajun & Kreolisch', 'BBQ & Smoker', 'Hawaiianisch', 'Karibisch', 'Kubanisch', 'Jamaikanisch', 'Puerto-ricanisch', 'Brasilianisch', 'Argentinisch', 'Chilenisch', 'Kolumbianisch', 'Venezolanisch', 'Bolivianisch', 'Kanadisch'],
     },
     {
-      name: '✨ Stile & Konzepte',
+      name: 'Stile & Konzepte',
+      icon: 'sparkles' as const,
       items: ['Mediterran', 'Nordisch (New Nordic)', 'Streetfood', 'Tapas & Pintxos', 'Mezze', 'Fusion', 'Ramen & Nudelsuppen', 'Sushi & Sashimi', 'Pizza Napoletana', 'Pasta-Klassiker', 'Bowls', 'Comfort Food', 'Fine Dining', 'Slow Cooking'],
     },
   ],
@@ -187,8 +192,8 @@ export const de = {
     exit: 'Koch-Modus beenden',
     timerStart: 'Timer starten',
     timerStop: 'Stopp',
-    done: 'Guten Appetit! 🎉',
-    cheers: 'Zum Wohl! 🍸',
+    done: 'Guten Appetit!',
+    cheers: 'Zum Wohl!',
     voiceOn: 'Sprachsteuerung an („weiter", „zurück", „Timer")',
     voiceOff: 'Sprachsteuerung aus',
     voiceHint: 'Sag „weiter", „zurück", „Timer" oder „beenden"',
@@ -206,8 +211,8 @@ export const de = {
   shopping: {
     title: 'Einkaufsliste',
     empty: 'Die Liste ist leer. Füge Zutaten aus einem Rezept hinzu.',
-    viewList: '🛒 Liste',
-    viewByRecipe: '🍽️ Nach Gericht',
+    viewList: 'Liste',
+    viewByRecipe: 'Nach Gericht',
     filterPlaceholder: 'Gericht suchen …',
     noRecipes: 'Noch keine Rezepte gezaubert.',
     noMatches: 'Kein Gericht passt zur Suche.',
@@ -281,7 +286,7 @@ export const de = {
     button: 'Anpassen',
     title: 'Rezept anpassen',
     placeholder: 'Eigener Wunsch, z. B. „mit Ofen statt Pfanne“ …',
-    go: 'Anpassen ✨',
+    go: 'Anpassen',
     chips: ['schärfer', 'milder', 'vegetarisch machen', 'schneller (unter 30 Min.)', 'ohne Ofen', 'für Meal-Prep'],
   },
   notes: {
@@ -294,6 +299,8 @@ export const de = {
   feedback: {
     question: 'Wie war das Rezept?',
     thanks: 'Danke für dein Feedback!',
+    up: 'Gefällt mir',
+    down: 'Gefällt mir nicht',
     reasons: ['zu generisch', 'Mengen unplausibel', 'hat nicht funktioniert', 'passt nicht zu den Vorgaben'],
   },
   admin: {

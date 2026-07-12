@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion, Reorder } from 'motion/react
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { Icon } from '../components/icons';
 import { motifForRecipe, RecipeMotif } from '../components/recipe/RecipeMotif';
 import { Button, IconButton, Segmented } from '../components/ui';
 import { t } from '../i18n';
@@ -81,8 +82,8 @@ export function ShoppingPage() {
         <div className="stack">
           <Segmented<View>
             options={[
-              { value: 'liste', label: t('shopping.viewList') },
-              { value: 'gerichte', label: t('shopping.viewByRecipe') },
+              { value: 'liste', label: <><Icon name="cart" size={15} /> {t('shopping.viewList')}</> },
+              { value: 'gerichte', label: <><Icon name="plate" size={15} /> {t('shopping.viewByRecipe')}</> },
             ]}
             value={view}
             onChange={setView}
@@ -174,7 +175,7 @@ export function ShoppingPage() {
                       )}
                     </span>
                     <IconButton label={t('common.delete')} onClick={() => deleteItem(item)}>
-                      ✕
+                      <Icon name="close" size={18} />
                     </IconButton>
                     <span className="muted" aria-hidden style={{ cursor: 'grab' }}>⋮⋮</span>
                   </div>
@@ -186,14 +187,14 @@ export function ShoppingPage() {
 
         {order.length > 0 && (
           <div className="actions" style={{ marginTop: 0 }}>
-            <Button variant="outlined" onClick={() => void exportList()}>📤 {t('shopping.export')}</Button>
+            <Button variant="outlined" onClick={() => void exportList()}><Icon name="share" size={18} /> {t('shopping.export')}</Button>
             {anyChecked && (
               <Button variant="tonal" onClick={clearChecked}>
-                🧹 {t('shopping.clearChecked')}
+                <Icon name="broom" size={18} /> {t('shopping.clearChecked')}
               </Button>
             )}
             <Button variant="danger" onClick={clearAll}>
-              🗑 {t('shopping.clearAll')}
+              <Icon name="trash" size={18} /> {t('shopping.clearAll')}
             </Button>
           </div>
         )}
@@ -283,7 +284,7 @@ function RecipeRow({
           <span style={{ minWidth: 0 }}>
             <span style={{ display: 'block', font: 'var(--type-title)' }}>{item.titel}</span>
             <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
-              {item.mode === 'cocktail' ? '🍸 ' : ''}{item.kueche}
+              {item.mode === 'cocktail' ? <><Icon name="cocktail" size={12} />{' '}</> : null}{item.kueche}
             </span>
           </span>
         </span>
@@ -316,7 +317,7 @@ function RecipeRow({
                     variant="tonal"
                     onClick={() => void withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(item.id))}
                   >
-                    🛒 {t('shopping.addRecipeToList')}
+                    <Icon name="cart" size={18} /> {t('shopping.addRecipeToList')}
                   </Button>
                 </div>
               </>

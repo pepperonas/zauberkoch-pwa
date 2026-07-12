@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { Icon } from '../components/icons';
 import { Button, Chip, IconButton } from '../components/ui';
 import { useSnackbar } from '../components/ui/Snackbar';
 import { strings, t } from '../i18n';
@@ -70,7 +71,7 @@ export function AdminPage() {
 
   return (
     <div>
-      <h1 className="page__title">🛡️ {t('admin.title')}</h1>
+      <h1 className="page__title"><Icon name="shield" size={22} /> {t('admin.title')}</h1>
 
       <div className="chips" style={{ marginBottom: 'var(--space-5)' }}>
         {[7, 30, 90].map((d) => (
@@ -111,7 +112,7 @@ export function AdminPage() {
               {Object.entries(s.feedback).map(([version, fb]) => (
                 <div key={version} className="row row--between" style={{ minHeight: 36 }}>
                   <span className="muted">{version}</span>
-                  <span>👍 {fb.up} · 👎 {fb.down}</span>
+                  <span><Icon name="thumbUp" size={14} /> {fb.up} · <Icon name="thumbDown" size={14} /> {fb.down}</span>
                 </div>
               ))}
             </section>
@@ -140,11 +141,11 @@ export function AdminPage() {
             <span>
               {item.email}{' '}
               <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
-                {item.registered ? `✓ ${t('admin.registered')}` : t('admin.invited')}
+                {item.registered ? <><Icon name="check" size={12} /> {t('admin.registered')}</> : t('admin.invited')}
               </span>
             </span>
             <IconButton label={t('common.delete')} onClick={() => remove.mutate(item.email)}>
-              ✕
+              <Icon name="close" size={18} />
             </IconButton>
           </div>
         ))}

@@ -9,6 +9,7 @@ import { strings, t } from '../../i18n';
 import type { Modus, Naehrwerte, RecipeMeta, Schritt, Zutat } from '../../lib/types';
 import { formatZutatMenge } from '../../lib/units';
 import { riseIn, spring, springBouncy, springSoft, stagger } from '../../motion/springs';
+import { Icon } from '../icons';
 import { NumberTicker } from './NumberTicker';
 import { motifForRecipe, RecipeMotif } from './RecipeMotif';
 import './recipe.css';
@@ -98,10 +99,10 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
           </h1>
           <p className="hero__teaser">{meta.teaser}</p>
           <div className="hero__stats">
-            <span className="stat">⏱ {t('recipe.activeTime')} {fmtMin(meta.zeit_aktiv)}</span>
-            <span className="stat">🕐 {t('recipe.totalTime')} {fmtMin(meta.zeit_gesamt)}</span>
-            <span className="stat">📶 {meta.schwierigkeit}</span>
-            {data.glas && <span className="stat">🥃 {data.glas}</span>}
+            <span className="stat"><Icon name="timer" size={15} /> {t('recipe.activeTime')} {fmtMin(meta.zeit_aktiv)}</span>
+            <span className="stat"><Icon name="clock" size={15} /> {t('recipe.totalTime')} {fmtMin(meta.zeit_gesamt)}</span>
+            <span className="stat"><Icon name="gauge" size={15} /> {meta.schwierigkeit}</span>
+            {data.glas && <span className="stat"><Icon name="glass" size={15} /> {data.glas}</span>}
           </div>
           </div>
           <RecipeMotif
@@ -174,7 +175,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
           <div style={{ marginTop: 'var(--space-3)' }}>
             {data.tipps.map((tipp, i) => (
               <motion.div key={i} className="tipp" {...(reduced || !streaming ? {} : riseIn)} transition={stagger(0)}>
-                <span aria-hidden>💡</span>
+                <span aria-hidden><Icon name="bulb" size={18} /></span>
                 <p>{tipp}</p>
               </motion.div>
             ))}
@@ -216,7 +217,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
 
       {data.garnitur && (
         <p className="muted" style={{ marginTop: 'var(--space-4)' }}>
-          🌿 {t('recipe.garnish')}: {data.garnitur}
+          <Icon name="herb" size={15} /> {t('recipe.garnish')}: {data.garnitur}
         </p>
       )}
 
@@ -326,7 +327,7 @@ const SchrittRow = memo(function SchrittRow({ schritt, streaming }: { schritt: S
         <div className="schritt__titel">{schritt.titel}</div>
         <p className="schritt__text">{schritt.text}</p>
         {schritt.dauer_sek != null && schritt.dauer_sek > 0 && (
-          <span className="schritt__timer">⏲ {strings.units.duration(schritt.dauer_sek / 60)}</span>
+          <span className="schritt__timer"><Icon name="timer" size={14} /> {strings.units.duration(schritt.dauer_sek / 60)}</span>
         )}
       </div>
     </motion.div>
