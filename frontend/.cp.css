@@ -1,5 +1,4 @@
-/* Conjuring stage (magic cauldron / shaker) */
-
+/* src/components/recipe/conjure.css */
 .conjure {
   display: flex;
   flex-direction: column;
@@ -8,7 +7,6 @@
   padding: var(--space-6) var(--space-4);
   text-align: center;
 }
-
 .conjure--compact {
   flex-direction: row;
   text-align: left;
@@ -17,9 +15,8 @@
   margin-bottom: var(--space-5);
   background: var(--c-surface-container);
   border-radius: var(--shape-xl);
-  overflow: hidden; /* orbiters must not spill past the banner */
+  overflow: hidden;
 }
-
 .conjure__scenebox {
   position: relative;
   width: 264px;
@@ -30,7 +27,6 @@
   width: 72px;
   height: 72px;
 }
-
 .conjure__scene {
   position: absolute;
   inset: 0;
@@ -38,7 +34,6 @@
   height: 264px;
   transform-origin: 0 0;
 }
-
 .conjure__orbit {
   position: absolute;
   inset: 0;
@@ -59,7 +54,6 @@
   font-size: 1.6rem;
   filter: drop-shadow(0 2px 6px var(--c-scrim));
 }
-
 .conjure__glow {
   position: absolute;
   left: 50%;
@@ -68,10 +62,13 @@
   height: 168px;
   translate: -50% -50%;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--c-hero-glow), transparent 65%);
+  background:
+    radial-gradient(
+      circle,
+      var(--c-hero-glow),
+      transparent 65%);
   pointer-events: none;
 }
-
 .conjure__vessel {
   position: absolute;
   left: 50%;
@@ -86,7 +83,6 @@
   height: 100%;
   overflow: visible;
 }
-
 .conjure__drop {
   position: absolute;
   left: 50%;
@@ -95,7 +91,6 @@
   font-size: 1.6rem;
   pointer-events: none;
 }
-
 .conjure__burst {
   position: absolute;
   left: 50%;
@@ -107,7 +102,6 @@
   color: var(--c-primary);
   font-size: 0.95rem;
 }
-
 .conjure__info {
   min-width: 0;
 }
@@ -130,8 +124,6 @@
   color: var(--c-on-surface-variant);
   margin: 0;
 }
-
-/* Celebratory burst when the recipe lands */
 .sparkburst {
   position: fixed;
   left: 50%;

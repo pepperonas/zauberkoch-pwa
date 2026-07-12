@@ -176,3 +176,29 @@
   font-size: 1.05rem;
 }
 .zutat__subst:hover { background: var(--c-surface-container-high); }
+
+/* Favorite button micro-interaction (see FavoriteButton.tsx) */
+.favbtn__icon { position: relative; display: inline-flex; }
+.favbtn__star { display: inline-flex; transform-origin: center; will-change: transform; }
+.favbtn__burst {
+  position: absolute; left: 50%; top: 50%;
+  width: 0; height: 0; pointer-events: none;
+}
+.favbtn__spark {
+  position: absolute; left: 0; top: 0;
+  width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%; will-change: transform, opacity;
+}
+
+/* Hero-moment reveal sweep + staggered action items (GeneratePage) */
+.actions__item { display: inline-flex; }
+.hero-reveal-clip {
+  position: absolute; top: 0; left: 0; right: 0; height: 180px;
+  overflow: hidden; border-radius: var(--shape-xl);
+  pointer-events: none; z-index: 2;
+}
+.hero-reveal {
+  position: absolute; top: 0; left: 0; height: 100%; width: 55%;
+  background: linear-gradient(100deg, transparent, color-mix(in srgb, var(--c-hero-glow) 70%, transparent), transparent);
+  will-change: transform, opacity;
+}

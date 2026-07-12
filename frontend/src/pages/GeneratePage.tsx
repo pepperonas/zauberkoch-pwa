@@ -2,13 +2,14 @@
  * The stream itself lives in the global generation store (state/generation.ts)
  * so it keeps running when the user navigates elsewhere. */
 
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { CuisineSheet } from '../components/CuisineSheet';
 import { Icon } from '../components/icons';
+import { FavoriteButton } from '../components/recipe/FavoriteButton';
 import { AdaptSheet } from '../components/recipe/AdaptSheet';
 import { ConjureStage, SparkBurst } from '../components/recipe/ConjureStage';
 import { CookMode } from '../components/recipe/CookMode';
@@ -25,6 +26,7 @@ import { downscaleToJpegBase64 } from '../lib/imageScale';
 import { api } from '../lib/api';
 import type { GenerateParams, Modus, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
+import { slowSpatial, staggerIn } from '../motion/tokens';
 import { useApp } from '../state/app';
 import {
   cancelGeneration,
@@ -72,6 +74,8 @@ export function GeneratePage() {
   // Stream state lives in the global store — survives navigation.
   const gen = useGeneration();
   const [burst, setBurst] = useState(false);
+  const [reveal, setReveal] = useState(false);
+  const heroControls = useAnimationControls();
   const [cookOpen, setCookOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [adultOpen, setAdultOpen] = useState(false);
@@ -89,16 +93,26 @@ export function GeneratePage() {
     if (gen.phase === 'done' || gen.phase === 'limit') markGenerationSeen();
   }, [gen.phase]);
 
-  // Celebratory spark burst when a live run lands while we're watching.
+  // Hero moment: the emotional peak when a live run lands while we're watching.
+  // Spark burst + one-shot card settle-pop + reveal glow sweep + haptics.
   useEffect(() => {
     const prev = prevPhase.current;
     prevPhase.current = gen.phase;
     if (prev === 'streaming' && gen.phase === 'done' && !gen.error) {
+      if (reduced) return;
       setBurst(true);
-      const id = window.setTimeout(() => setBurst(false), 1100);
-      return () => window.clearTimeout(id);
+      setReveal(true);
+      void heroControls.start({ scale: [1, 1.025, 1] }, slowSpatial);
+      // feature-detected haptic tick (mobile) — gated on reduced-motion too
+      navigator.vibrate?.([10, 40, 16]);
+      const b = window.setTimeout(() => setBurst(false), 1100);
+      const r = window.setTimeout(() => setReveal(false), 1300);
+      return () => {
+        window.clearTimeout(b);
+        window.clearTimeout(r);
+      };
     }
-  }, [gen.phase, gen.error]);
+  }, [gen.phase, gen.error, reduced, heroControls]);
 
   const buildParams = useCallback(
     (overrides: Partial<GenerateParams> = {}): GenerateParams => ({
@@ -245,46 +259,83 @@ export function GeneratePage() {
 
         {burst && <SparkBurst />}
 
-        <RecipeView
-          data={data}
-          mode={gen.mode}
-          streaming={gen.phase === 'streaming'}
-          actions={
-            gen.phase === 'done' && !error ? (
-              <>
-                <Button variant={gen.isFavorite ? 'tonal' : 'outlined'} onClick={() => void toggleFavorite()}>
-                  <Icon name={gen.isFavorite ? 'star' : 'starOff'} size={18} /> {t('recipe.favorite')}
-                </Button>
-                {recipeId != null && (
-                  <Button
-                    variant="outlined"
-                    onClick={() => void withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(recipeId))}
-                  >
-                    <Icon name="cart" size={18} /> {t('recipe.toShoppingList')}
-                  </Button>
-                )}
-                {recipeId != null && (
-                  <Button variant="outlined" onClick={() => setShareOpen(true)}>
-                    <Icon name="share" size={18} /> {t('recipe.share')}
-                  </Button>
-                )}
-                {data.schritte.length > 0 && (
-                  <Button onClick={() => setCookOpen(true)}><Icon name="chefhat" size={18} /> {t('recipe.cookMode')}</Button>
-                )}
-                {recipeId != null && (
-                  <Button variant="tonal" onClick={() => { setAdaptTarget(recipeId); setAdaptOpen(true); }}>
-                    <Icon name="sparkles" size={18} /> {t('adapt.button')}
-                  </Button>
-                )}
-                {gen.canRegenerate && (
-                  <Button variant="text" onClick={regenerateGeneration}>
-                    <Icon name="dice" size={18} /> {t('stream.regenerate')}
-                  </Button>
-                )}
-              </>
-            ) : null
-          }
-        />
+        <motion.div animate={heroControls} style={{ transformOrigin: 'top center', position: 'relative' }}>
+          {reveal && !reduced && (
+            <div className="hero-reveal-clip" aria-hidden>
+              <motion.div
+                className="hero-reveal"
+                initial={{ x: '-110%', opacity: 0 }}
+                animate={{ x: '120%', opacity: [0, 0.85, 0] }}
+                transition={slowSpatial}
+              />
+            </div>
+          )}
+          <RecipeView
+            data={data}
+            mode={gen.mode}
+            streaming={gen.phase === 'streaming'}
+            actions={
+              gen.phase === 'done' && !error
+                ? [
+                    <FavoriteButton
+                      key="fav"
+                      active={gen.isFavorite}
+                      onToggle={() => void toggleFavorite()}
+                      label={t('recipe.favorite')}
+                    />,
+                    recipeId != null && (
+                      <Button
+                        key="shop"
+                        variant="outlined"
+                        onClick={() => void withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(recipeId))}
+                      >
+                        <Icon name="cart" size={18} /> {t('recipe.toShoppingList')}
+                      </Button>
+                    ),
+                    recipeId != null && (
+                      <Button key="share" variant="outlined" onClick={() => setShareOpen(true)}>
+                        <Icon name="share" size={18} /> {t('recipe.share')}
+                      </Button>
+                    ),
+                    data.schritte.length > 0 && (
+                      <Button key="cook" onClick={() => setCookOpen(true)}>
+                        <Icon name="chefhat" size={18} /> {t('recipe.cookMode')}
+                      </Button>
+                    ),
+                    recipeId != null && (
+                      <Button
+                        key="adapt"
+                        variant="tonal"
+                        onClick={() => {
+                          setAdaptTarget(recipeId);
+                          setAdaptOpen(true);
+                        }}
+                      >
+                        <Icon name="sparkles" size={18} /> {t('adapt.button')}
+                      </Button>
+                    ),
+                    gen.canRegenerate && (
+                      <Button key="regen" variant="text" onClick={regenerateGeneration}>
+                        <Icon name="dice" size={18} /> {t('stream.regenerate')}
+                      </Button>
+                    ),
+                  ]
+                    .filter((el): el is React.ReactElement => Boolean(el))
+                    .map((el, i) => (
+                      <motion.div
+                        key={el.key ?? i}
+                        className="actions__item"
+                        initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={reduced ? { duration: 0.12 } : staggerIn(i, 0.05)}
+                      >
+                        {el}
+                      </motion.div>
+                    ))
+                : null
+            }
+          />
+        </motion.div>
 
         {gen.phase === 'done' && recipeId != null && !error && <FeedbackBar recipeId={recipeId} />}
 

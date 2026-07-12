@@ -139,6 +139,15 @@ export const de = {
     newRecipe: 'Neues Rezept',
     cancelHint: 'Du kannst weiter durch die App — der Zauber läuft im Hintergrund.',
     phaseStart: 'Der Zauberkoch schwingt den Stab …',
+    /** Rotating status lines shown during the initial wait (before the first event). */
+    conjuringCycle: [
+      'Der Zauberkoch schwingt den Stab …',
+      'Zutaten werden abgestimmt …',
+      'Aromen werden komponiert …',
+      'Ein Hauch Magie kommt dazu …',
+      'Die Balance wird austariert …',
+      'Der Kessel beginnt zu brodeln …',
+    ],
     phaseMeta: (titel: string) => `„${titel}“ nimmt Gestalt an …`,
     phaseZutaten: (n: number) =>
       n === 1 ? 'Die erste Zutat fällt hinein …' : `${n} Zutaten sind schon drin …`,

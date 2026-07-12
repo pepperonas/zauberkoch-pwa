@@ -7,11 +7,13 @@
  */
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useEffect, useState } from 'react';
 
 import { strings, t } from '../../i18n';
 import type { Modus, Zutat } from '../../lib/types';
 import { emojiForZutat, ORBIT_EMOJIS } from '../../lib/zutatEmoji';
 import { spring, springSoft } from '../../motion/springs';
+import { defaultSpatial } from '../../motion/tokens';
 import type { GenEvent } from '../../state/generation';
 import type { RecipeViewData } from './RecipeView';
 import './conjure.css';
@@ -48,8 +50,22 @@ function phaseText(lastEvent: GenEvent, data: RecipeViewData): string {
 export function ConjureStage({ mode, data, lastEvent }: Props) {
   const reduced = useReducedMotion();
   const compact = data.meta != null;
-  const text = phaseText(lastEvent, data);
   const zutaten = data.zutaten;
+
+  // Rotating status lines during the initial wait (before the first event),
+  // so a slow first token doesn't feel frozen. Once events flow, the phase
+  // text takes over. Seamless: the AnimatePresence below cross-fades each line.
+  const [cycle, setCycle] = useState(0);
+  const waiting = lastEvent === 'start';
+  useEffect(() => {
+    if (!waiting) return;
+    const id = window.setInterval(
+      () => setCycle((c) => (c + 1) % strings.stream.conjuringCycle.length),
+      2400,
+    );
+    return () => window.clearInterval(id);
+  }, [waiting]);
+  const text = waiting ? strings.stream.conjuringCycle[cycle] : phaseText(lastEvent, data);
   const orbitEmojis = zutaten.length > 0 ? zutaten.slice(-6).map((z) => emojiForZutat(z.name)) : ORBIT_EMOJIS[mode];
 
   return (
@@ -65,28 +81,37 @@ export function ConjureStage({ mode, data, lastEvent }: Props) {
       <motion.div layout={!reduced} className="conjure__scenebox" transition={spring}>
         <motion.div
           className="conjure__scene"
-          animate={{ scale: compact ? 0.34 : 1 }}
+          animate={{ scale: compact ? 0.273 : 1 }}
           transition={spring}
         >
           {!reduced && (
             <>
-              <Orbit emojis={orbitEmojis.slice(0, 4)} radius={82} duration={17} />
-              <Orbit emojis={orbitEmojis.slice(4)} radius={56} duration={11} reverse />
+              <Orbit emojis={orbitEmojis.slice(0, 4)} radius={103} duration={17} />
+              <Orbit emojis={orbitEmojis.slice(4)} radius={70} duration={11} reverse />
             </>
           )}
           <motion.div
             className="conjure__glow"
             aria-hidden
-            animate={reduced ? undefined : { opacity: [0.45, 0.8, 0.45] }}
+            animate={reduced ? undefined : { opacity: [0.45, 0.8, 0.45], scale: [1, 1.08, 1] }}
             transition={{ repeat: Infinity, duration: 2.6, ease: 'easeInOut' }}
           />
-          <div className="conjure__vessel">
+          {/* physics-based breathing while waiting (ambient loop; settles via token when compact) */}
+          <motion.div
+            className="conjure__vessel"
+            animate={!reduced && !compact ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+            transition={
+              !reduced && !compact
+                ? { repeat: Infinity, duration: 3, ease: 'easeInOut' }
+                : defaultSpatial
+            }
+          >
             {mode === 'cocktail' ? (
               <ShakerSvg reduced={!!reduced} />
             ) : (
               <CauldronSvg reduced={!!reduced} stirKey={data.schritte.length} />
             )}
-          </div>
+          </motion.div>
           {!reduced && <ZutatDrop zutaten={zutaten} active={lastEvent === 'zutat'} />}
         </motion.div>
       </motion.div>
