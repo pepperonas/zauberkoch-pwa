@@ -29,10 +29,11 @@ def fake_claims(email="alice@example.com", sub="sub-123"):
     }
 
 
-def do_login_callback(client, monkeypatch, claims=None):
+def do_login_callback(client, monkeypatch, claims=None, invite=""):
     """Run the full login → callback flow with a mocked token exchange."""
     claims = claims or fake_claims()
-    r = client.get("/api/v1/auth/login", follow_redirects=False)
+    suffix = f"?invite={invite}" if invite else ""
+    r = client.get(f"/api/v1/auth/login{suffix}", follow_redirects=False)
     assert r.status_code == 307
     query = parse_qs(urlparse(r.headers["location"]).query)
     state = query["state"][0]

@@ -20,6 +20,11 @@ export function streamRecipe(params: GenerateParams, callbacks: StreamCallbacks)
   return streamSSE('/api/v1/recipes/generate', params, callbacks);
 }
 
+/** Logged-out taster generation (landing page) — no auth, no persistence. */
+export function tryRecipe(params: GenerateParams, callbacks: StreamCallbacks): () => void {
+  return streamSSE('/api/v1/recipes/try', params, callbacks);
+}
+
 /** Adapt an existing recipe ("schärfer", "ohne Ofen" …) — same event stream. */
 export function adaptRecipe(recipeId: number, anweisung: string, callbacks: StreamCallbacks): () => void {
   return streamSSE(`/api/v1/recipes/${recipeId}/adapt`, { anweisung }, callbacks);

@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from app.models import RateLimit
 
 GLOBAL_SCOPE = "global"
+ANON_SCOPE = "anon"
 
 
 def _today() -> str:
@@ -68,5 +69,25 @@ def consume_generation(db: DbSession, user_id: int) -> None:
         )
 
     user_row.count += 1
+    global_row.count += 1
+    db.commit()
+
+
+def consume_anon(db: DbSession) -> None:
+    """One logged-out taster generation — tight global budget, or 429."""
+    settings = get_settings()
+    day = _today()
+    anon_row = _get_or_create(db, ANON_SCOPE, day)
+    global_row = _get_or_create(db, GLOBAL_SCOPE, day)
+    if anon_row.count >= settings.daily_limit_anon or global_row.count >= settings.daily_limit_global:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "daily_limit_anon",
+                "message": "Der Probier-Zauber ist für heute ausgeschöpft — melde dich an oder schau morgen wieder vorbei.",
+                "retry_after": _seconds_until_midnight_utc(),
+            },
+        )
+    anon_row.count += 1
     global_row.count += 1
     db.commit()

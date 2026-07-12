@@ -157,3 +157,8 @@ export interface AllowlistItem {
   registered: boolean;
   created_at: string;
 }
+
+export interface InviteItem {
+  code: string;
+  used: boolean;
+}

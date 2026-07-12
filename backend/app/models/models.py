@@ -62,6 +62,7 @@ class Recipe(Base):
     prompt_version: Mapped[str] = mapped_column(String(32))
     model: Mapped[str] = mapped_column(String(64))
     share_token: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
+    public_listed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")  # opt-in gallery
     feedback: Mapped[int | None] = mapped_column(Integer, nullable=True)  # +1 / -1
     feedback_grund: Mapped[str] = mapped_column(String(255), default="")
     notiz: Mapped[str] = mapped_column(Text, default="", server_default="")  # personal cooking note
@@ -130,6 +131,32 @@ class AllowlistEntry(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Invite(Base):
+    """Single-use signup codes — every user can hand out a few."""
+
+    __tablename__ = "invites"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(16), unique=True, index=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    used_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MealPlanEntry(Base):
+    """Weekly planner: a recipe assigned to a calendar day."""
+
+    __tablename__ = "meal_plan"
+    __table_args__ = (UniqueConstraint("user_id", "datum", "recipe_id", name="uq_mealplan_user_day_recipe"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    datum: Mapped[str] = mapped_column(String(10), index=True)  # YYYY-MM-DD
+    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id", ondelete="CASCADE"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

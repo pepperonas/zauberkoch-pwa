@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     zk_admin_emails: str = ""  # comma-separated admin emails
     daily_limit_per_user: int = 20
     daily_limit_global: int = 200
+    daily_limit_anon: int = 15  # global cap for logged-out taster generations
 
     @property
     def admin_emails(self) -> set[str]:

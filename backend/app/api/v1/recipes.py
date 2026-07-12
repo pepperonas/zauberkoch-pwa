@@ -6,7 +6,7 @@ import logging
 from typing import Literal
 from collections.abc import AsyncGenerator
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -18,6 +18,7 @@ from app.models import Favorite, Generation, Recipe, User
 from app.schemas.recipe import GenerateParams
 from app.api.v1.me import load_preferences
 from app.services import ai, aggregation, cache, ratelimit
+from app.services.ratelimit_ip import check_ip_limit
 from app.services.json_stream import replay_events
 
 logger = logging.getLogger("zauberkoch.recipes")
@@ -236,6 +237,90 @@ async def generate(
                     await queue.put(("saved", saved))
             except Exception:
                 logger.exception("generation task failed")
+                await queue.put(("error", {"code": "generation_failed", "message": "Generierung fehlgeschlagen."}))
+            finally:
+                await queue.put(None)
+
+        task = asyncio.create_task(produce())
+        _live_tasks.add(task)
+        task.add_done_callback(_live_tasks.discard)
+
+        while True:
+            item = await queue.get()
+            if item is None:
+                break
+            yield _sse(item[0], item[1])
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.post("/try")
+async def try_generate(
+    params: GenerateParams,
+    request: Request,
+    db: DbSession = Depends(get_db),
+) -> StreamingResponse:
+    """Logged-out taster generation (landing page). Cost guards, strictly
+    ordered: cache hits are free and unlimited; a live generation needs
+    BOTH a per-IP allowance (2/day) AND the global anon budget. Nothing is
+    persisted to a history; the result still fills the shared cache."""
+    params = params.model_copy(
+        update={
+            "modus": "kochen",  # cocktails need the 18+ confirmation -> login
+            "regenerate": False,
+            "vermeiden_titel": [],
+            "personen": min(params.personen or 2, 4),
+        }
+    )
+
+    h = cache.params_hash(params)
+    current_version = ai.prompt_version()
+    cached = cache.get_cached(db, h, current_version)
+
+    if cached is None:
+        check_ip_limit(request, scope="try", limit=2, window_s=86400)
+        ratelimit.consume_anon(db)
+
+    def _finalize_anon(final: dict | None) -> None:
+        if final is None:
+            return
+        from app.db import SessionLocal
+
+        session = SessionLocal()
+        try:
+            cache.store(session, h, json.dumps(final, ensure_ascii=False), current_version, ai.get_settings_model())
+        finally:
+            session.close()
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        if cached is not None:
+            recipe = _scale_recipe(json.loads(cached.recipe_json), params.personen)
+            cache.register_hit(db, cached)
+            for name, data in replay_events(recipe):
+                yield _sse(name, data)
+            return
+
+        queue: asyncio.Queue[tuple[str, object] | None] = asyncio.Queue()
+
+        async def produce() -> None:
+            final: dict | None = None
+            failed = False
+            try:
+                async for name, data in ai.generate_recipe_events(params):
+                    if name == "usage":
+                        continue
+                    if name == "error":
+                        failed = True
+                    if name == "done":
+                        final = data
+                    await queue.put((name, data))
+                await asyncio.to_thread(_finalize_anon, None if failed else final)
+            except Exception:
+                logger.exception("anon generation failed")
                 await queue.put(("error", {"code": "generation_failed", "message": "Generierung fehlgeschlagen."}))
             finally:
                 await queue.put(None)
