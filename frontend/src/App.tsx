@@ -56,10 +56,10 @@ const GenerationBar = lazyPage('genbar', () =>
 
 const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
   { to: '/', icon: 'sparkles', label: strings.nav.generate },
-  { to: '/plan', icon: 'calendar', label: strings.nav.plan },
   { to: '/favoriten', icon: 'star', label: strings.nav.favorites },
   { to: '/verlauf', icon: 'history', label: strings.nav.history },
   { to: '/einkauf', icon: 'cart', label: strings.nav.shopping },
+  { to: '/plan', icon: 'calendar', label: strings.nav.plan },
 ];
 
 export default function App() {

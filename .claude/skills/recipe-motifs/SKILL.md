@@ -34,17 +34,41 @@ wie in klassischen Material-Apps. Explizit KEIN Emoji-Look.
 8. **Verboten**: Text, Emojis, Filter/Blur, `<image>`, Animationen,
    Highlight-Punkte auf Früchten, weiße Rim-/Shine-Striche.
 
-## Generator-Prompt (für neue Motive, auch außerhalb von Claude Code nutzbar)
+## Generator-Prompt (KANONISCH — für jede zukünftige Grafik-Generierung nutzen)
 
-> Erzeuge eine React-SVG-Komponente `function <Name>({ id, v = 0, ...svg }: SvgProps)`
-> für das Motiv „<BESCHREIBUNG>" im Stil von Google Material Design Flat
-> Illustrations (~2016): reine Vektorgrafik aus einfachen geometrischen
-> Formen, KEINE Outlines/Strokes als Kontur, KEINE Glanzeffekte/Highlights,
-> KEIN Emoji-Look/3D, flacher blur-freier Bodenschatten (außerhalb der
-> Rotation), das Objekt 5–10° rotiert, max. 4–6 gedeckte satte Farben,
-> subtile lineare Gradients innerhalb der Flächen (dunkel→hell derselben
-> Farbe, IDs als `${id}-<name>`), halbtransparente Überlagerungen (0.3–0.6)
-> für Glas/Eis/Dampf, Objekt füllt 60–70 % der viewBox 0 0 120 120.
+Dies ist der verbindliche Stil-Prompt (vom Betreiber vorgegeben). Bei neuen
+Motiven/Illustrationen **wörtlich** zugrunde legen:
+
+> Erstelle SVG-Illustrationen im Stil von Google Material Design Flat
+> Illustrations (ca. 2016, wie in klassischen Material-Apps):
+>
+> STIL-REGELN (strikt einhalten):
+> - Reine Vektorgrafik aus einfachen geometrischen Formen (Trapeze,
+>   Rechtecke, Kreise, Pfade mit wenigen Punkten)
+> - KEINE Outlines, KEINE Strokes – Formen trennen sich nur durch Farbe
+> - KEINE Glanzeffekte, KEINE Highlights, KEIN Emoji-Look, KEIN 3D,
+>   KEINE Drop-Shadows mit Blur
+> - Lineare Gradients INNERHALB der Farbflächen erlaubt (subtil,
+>   z.B. von dunklem zu hellem Ton derselben Farbe)
+> - Halbtransparente Überlagerungen (opacity 0.3–0.6) für Elemente
+>   wie Dampf, Flüssigkeit, Glas
+> - Das gesamte Objekt leicht rotiert (5–10°) für Dynamik
+> - Flat Design: max. 4–6 Farben pro Grafik, gedeckte aber satte Töne
+> - Viel Whitespace, Objekt füllt ca. 60–70% des viewBox
+>
+> NEGATIV-BEISPIEL: Apple-Emoji-Stil mit Glanz, Schattierung und
+> runden, glossy Formen – genau das NICHT.
+
+**Projekt-Konkretisierungen** zu diesem Prompt (technisch verbindlich):
+- Komponente `function <Name>({ id, v = 0, ...svg }: SvgProps)`, `viewBox 0 0 120 120`.
+- „KEINE Strokes" gilt für **Konturen/Outlines**. Strokes als **Band-Form**
+  (Ring, Bogen, Spaghetti-Strang, Dampf-Wisp, Spieß-Stiel, Score-Marken auf
+  Brot) sind erlaubt — nie als Umrandung einer Fläche.
+- Flacher, blur-freier Bodenschatten `<Ground/>` (#263238, opacity 0.08)
+  bleibt AUSSERHALB der Rotation (horizontal); Dampf steht ebenfalls aufrecht
+  außerhalb der Kippung.
+- Gradient-IDs immer `${id}-<name>`-geprefixt (kollisionsfrei bei mehreren
+  Instanzen auf einer Seite).
 
 ## Varianten-System
 

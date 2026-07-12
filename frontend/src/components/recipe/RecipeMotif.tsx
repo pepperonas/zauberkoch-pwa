@@ -12,8 +12,10 @@ import type { Modus } from '../../lib/types';
 
 export type Motif =
   | 'highball' | 'tumbler' | 'coupe' | 'tiki' | 'martini' | 'wine' | 'flute' | 'mule'
+  | 'shot' | 'mug' | 'beer' | 'margarita' | 'punch'
   | 'pasta' | 'bowl' | 'suppe' | 'pfanne' | 'pizza' | 'salat' | 'burger' | 'fisch'
-  | 'steak' | 'dessert' | 'taco' | 'auflauf' | 'pancakes' | 'sandwich';
+  | 'steak' | 'dessert' | 'taco' | 'auflauf' | 'pancakes' | 'sandwich'
+  | 'sushi' | 'kuchen' | 'eis' | 'spiess' | 'dumpling' | 'wrap' | 'brot';
 
 interface MatchInput {
   mode: Modus;
@@ -32,6 +34,11 @@ export function motifForRecipe(item: MatchInput): Motif {
     const glassOf = (s: string): Motif | null => {
       if (/tiki|hurricane|zombie|mai tai/.test(s)) return 'tiki';
       if (/kupfer|mule|moscow/.test(s)) return 'mule';
+      if (/margarita/.test(s)) return 'margarita';
+      if (/bowle|punsch|\bpunch\b|feuerzangen/.test(s)) return 'punch';
+      if (/\bshot\b|shooter|kurzer|pinnchen|stamperl|b-?52|kamikaze/.test(s)) return 'shot';
+      if (/heiß|hot toddy|\btoddy\b|grog|irish coffee|kakao|heiße schoko/.test(s)) return 'mug';
+      if (/bier|beer|radler|michelada|weizen|weißbier|\bpils\b|helles|lager|\bale\b|\bipa\b|humpen|\bpint\b/.test(s)) return 'beer';
       if (/coupe|cocktailschale|schale|nick|nora/.test(s)) return 'coupe';
       if (/martini|spitz|dreieck/.test(s)) return 'martini';
       if (/sekt|champagner|flöte|flute|prosecco/.test(s)) return 'flute';
@@ -44,19 +51,26 @@ export function motifForRecipe(item: MatchInput): Motif {
     return glassOf((item.glas ?? '').toLowerCase()) ?? glassOf(hay) ?? 'tumbler';
   }
   if (/pfannkuchen|pancake|crêpe|crepe|waffel|kaiserschmarrn/.test(hay)) return 'pancakes';
+  if (/sushi|nigiri|maki|sashimi|temaki|california roll|inside.?out/.test(hay)) return 'sushi';
   if (/burger/.test(hay)) return 'burger';
   if (/pizza|flammkuchen|galette/.test(hay)) return 'pizza';
-  if (/taco|burrito|wrap|quesadilla|fajita|enchilada/.test(hay)) return 'taco';
+  if (/wrap|burrito|dürüm|durum|döner|shawarma|gyros/.test(hay)) return 'wrap';
+  if (/taco|quesadilla|fajita|enchilada|nachos/.test(hay)) return 'taco';
+  if (/gyoza|dumpling|dim ?sum|wonton|teigtasche|maultasche|pierogi|jiaozi|momo|potsticker/.test(hay)) return 'dumpling';
   if (/sandwich|toast|stulle|bagel|panini|croque/.test(hay)) return 'sandwich';
   if (/ramen|udon|soba|pho|suppe|eintopf|chowder|brühe|minestrone|gulasch/.test(hay)) return 'suppe';
   if (/lasagne|auflauf|gratin|moussaka|casserole|überbacken|parmigiana/.test(hay)) return 'auflauf';
   if (/pasta|spaghetti|tagliatelle|linguine|penne|nudel|gnocchi|carbonara|orecchiette/.test(hay)) return 'pasta';
   if (/bowl|poke|buddha|curry|risotto|porridge|dal/.test(hay)) return 'bowl';
-  if (/dessert|kuchen|torte|tiramisu|mousse|pudding|brownie|cheesecake|crumble|panna cotta|sorbet/.test(hay)) return 'dessert';
+  if (/kuchen|torte|tarte|cheesecake|cupcake|muffin|gugelhupf|streusel|gâteau|gateau/.test(hay)) return 'kuchen';
+  if (/eisbecher|eiscreme|eiscrème|softeis|gelato|sorbet|sundae|parfait|\beis\b/.test(hay)) return 'eis';
+  if (/dessert|nachtisch|tiramisu|mousse|pudding|brownie|crumble|panna cotta|crème|flan/.test(hay)) return 'dessert';
   if (/salat|caesar|caprese|tabouleh|slaw/.test(hay)) return 'salat';
+  if (/spieß|spiess|skewer|kebab|kebap|satay|saté|yakitori|brochette|souvlaki|schaschlik/.test(hay)) return 'spiess';
   if (/fisch|lachs|forelle|dorade|thunfisch|garnele|gamba|shrimp|scampi|muschel|kabeljau|zander|pulpo|oktopus|tintenfisch/.test(hay)) return 'fisch';
   if (/steak|braten|filet|kotelett|schnitzel|rind|lamm|entrecôte|ribs|grill|bbq|hähnchen|fleisch|frikadelle|köfte/.test(hay)) return 'steak';
   if (/pfanne|wok|stir|geschnetzelt|shakshuka|rührei/.test(hay)) return 'pfanne';
+  if (/brot|baguette|focaccia|ciabatta|sauerteig|laib|brötchen|semmel|brioche/.test(hay)) return 'brot';
   return 'bowl'; // bowls, curry, reis, risotto + default
 }
 
@@ -65,8 +79,10 @@ export function motifForRecipe(item: MatchInput): Motif {
  * og_image.MOTIF_VARIANTS (the OG renderer picks the same art). */
 export const MOTIF_VARIANTS: Record<Motif, number> = {
   highball: 3, tumbler: 3, coupe: 3, tiki: 1, martini: 2, wine: 2, flute: 1, mule: 1,
+  shot: 2, mug: 2, beer: 1, margarita: 1, punch: 1,
   pasta: 3, bowl: 3, suppe: 2, pfanne: 2, pizza: 2, salat: 2, burger: 1, fisch: 2,
   steak: 2, dessert: 2, taco: 1, auflauf: 1, pancakes: 1, sandwich: 1,
+  sushi: 2, kuchen: 2, eis: 1, spiess: 2, dumpling: 1, wrap: 1, brot: 1,
 };
 
 /** Stable, language-portable hash (sum of UTF-16 code units) — the Python
@@ -96,6 +112,11 @@ const VARIANT_HINTS: Partial<Record<Motif, [RegExp, number][]>> = {
   pizza: [[/verdure|vegetari|funghi|pilz|gemüse/, 1]],
   salat: [[/feta|hirten|griech/, 1]],
   martini: [[/twist|zitrone|lemon/, 1], [/dry|dirty|olive/, 0]],
+  shot: [[/b-?52|layer|schicht|rainbow|regenbogen/, 1]],
+  mug: [[/irish|coffee|kaffee|latte|cappuc|kakao|schoko/, 1]],
+  sushi: [[/maki|roll|california|inside/, 1], [/nigiri|sashimi/, 0]],
+  kuchen: [[/torte|tarte|gâteau|gateau|tartelette/, 1]],
+  spiess: [[/garnele|shrimp|scampi|gamba|lachs|fisch|meeres/, 1]],
 };
 
 /** Variant for a motif + title: semantic hint first, hash otherwise. */
@@ -123,10 +144,12 @@ export function RecipeMotif({ motif, seed = '', size = 84, className = '' }: Pro
   const common = { width: size, height: size, viewBox: '0 0 120 120', className, 'aria-hidden': true as const };
   const MAP: Record<Motif, (p: SvgProps) => React.JSX.Element> = {
     highball: Highball, tumbler: Tumbler, coupe: Coupe, tiki: Tiki, martini: Martini,
-    wine: Wine, flute: Flute, mule: Mule, pasta: Pasta, bowl: Bowl, suppe: Suppe,
+    wine: Wine, flute: Flute, mule: Mule, shot: Shot, mug: Mug, beer: Beer,
+    margarita: Margarita, punch: Punch, pasta: Pasta, bowl: Bowl, suppe: Suppe,
     pfanne: Pfanne, pizza: Pizza, salat: Salat, burger: Burger, fisch: Fisch,
     steak: Steak, dessert: Dessert, taco: Taco, auflauf: Auflauf, pancakes: Pancakes,
-    sandwich: Sandwich,
+    sandwich: Sandwich, sushi: Sushi, kuchen: Kuchen, eis: Eis, spiess: Spiess,
+    dumpling: Dumpling, wrap: Wrap, brot: Brot,
   };
   const Cmp = MAP[motif] ?? Tumbler;
   return <Cmp id={id} v={v} {...common} />;
@@ -1042,6 +1065,391 @@ function Sandwich({ id, ...svg }: SvgProps) {
           <rect x="-25" y="13" width="50" height="5" rx="2" fill="#fbc02d" />
           <rect x="-26" y="18" width="52" height="5" rx="2" fill="#e53935" />
           <rect x="-28" y="23" width="56" height="8" rx="3" fill="#c98d3f" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/* Shot — v0 single spirit, v1 layered (B-52). */
+function Shot({ id, v = 0, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={17} />
+      <g transform="rotate(-6 60 82)">
+        <defs>
+          <linearGradient id={`${id}-l`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#c77c1a" />
+            <stop offset="1" stopColor="#e8a33d" />
+          </linearGradient>
+        </defs>
+        <path d="M45 60 L49 99 Q49 101.5 52 101.5 L68 101.5 Q71 101.5 71 99 L75 60 Z" fill="#90a4ae" opacity="0.35" />
+        {v === 0 ? (
+          <>
+            <path d="M48 71 L51 97 Q51 99 53 99 L67 99 Q69 99 69 97 L72 71 Z" fill={`url(#${id}-l)`} opacity="0.92" />
+            <g transform="translate(73 60) rotate(20)">
+              <path d="M-8 0 A8 8 0 0 1 8 0 Z" fill="#7cb342" />
+              <path d="M-5.6 0 A5.6 5.6 0 0 1 5.6 0 Z" fill="#dcedc8" />
+            </g>
+          </>
+        ) : (
+          <>
+            <path d="M49.5 86 L51 97 Q51 99 53 99 L67 99 Q69 99 69 97 L70.5 86 Z" fill="#3e2723" />
+            <rect x="49.5" y="77" width="21" height="9" fill="#a1723b" />
+            <path d="M50 71 L70 71 L69.4 77 L50.6 77 Z" fill="#f5e6c8" />
+          </>
+        )}
+        <rect x="46" y="59" width="28" height="3.6" rx="1.8" fill="#cfd8dc" opacity="0.55" />
+      </g>
+    </svg>
+  );
+}
+
+/* Mug — v0 mulled wine, v1 coffee with cream. Steam stays upright. */
+function Mug({ id, v = 0, ...svg }: SvgProps) {
+  const body = v === 1 ? ['#c9ced2', '#eceff1'] : ['#a8443a', '#c95a4c'];
+  const liq = v === 1 ? '#3b2417' : '#7b1e1e';
+  return (
+    <svg {...svg}>
+      <Ground rx={26} />
+      <g fill="none" stroke="#b0bec5" strokeWidth="3" strokeLinecap="round" opacity="0.45">
+        <path d="M52 40 Q47 33 52 26 Q57 19 52 12" />
+        <path d="M67 42 Q62 35 67 28 Q72 21 67 15" />
+      </g>
+      <g transform="rotate(-5 60 78)">
+        <defs>
+          <linearGradient id={`${id}-m`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor={body[0]} />
+            <stop offset="1" stopColor={body[1]} />
+          </linearGradient>
+        </defs>
+        <path d="M78 64 Q92 64 92 77 Q92 90 78 90 L78 84 Q85 84 85 77 Q85 70 78 70 Z" fill={`url(#${id}-m)`} />
+        <path d="M40 58 H80 V95 Q80 102 73 102 H47 Q40 102 40 95 Z" fill={`url(#${id}-m)`} />
+        <ellipse cx="60" cy="59" rx="20" ry="5" fill={liq} />
+        {v === 1 && <ellipse cx="60" cy="58.5" rx="15" ry="3.4" fill="#e6d3b8" />}
+        {v === 0 && (
+          <>
+            <rect x="53" y="45" width="3" height="17" rx="1.5" transform="rotate(20 54.5 53)" fill="#7a4a24" />
+            <g transform="translate(67 59)">
+              <circle r="4.6" fill="#ef9a3d" />
+              <circle r="3" fill="#ffd39b" />
+            </g>
+          </>
+        )}
+      </g>
+    </svg>
+  );
+}
+
+/* Beer — golden pour, white foam head, rising bubbles. */
+function Beer({ id, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={24} />
+      <g transform="rotate(6 60 66)">
+        <defs>
+          <linearGradient id={`${id}-b`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#f9a825" />
+            <stop offset="1" stopColor="#ffca28" />
+          </linearGradient>
+        </defs>
+        <path d="M42 34 L45 100 Q45 103 49 103 L71 103 Q75 103 75 100 L78 34 Z" fill="#90a4ae" opacity="0.35" />
+        <path d="M44.4 44 L47 98 Q47.2 100.5 50 100.5 L70 100.5 Q72.8 100.5 73 98 L75.6 44 Z" fill={`url(#${id}-b)`} opacity="0.92" />
+        <g fill="#ffffff" opacity="0.55">
+          <circle cx="54" cy="60" r="2.4" />
+          <circle cx="64" cy="72" r="2" />
+          <circle cx="58" cy="84" r="1.7" />
+          <circle cx="67" cy="55" r="1.6" />
+        </g>
+        <path d="M42 40 Q42 28 52 30 Q56 22 63 30 Q73 26 76 38 Q60 46 42 40 Z" fill="#fff8e1" />
+        <circle cx="52" cy="31" r="4.5" fill="#ffffff" />
+        <circle cx="66" cy="31" r="4" fill="#ffffff" />
+      </g>
+    </svg>
+  );
+}
+
+/* Margarita — wide bowl, salt rim, pale agave-green, lime wedge. */
+function Margarita({ id, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={26} />
+      <g transform="rotate(6 60 60)">
+        <defs>
+          <linearGradient id={`${id}-l`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#aed581" />
+            <stop offset="1" stopColor="#dcedc8" />
+          </linearGradient>
+        </defs>
+        <path d="M28 34 Q40 60 60 60 Q80 60 92 34 Q60 42 28 34 Z" fill="#90a4ae" opacity="0.35" />
+        <path d="M33 37 Q43 55 60 55 Q77 55 87 37 Q60 44 33 37 Z" fill={`url(#${id}-l)`} opacity="0.9" />
+        <rect x="57.5" y="60" width="5" height="34" fill="#90a4ae" opacity="0.45" />
+        <path d="M42 100 Q42 95 60 95 Q78 95 78 100 L78 103 L42 103 Z" fill="#90a4ae" opacity="0.45" />
+        <g fill="#eceff1">
+          <circle cx="30" cy="34" r="1.6" />
+          <circle cx="38" cy="37" r="1.6" />
+          <circle cx="48" cy="39" r="1.6" />
+          <circle cx="60" cy="40" r="1.6" />
+          <circle cx="72" cy="39" r="1.6" />
+          <circle cx="82" cy="37" r="1.6" />
+          <circle cx="90" cy="34" r="1.6" />
+        </g>
+        <g transform="translate(84 33) rotate(24)">
+          <path d="M-9 0 A9 9 0 0 1 9 0 Z" fill="#7cb342" />
+          <path d="M-6.4 0 A6.4 6.4 0 0 1 6.4 0 Z" fill="#dcedc8" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/* Punch bowl — fruity surface, floating citrus, ladle. */
+function Punch({ id, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={38} />
+      <g transform="rotate(4 60 74)">
+        <defs>
+          <linearGradient id={`${id}-b`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#5d4037" />
+            <stop offset="1" stopColor="#8d6e63" />
+          </linearGradient>
+          <linearGradient id={`${id}-l`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#e53935" />
+            <stop offset="1" stopColor="#fb8c00" />
+          </linearGradient>
+        </defs>
+        <path d="M78 40 L92 30" stroke="#b0bec5" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <ellipse cx="93" cy="28" rx="6" ry="4" fill="#cfd8dc" />
+        <path d="M26 62 Q26 92 60 96 Q94 92 94 62 Z" fill={`url(#${id}-b)`} />
+        <ellipse cx="60" cy="62" rx="34" ry="8" fill={`url(#${id}-l)`} />
+        <g>
+          <circle cx="48" cy="61" r="4.5" fill="#ffb300" />
+          <circle cx="48" cy="61" r="2.6" fill="#ffe082" />
+          <circle cx="70" cy="63" r="4" fill="#ef5350" />
+          <circle cx="70" cy="63" r="2.3" fill="#ffcdd2" />
+          <path d="M58 58 Q62 55 64 59 Q60 62 58 58 Z" fill="#66bb6a" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/* Sushi — v0 nigiri pair, v1 maki rolls, on a slate board. */
+function Sushi({ id, v = 0, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={34} />
+      <g transform="rotate(-4 60 72)">
+        <defs>
+          <linearGradient id={`${id}-r`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#e0a952" />
+            <stop offset="1" stopColor="#f2c266" />
+          </linearGradient>
+        </defs>
+        <path d="M26 80 Q26 74 32 74 L88 74 Q94 74 94 80 L94 86 Q94 92 88 92 L32 92 Q26 92 26 86 Z" fill="#37474f" />
+        {v === 0 ? (
+          <>
+            <g transform="translate(46 68) rotate(-4)">
+              <rect x="-16" y="-1" width="32" height="16" rx="8" fill="#fafafa" />
+              <path d="M-16 -4 Q0 -12 16 -4 Q16 2 -16 2 Z" fill="#fb8c00" />
+              <path d="M-16 -3 Q0 -10 16 -3" fill="none" stroke="#ffcc80" strokeWidth="1.4" opacity="0.7" />
+            </g>
+            <g transform="translate(76 70) rotate(5)">
+              <rect x="-15" y="-1" width="30" height="15" rx="7.5" fill="#fafafa" />
+              <path d="M-15 -3 Q0 -11 15 -3 Q15 2 -15 2 Z" fill="#e53935" />
+              <rect x="-6" y="-2.5" width="12" height="4" rx="2" fill="#455a64" />
+            </g>
+          </>
+        ) : (
+          <g transform="translate(0 -2)">
+            {[42, 60, 78].map((cx, i) => (
+              <g key={cx} transform={`translate(${cx} 70)`}>
+                <circle r="11" fill="#37474f" />
+                <circle r="9" fill="#fafafa" />
+                <circle r="4.2" fill={['#7cb342', '#fb8c00', '#e57373'][i]} />
+              </g>
+            ))}
+          </g>
+        )}
+      </g>
+    </svg>
+  );
+}
+
+/* Kuchen — v0 layered slice, v1 round tart (top view). */
+function Kuchen({ id, v = 0, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={30} />
+      <g transform="rotate(-5 60 66)">
+        <defs>
+          <linearGradient id={`${id}-s`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#b9762f" />
+            <stop offset="1" stopColor="#d99a4e" />
+          </linearGradient>
+        </defs>
+        {v === 0 ? (
+          <g transform="translate(60 60)">
+            <path d="M-30 34 L26 34 L14 -20 L-30 -6 Z" fill={`url(#${id}-s)`} />
+            <path d="M-30 6 L18 -6 L14 -20 L-30 -6 Z" fill="#f8bbd0" />
+            <rect x="-30" y="10" width="52" height="8" transform="skewX(-12)" fill="#fff3e0" />
+            <path d="M-30 -6 L14 -20 Q18 -26 22 -20 L-30 -18 Z" fill="#f48fb1" />
+            <circle cx="2" cy="-24" r="5" fill="#e53935" />
+            <rect x="1" y="-33" width="2" height="6" fill="#7cb342" />
+          </g>
+        ) : (
+          <g transform="translate(60 66)">
+            <ellipse cx="0" cy="4" rx="34" ry="20" fill="#b9762f" />
+            <ellipse cx="0" cy="1" rx="30" ry="17" fill="#fff3e0" />
+            <ellipse cx="0" cy="1" rx="22" ry="12.5" fill="#f8bbd0" />
+            <g fill="#c2185b">
+              <circle cx="0" cy="-8" r="3.4" />
+              <circle cx="12" cy="-2" r="3.4" />
+              <circle cx="8" cy="8" r="3.4" />
+              <circle cx="-8" cy="8" r="3.4" />
+              <circle cx="-12" cy="-2" r="3.4" />
+              <circle cx="0" cy="2" r="3.4" />
+            </g>
+          </g>
+        )}
+      </g>
+    </svg>
+  );
+}
+
+/* Eis — sundae with three scoops, wafer, cherry. */
+function Eis({ id, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={22} />
+      <g transform="rotate(-5 60 64)">
+        <defs>
+          <linearGradient id={`${id}-c`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#90a4ae" />
+            <stop offset="1" stopColor="#cfd8dc" />
+          </linearGradient>
+        </defs>
+        <path d="M42 62 Q42 84 60 88 Q78 84 78 62 Z" fill={`url(#${id}-c)`} opacity="0.55" />
+        <rect x="57" y="88" width="6" height="10" fill="#90a4ae" opacity="0.5" />
+        <path d="M48 100 Q48 96 60 96 Q72 96 72 100 Z" fill="#90a4ae" opacity="0.5" />
+        <circle cx="49" cy="58" r="11" fill="#f8bbd0" />
+        <circle cx="71" cy="58" r="11" fill="#a1723b" />
+        <circle cx="60" cy="48" r="12" fill="#fff8e1" />
+        <path d="M68 44 L82 18 L88 22 L74 50 Z" fill="#e0a952" />
+        <circle cx="60" cy="34" r="5.5" fill="#e53935" />
+        <path d="M60 29 Q64 22 70 22" fill="none" stroke="#7cb342" strokeWidth="2" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
+/* Spiess — v0 meat & pepper skewer, v1 seafood skewer. */
+function Spiess({ id, v = 0, ...svg }: SvgProps) {
+  const pieces =
+    v === 0
+      ? ['#8d4a2f', '#e53935', '#f0e6d2', '#7cb342', '#8d4a2f']
+      : ['#ef9a9a', '#7cb342', '#ef9a9a', '#fbc02d', '#ef9a9a'];
+  return (
+    <svg {...svg}>
+      <Ground rx={30} />
+      <g transform="rotate(-33 60 60)">
+        <rect x="18" y="57.5" width="86" height="4" rx="2" fill="#a1743b" />
+        {pieces.map((c, i) => (
+          <rect
+            key={i}
+            x={26 + i * 15}
+            y={i % 2 === 0 ? 49 : 50}
+            width="14"
+            height={i % 2 === 0 ? 21 : 19}
+            rx="4"
+            fill={c}
+          />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+/* Dumpling — three gyoza on a plate with a dip bowl. */
+function Dumpling({ id, ...svg }: SvgProps) {
+  void id;
+  return (
+    <svg {...svg}>
+      <Ground rx={32} />
+      <g transform="rotate(-4 60 74)">
+        <ellipse cx="56" cy="82" rx="42" ry="12" fill="#eceff1" />
+        {[38, 56, 74].map((cx, i) => (
+          <g key={cx} transform={`translate(${cx} ${74 + (i % 2) * 3})`}>
+            <path d="M-15 5 Q0 -12 15 5 Q0 11 -15 5 Z" fill="#f0e6c8" />
+            <path d="M-15 5 Q0 9 15 5 Q0 13 -15 5 Z" fill="#c9a24a" />
+            <g fill="#e0d0a8">
+              <path d="M-11 1 l3 -5 l3 5 Z" />
+              <path d="M-4 -1 l3 -5 l3 5 Z" />
+              <path d="M3 -1 l3 -5 l3 5 Z" />
+              <path d="M9 1 l2.5 -4 l2.5 4 Z" />
+            </g>
+          </g>
+        ))}
+        <g transform="translate(90 66)">
+          <ellipse cx="0" cy="2" rx="11" ry="6" fill="#455a64" />
+          <ellipse cx="0" cy="1" rx="8" ry="4" fill="#3e2723" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/* Wrap — rolled burrito, diagonally cut, filling showing. */
+function Wrap({ id, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={22} />
+      <g transform="rotate(-7 60 74)">
+        <defs>
+          <linearGradient id={`${id}-t`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#d9b877" />
+            <stop offset="1" stopColor="#ecd39a" />
+          </linearGradient>
+        </defs>
+        <path d="M46 52 L44 100 Q44 103 48 103 L72 103 Q76 103 76 100 L74 52 Z" fill={`url(#${id}-t)`} />
+        <path d="M44 100 Q44 103 48 103 L72 103 Q76 103 76 100 L75 92 L45 92 Z" fill="#cfd8dc" />
+        <path d="M45 92 L75 92 L74.6 96 L45.4 96 Z" fill="#b0bec5" />
+        <g transform="translate(60 52) rotate(-18)">
+          <ellipse cx="0" cy="0" rx="17" ry="7" fill="#e8c98a" />
+          <ellipse cx="0" cy="-0.5" rx="13" ry="5" fill="#fff8e1" />
+          <ellipse cx="-5" cy="-1" rx="4" ry="2.4" fill="#6d4c41" />
+          <ellipse cx="5" cy="0" rx="3.5" ry="2.2" fill="#e53935" />
+          <ellipse cx="1" cy="-2" rx="3" ry="1.8" fill="#7cb342" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/* Brot — rustic scored loaf on a board. */
+function Brot({ id, ...svg }: SvgProps) {
+  return (
+    <svg {...svg}>
+      <Ground rx={34} />
+      <g transform="rotate(-5 60 70)">
+        <defs>
+          <linearGradient id={`${id}-c`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#a5682c" />
+            <stop offset="1" stopColor="#d99a4e" />
+          </linearGradient>
+        </defs>
+        <ellipse cx="60" cy="92" rx="40" ry="7" fill="#8d6e63" opacity="0.6" />
+        <path d="M24 74 Q24 52 60 52 Q96 52 96 74 Q96 86 60 86 Q24 86 24 74 Z" fill={`url(#${id}-c)`} />
+        <g stroke="#8a531f" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.75">
+          <path d="M40 62 L48 74" />
+          <path d="M54 60 L62 72" />
+          <path d="M68 61 L76 73" />
+        </g>
+        <g fill="#f5deb3" opacity="0.5">
+          <circle cx="46" cy="70" r="1.4" />
+          <circle cx="60" cy="67" r="1.4" />
+          <circle cx="72" cy="69" r="1.4" />
         </g>
       </g>
     </svg>

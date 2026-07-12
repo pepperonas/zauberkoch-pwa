@@ -16,7 +16,7 @@ from app.core.config import get_settings
 logger = logging.getLogger("zauberkoch.og")
 
 W, H = 1200, 630
-STYLE_VERSION = 6  # bump to invalidate cached PNGs after a redesign
+STYLE_VERSION = 7  # bump to invalidate cached PNGs after a redesign
 FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 MOTIF_DIR = Path(__file__).resolve().parent.parent / "assets" / "motifs"
 
@@ -31,6 +31,11 @@ PALETTES = {
 _GLASS_CHECKS = [
     ("tiki", r"tiki|hurricane|zombie|mai tai"),
     ("mule", r"kupfer|mule|moscow"),
+    ("margarita", r"margarita"),
+    ("punch", r"bowle|punsch|\bpunch\b|feuerzangen"),
+    ("shot", r"\bshot\b|shooter|kurzer|pinnchen|stamperl|b-?52|kamikaze"),
+    ("mug", r"heiß|hot toddy|\btoddy\b|grog|irish coffee|kakao|heiße schoko"),
+    ("beer", r"bier|beer|radler|michelada|weizen|weißbier|\bpils\b|helles|lager|\bale\b|\bipa\b|humpen|\bpint\b"),
     ("coupe", r"coupe|cocktailschale|schale|nick|nora"),
     ("martini", r"martini|spitz|dreieck"),
     ("flute", r"sekt|champagner|flöte|flute|prosecco"),
@@ -41,27 +46,36 @@ _GLASS_CHECKS = [
 
 _DISH_CHECKS = [
     ("pancakes", r"pfannkuchen|pancake|crêpe|crepe|waffel|kaiserschmarrn"),
+    ("sushi", r"sushi|nigiri|maki|sashimi|temaki|california roll|inside.?out"),
     ("burger", r"burger"),
     ("pizza", r"pizza|flammkuchen|galette"),
-    ("taco", r"taco|burrito|wrap|quesadilla|fajita|enchilada"),
+    ("wrap", r"wrap|burrito|dürüm|durum|döner|shawarma|gyros"),
+    ("taco", r"taco|quesadilla|fajita|enchilada|nachos"),
+    ("dumpling", r"gyoza|dumpling|dim ?sum|wonton|teigtasche|maultasche|pierogi|jiaozi|momo|potsticker"),
     ("sandwich", r"sandwich|toast|stulle|bagel|panini|croque"),
     ("suppe", r"ramen|udon|soba|pho|suppe|eintopf|chowder|brühe|minestrone|gulasch"),
     ("auflauf", r"lasagne|auflauf|gratin|moussaka|casserole|überbacken|parmigiana"),
     ("pasta", r"pasta|spaghetti|tagliatelle|linguine|penne|nudel|gnocchi|carbonara|orecchiette"),
     ("bowl", r"bowl|poke|buddha|curry|risotto|porridge|dal"),
-    ("dessert", r"dessert|kuchen|torte|tiramisu|mousse|pudding|brownie|cheesecake|crumble|panna cotta|sorbet"),
+    ("kuchen", r"kuchen|torte|tarte|cheesecake|cupcake|muffin|gugelhupf|streusel|gâteau|gateau"),
+    ("eis", r"eisbecher|eiscreme|eiscrème|softeis|gelato|sorbet|sundae|parfait|\beis\b"),
+    ("dessert", r"dessert|nachtisch|tiramisu|mousse|pudding|brownie|crumble|panna cotta|crème|flan"),
     ("salat", r"salat|caesar|caprese|tabouleh|slaw"),
+    ("spiess", r"spieß|spiess|skewer|kebab|kebap|satay|saté|yakitori|brochette|souvlaki|schaschlik"),
     ("fisch", r"fisch|lachs|forelle|dorade|thunfisch|garnele|gamba|shrimp|scampi|muschel|kabeljau|zander|pulpo|oktopus|tintenfisch"),
     ("steak", r"steak|braten|filet|kotelett|schnitzel|rind|lamm|entrecôte|ribs|grill|bbq|hähnchen|fleisch|frikadelle|köfte"),
     ("pfanne", r"pfanne|wok|stir|geschnetzelt|shakshuka|rührei"),
+    ("brot", r"brot|baguette|focaccia|ciabatta|sauerteig|laib|brötchen|semmel|brioche"),
 ]
 
 
 # Variant counts — MUST stay in sync with frontend RecipeMotif.MOTIF_VARIANTS
 MOTIF_VARIANTS = {
     "highball": 3, "tumbler": 3, "coupe": 3, "tiki": 1, "martini": 2, "wine": 2, "flute": 1, "mule": 1,
+    "shot": 2, "mug": 2, "beer": 1, "margarita": 1, "punch": 1,
     "pasta": 3, "bowl": 3, "suppe": 2, "pfanne": 2, "pizza": 2, "salat": 2, "burger": 1, "fisch": 2,
     "steak": 2, "dessert": 2, "taco": 1, "auflauf": 1, "pancakes": 1, "sandwich": 1,
+    "sushi": 2, "kuchen": 2, "eis": 1, "spiess": 2, "dumpling": 1, "wrap": 1, "brot": 1,
 }
 
 
@@ -88,6 +102,11 @@ _VARIANT_HINTS: dict[str, list[tuple[str, int]]] = {
     "pizza": [(r"verdure|vegetari|funghi|pilz|gemüse", 1)],
     "salat": [(r"feta|hirten|griech", 1)],
     "martini": [(r"twist|zitrone|lemon", 1), (r"dry|dirty|olive", 0)],
+    "shot": [(r"b-?52|layer|schicht|rainbow|regenbogen", 1)],
+    "mug": [(r"irish|coffee|kaffee|latte|cappuc|kakao|schoko", 1)],
+    "sushi": [(r"maki|roll|california|inside", 1), (r"nigiri|sashimi", 0)],
+    "kuchen": [(r"torte|tarte|gâteau|gateau|tartelette", 1)],
+    "spiess": [(r"garnele|shrimp|scampi|gamba|lachs|fisch|meeres", 1)],
 }
 
 

@@ -90,11 +90,29 @@ def test_og_motif_assets_and_matcher():
     assert variant_for_motif("highball", "Mojito Royal") == 2
     assert variant_for_motif("pasta", "Spaghetti alle Vongole") == 2
     assert variant_for_motif("coupe", "Gin Sour Royal") == 2
+    assert variant_for_motif("sushi", "California Maki") == 1
+    assert variant_for_motif("sushi", "Lachs Nigiri") == 0
+    assert variant_for_motif("spiess", "Garnelenspieß") == 1
+    assert variant_for_motif("mug", "Irish Coffee") == 1
+    assert variant_for_motif("shot", "B-52 Shot") == 1
+    assert variant_for_motif("kuchen", "Schwarzwälder Torte") == 1
 
     assert motif_for_recipe({"titel": "Jungle Bird", "glas": "Tiki-Becher"}, "cocktail") == "tiki"
     assert motif_for_recipe({"titel": "Espresso Martini", "glas": "Cocktailschale"}, "cocktail") == "coupe"
     assert motif_for_recipe({"titel": "Gambas al Ajillo mit knusprigem Brot"}, "kochen") == "fisch"
     assert motif_for_recipe({"titel": "Spaghetti alle Vongole"}, "kochen") == "pasta"
+    # new motifs (matcher order + reassignments)
+    assert motif_for_recipe({"titel": "Frozen Margarita"}, "cocktail") == "margarita"
+    assert motif_for_recipe({"titel": "Feuerzangenbowle"}, "cocktail") == "punch"
+    assert motif_for_recipe({"titel": "Weizenbier"}, "cocktail") == "beer"
+    assert motif_for_recipe({"titel": "Irish Coffee"}, "cocktail") == "mug"
+    assert motif_for_recipe({"titel": "Glühwein"}, "cocktail") == "wine"
+    assert motif_for_recipe({"titel": "Lachs Nigiri"}, "kochen") == "sushi"
+    assert motif_for_recipe({"titel": "Chicken Burrito"}, "kochen") == "wrap"
+    assert motif_for_recipe({"titel": "Gyoza mit Ponzu"}, "kochen") == "dumpling"
+    assert motif_for_recipe({"titel": "Käsekuchen"}, "kochen") == "kuchen"
+    assert motif_for_recipe({"titel": "Hähnchenspieß"}, "kochen") == "spiess"
+    assert motif_for_recipe({"titel": "Rustikales Sauerteigbrot"}, "kochen") == "brot"
     assert motif_for_recipe({"titel": "Irgendwas"}, "kochen") == "bowl"
 
 

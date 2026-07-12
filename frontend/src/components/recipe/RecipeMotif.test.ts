@@ -50,6 +50,30 @@ describe('motifForRecipe', () => {
     // "Fleisch"/"Eis" substrings must not trigger dessert
     expect(motifForRecipe({ mode: 'kochen', titel: 'Fleischbällchen in Tomatensauce' })).toBe('steak');
   });
+
+  it('covers the new drink motifs', () => {
+    expect(motifForRecipe({ mode: 'cocktail', titel: 'Frozen Margarita', glas: null })).toBe('margarita');
+    expect(motifForRecipe({ mode: 'cocktail', titel: 'Feuerzangenbowle', glas: null })).toBe('punch');
+    expect(motifForRecipe({ mode: 'cocktail', titel: 'Tequila Shooter', glas: null })).toBe('shot');
+    expect(motifForRecipe({ mode: 'cocktail', titel: 'Irish Coffee', glas: null })).toBe('mug');
+    expect(motifForRecipe({ mode: 'cocktail', titel: 'Hot Toddy', glas: null })).toBe('mug');
+    expect(motifForRecipe({ mode: 'cocktail', titel: 'Weizenbier', glas: null })).toBe('beer');
+    // glühwein still reads as a wine glass (not stolen by mug)
+    expect(motifForRecipe({ mode: 'cocktail', titel: 'Glühwein', glas: null })).toBe('wine');
+  });
+
+  it('covers the new dish motifs (specific beats generic)', () => {
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Lachs Nigiri' })).toBe('sushi'); // sushi beats fisch
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Chicken Burrito' })).toBe('wrap'); // wrap, not taco
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Quesadilla mit Käse' })).toBe('taco');
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Gyoza mit Ponzu' })).toBe('dumpling');
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Käsekuchen' })).toBe('kuchen'); // not dessert
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Eisbecher mit Früchten' })).toBe('eis');
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Hähnchenspieß' })).toBe('spiess'); // spiess beats steak
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Rustikales Sauerteigbrot' })).toBe('brot');
+    // "…mit knusprigem Brot" must still resolve to the main component (fisch)
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Gambas al Ajillo mit knusprigem Brot' })).toBe('fisch');
+  });
 });
 
 describe('variantFor (must match backend variant_for)', () => {
@@ -71,10 +95,16 @@ describe('variantFor (must match backend variant_for)', () => {
     expect(variantForMotif('highball', 'Mojito Royal')).toBe(2);
     expect(variantForMotif('pasta', 'Spaghetti alle Vongole')).toBe(2);
     expect(variantForMotif('coupe', 'Gin Sour Royal')).toBe(2);
+    expect(variantForMotif('sushi', 'California Maki')).toBe(1);
+    expect(variantForMotif('sushi', 'Lachs Nigiri')).toBe(0);
+    expect(variantForMotif('spiess', 'Garnelenspieß')).toBe(1);
+    expect(variantForMotif('mug', 'Irish Coffee')).toBe(1);
+    expect(variantForMotif('shot', 'B-52 Shot')).toBe(1);
+    expect(variantForMotif('kuchen', 'Schwarzwälder Torte')).toBe(1);
   });
 
-  it('declares at least 40 distinct visuals', () => {
+  it('declares at least 55 distinct visuals', () => {
     const total = Object.values(MOTIF_VARIANTS).reduce((a, b) => a + b, 0);
-    expect(total).toBeGreaterThanOrEqual(40);
+    expect(total).toBeGreaterThanOrEqual(55);
   });
 });

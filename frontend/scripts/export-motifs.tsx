@@ -14,8 +14,10 @@ import { MOTIF_VARIANTS, RecipeMotif, type Motif } from '../src/components/recip
 
 const MOTIFS: Motif[] = [
   'highball', 'tumbler', 'coupe', 'tiki', 'martini', 'wine', 'flute', 'mule',
+  'shot', 'mug', 'beer', 'margarita', 'punch',
   'pasta', 'bowl', 'suppe', 'pfanne', 'pizza', 'salat', 'burger', 'fisch',
   'steak', 'dessert', 'taco', 'auflauf', 'pancakes', 'sandwich',
+  'sushi', 'kuchen', 'eis', 'spiess', 'dumpling', 'wrap', 'brot',
 ];
 
 // cwd-relative (run from frontend/): the script gets bundled before running,
