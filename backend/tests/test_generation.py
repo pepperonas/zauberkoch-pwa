@@ -82,6 +82,17 @@ def test_generate_streams_semantic_events(client, logged_in, mock_ai):
     assert saved["remaining"] == 19  # one of 20 consumed
 
 
+def test_gericht_typ_persists_and_filters(client, logged_in, mock_ai):
+    generate(client, logged_in, {**PARAMS, "gericht_typ": "Dessert"})
+    generate(client, logged_in, {**PARAMS, "kueche": "Thai", "gericht_typ": "Snack"})
+
+    items = client.get("/api/v1/recipes").json()["items"]
+    assert {i["gericht_typ"] for i in items} == {"dessert", "snack"}  # stored lowercased
+
+    filtered = client.get("/api/v1/recipes?gericht_typ=Dessert").json()["items"]
+    assert len(filtered) == 1 and filtered[0]["gericht_typ"] == "dessert"
+
+
 def test_generate_requires_csrf(client, logged_in, mock_ai):
     r = client.post("/api/v1/recipes/generate", json=PARAMS)
     assert r.status_code == 403

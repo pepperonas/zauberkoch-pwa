@@ -56,6 +56,7 @@ export interface GenerateParams {
   modus: Modus;
   kueche?: string;
   kueche_freitext?: string;
+  gericht_typ?: string;
   geschmack?: string[];
   vegetarisch?: boolean;
   vegan?: boolean;
@@ -107,6 +108,7 @@ export interface RecipeListItem {
   titel: string;
   teaser: string;
   kueche: string;
+  gericht_typ?: string;
   tags: string[];
   zeit_gesamt: number | null;
   schwierigkeit: Schwierigkeit | null;

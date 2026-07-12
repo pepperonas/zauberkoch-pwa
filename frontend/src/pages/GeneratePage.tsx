@@ -49,6 +49,7 @@ export function GeneratePage() {
   const [step, setStep] = useState(0);
   const [kueche, setKueche] = useState('');
   const [kuecheFrei, setKuecheFrei] = useState('');
+  const [gerichtTyp, setGerichtTyp] = useState('');
   const [geschmack, setGeschmack] = useState<string[]>([]);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [vegetarisch, setVegetarisch] = useState(false);
@@ -119,6 +120,7 @@ export function GeneratePage() {
       modus: mode,
       kueche: mode === 'cocktail' ? '' : kueche,
       kueche_freitext: mode === 'cocktail' ? '' : kuecheFrei,
+      gericht_typ: mode === 'cocktail' ? '' : gerichtTyp,
       drink_typ: mode === 'cocktail' ? (drinkTypFrei.trim() || drinkTyp) : '',
       geschmack,
       vegetarisch,
@@ -136,7 +138,7 @@ export function GeneratePage() {
       ...overrides,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, kueche, kuecheFrei, drinkTyp, drinkTypFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, proteinreich, ketogen, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
+    [mode, kueche, kuecheFrei, gerichtTyp, drinkTyp, drinkTypFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, proteinreich, ketogen, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
   );
 
   const invalidateRecipes = useCallback(
@@ -436,6 +438,14 @@ export function GeneratePage() {
 
           {step === 0 && mode !== 'cocktail' && (
             <section>
+              <span className="wiz__row-label">{t('wizard.gerichtTypLabel')}</span>
+              <div className="chips" style={{ marginTop: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
+                {strings.gerichtTypen.map((g) => (
+                  <Chip key={g} selected={gerichtTyp === g} onToggle={() => setGerichtTyp(gerichtTyp === g ? '' : g)}>
+                    {g}
+                  </Chip>
+                ))}
+              </div>
               <h2 className="wiz__step-title">{t('wizard.cuisineTitle')}</h2>
               <div className="chips">
                 {(me?.preferences?.kuechen?.length ? me.preferences.kuechen : strings.cuisines).map((c) => (
@@ -594,7 +604,7 @@ export function GeneratePage() {
       </div>
 
       <div className="wiz__surprise">
-        <Button variant="outlined" onClick={() => generate({ ueberrasch_mich: true, kueche: '', kueche_freitext: '', drink_typ: '' })}>
+        <Button variant="outlined" onClick={() => generate({ ueberrasch_mich: true, kueche: '', kueche_freitext: '', gericht_typ: '', drink_typ: '' })}>
           <Icon name="gift" size={18} /> {t('wizard.surpriseMe')}
         </Button>
       </div>

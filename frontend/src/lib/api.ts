@@ -61,10 +61,11 @@ export const api = {
       body: JSON.stringify({ wert, grund }),
     }),
 
-  recipes: (params: { q?: string; mode?: string; favorites_only?: boolean } = {}) => {
+  recipes: (params: { q?: string; mode?: string; gericht_typ?: string; favorites_only?: boolean } = {}) => {
     const qs = new URLSearchParams();
     if (params.q) qs.set('q', params.q);
     if (params.mode) qs.set('mode', params.mode);
+    if (params.gericht_typ) qs.set('gericht_typ', params.gericht_typ);
     if (params.favorites_only) qs.set('favorites_only', 'true');
     const suffix = qs.size ? `?${qs}` : '';
     return request<{ items: RecipeListItem[] }>(`/recipes${suffix}`);

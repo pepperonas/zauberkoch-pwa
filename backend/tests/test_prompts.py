@@ -102,6 +102,20 @@ def test_cocktail_prompt_maps_drink_typ():
     assert "Drink-Typ" not in recipe_v2.build_user_prompt(GenerateParams(modus="kochen", drink_typ="Shot"))
 
 
+def test_kochen_prompt_maps_gericht_typ():
+    from app.services.cache import params_hash
+
+    params = GenerateParams(modus="kochen", kueche="Deutsch", gericht_typ="Dessert")
+    prompt = recipe_v2.build_user_prompt(params)
+    assert "Gericht-Art: „Dessert“" in prompt
+    # gericht_typ changes the cache key
+    assert params_hash(params) != params_hash(GenerateParams(modus="kochen", kueche="Deutsch", gericht_typ="Snack"))
+    # only rendered for kochen (cocktails use drink_typ instead)
+    assert "Gericht-Art" not in recipe_v2.build_user_prompt(
+        GenerateParams(modus="cocktail", drink_typ="Shot", gericht_typ="Dessert")
+    )
+
+
 def _assert_hardened(node: dict) -> None:
     if node.get("type") == "object" and "properties" in node:
         assert node.get("additionalProperties") is False

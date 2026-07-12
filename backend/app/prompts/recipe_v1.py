@@ -81,6 +81,8 @@ def build_user_prompt(params: GenerateParams) -> str:
         lines.append(f"Anzahl Drinks: {p.personen}.")
     else:
         lines.append("Erstelle ein Kochrezept.")
+        if p.gericht_typ:
+            lines.append(f"Gericht-Art: „{_clean(p.gericht_typ)}“ (richte Umfang, Zutaten und Anlass danach aus).")
         lines.append(f"Personenzahl: {p.personen}.")
 
     kueche = _clean(p.kueche_freitext or p.kueche)

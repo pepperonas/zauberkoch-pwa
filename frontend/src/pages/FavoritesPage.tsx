@@ -6,12 +6,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Icon } from '../components/icons';
 import { RecipeCard } from '../components/recipe/RecipeCard';
 import { Chip } from '../components/ui';
-import { t } from '../i18n';
+import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 
 export function FavoritesPage() {
   const [mode, setMode] = useState('');
   const [kueche, setKueche] = useState('');
+  const [gtyp, setGtyp] = useState('');
 
   const recipes = useQuery({
     queryKey: ['recipes', 'favorites', mode],
@@ -20,7 +21,14 @@ export function FavoritesPage() {
 
   const items = recipes.data?.items ?? [];
   const kuechen = useMemo(() => [...new Set(items.map((i) => i.kueche).filter(Boolean))], [items]);
-  const filtered = kueche ? items.filter((i) => i.kueche === kueche) : items;
+  // Meal-type chips in canonical order, only those actually present (stored lowercased).
+  const typen = useMemo(
+    () => strings.gerichtTypen.filter((g) => items.some((i) => i.gericht_typ === g.toLowerCase())),
+    [items],
+  );
+  const filtered = items
+    .filter((i) => !kueche || i.kueche === kueche)
+    .filter((i) => !gtyp || i.gericht_typ === gtyp);
 
   return (
     <div>
@@ -34,6 +42,11 @@ export function FavoritesPage() {
           <Chip selected={mode === 'cocktail'} onToggle={() => setMode(mode === 'cocktail' ? '' : 'cocktail')}>
             <Icon name="cocktail" size={13} /> {t('wizard.modeCocktail')}
           </Chip>
+          {typen.map((g) => (
+            <Chip key={g} selected={gtyp === g.toLowerCase()} onToggle={() => setGtyp(gtyp === g.toLowerCase() ? '' : g.toLowerCase())}>
+              {g}
+            </Chip>
+          ))}
           {kuechen.map((k) => (
             <Chip key={k} selected={kueche === k} onToggle={() => setKueche(kueche === k ? '' : k)}>
               {k}

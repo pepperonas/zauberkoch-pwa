@@ -59,6 +59,7 @@ class Recipe(Base):
     recipe_json: Mapped[str] = mapped_column(Text)  # full recipe per schema
     titel: Mapped[str] = mapped_column(String(255), index=True)  # denormalized for search
     kueche: Mapped[str] = mapped_column(String(64), default="", index=True)
+    gericht_typ: Mapped[str] = mapped_column(String(64), default="", server_default="", index=True)  # meal type (kochen)
     prompt_version: Mapped[str] = mapped_column(String(32))
     model: Mapped[str] = mapped_column(String(64))
     share_token: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)

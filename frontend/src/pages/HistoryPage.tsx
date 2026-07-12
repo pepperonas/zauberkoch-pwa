@@ -1,24 +1,30 @@
 /** History: everything the user ever generated, with search + mode filter. */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { Icon } from '../components/icons';
 import { RecipeCard } from '../components/recipe/RecipeCard';
 import { Chip } from '../components/ui';
-import { t } from '../i18n';
+import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 
 export function HistoryPage() {
   const [q, setQ] = useState('');
   const [mode, setMode] = useState('');
+  const [gtyp, setGtyp] = useState('');
 
   const recipes = useQuery({
     queryKey: ['recipes', 'history', q, mode],
     queryFn: () => api.recipes({ q, mode }),
   });
 
-  const items = recipes.data?.items ?? [];
+  const all = recipes.data?.items ?? [];
+  const typen = useMemo(
+    () => strings.gerichtTypen.filter((g) => all.some((i) => i.gericht_typ === g.toLowerCase())),
+    [all],
+  );
+  const items = gtyp ? all.filter((i) => i.gericht_typ === gtyp) : all;
 
   return (
     <div>
@@ -40,6 +46,11 @@ export function HistoryPage() {
           <Chip selected={mode === 'cocktail'} onToggle={() => setMode(mode === 'cocktail' ? '' : 'cocktail')}>
             <Icon name="cocktail" size={13} /> {t('wizard.modeCocktail')}
           </Chip>
+          {typen.map((g) => (
+            <Chip key={g} selected={gtyp === g.toLowerCase()} onToggle={() => setGtyp(gtyp === g.toLowerCase() ? '' : g.toLowerCase())}>
+              {g}
+            </Chip>
+          ))}
         </div>
         {recipes.isLoading ? (
           <p className="muted">{t('common.loading')}</p>

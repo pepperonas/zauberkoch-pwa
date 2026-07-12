@@ -50,6 +50,7 @@ def _persist_recipe(db: DbSession, user_id: int, params: GenerateParams, recipe:
         recipe_json=json.dumps(recipe, ensure_ascii=False),
         titel=recipe.get("titel", ""),
         kueche=recipe.get("kueche", ""),
+        gericht_typ=params.gericht_typ.strip().lower(),
         prompt_version=prompt_version,
         model=model,
     )
@@ -347,6 +348,7 @@ def list_recipes(
     q: str = Query(default="", max_length=100),
     mode: str = Query(default="", pattern="^(kochen|cocktail)?$"),
     kueche: str = Query(default="", max_length=64),
+    gericht_typ: str = Query(default="", max_length=64),
     favorites_only: bool = False,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
@@ -361,6 +363,8 @@ def list_recipes(
         stmt = stmt.where(Recipe.mode == mode)
     if kueche:
         stmt = stmt.where(Recipe.kueche == kueche)
+    if gericht_typ:
+        stmt = stmt.where(Recipe.gericht_typ == gericht_typ.strip().lower())
     if favorites_only:
         stmt = stmt.join(Favorite, Favorite.recipe_id == Recipe.id).where(Favorite.user_id == user.id)
     stmt = stmt.order_by(Recipe.created_at.desc()).limit(limit).offset(offset)
@@ -379,6 +383,7 @@ def list_recipes(
                 "titel": r.titel,
                 "teaser": recipe.get("teaser", ""),
                 "kueche": r.kueche,
+                "gericht_typ": r.gericht_typ,
                 "tags": recipe.get("tags", []),
                 "zeit_gesamt": recipe.get("zeit_gesamt"),
                 "schwierigkeit": recipe.get("schwierigkeit"),

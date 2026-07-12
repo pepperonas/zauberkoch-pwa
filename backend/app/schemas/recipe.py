@@ -79,6 +79,7 @@ class GenerateParams(BaseModel):
     modus: Literal["kochen", "cocktail"]
     kueche: str = Field(default="", max_length=64)
     kueche_freitext: str = Field(default="", max_length=120)
+    gericht_typ: str = Field(default="", max_length=64)  # Frühstück, Dessert, Snack, Beilage, Meal-Prep, ...
     geschmack: list[str] = Field(default=[], max_length=8)
     # Constraints
     vegetarisch: bool = False
@@ -114,6 +115,7 @@ class GenerateParams(BaseModel):
         data["vermeiden"] = sorted(v.strip().lower() for v in data["vermeiden"] if v.strip())
         data["kueche"] = data["kueche"].strip().lower()
         data["kueche_freitext"] = data["kueche_freitext"].strip().lower()
+        data["gericht_typ"] = data["gericht_typ"].strip().lower()
         data["basis_spirituose"] = data["basis_spirituose"].strip().lower()
         data["drink_typ"] = data["drink_typ"].strip().lower()
         data["glas_vorgabe"] = data["glas_vorgabe"].strip().lower()

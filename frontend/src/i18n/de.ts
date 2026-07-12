@@ -45,6 +45,7 @@ export const de = {
     stepTaste: 'Geschmack',
     stepDetails: 'Extras',
     cuisineTitle: 'Welche Küche darf es sein?',
+    gerichtTypLabel: 'Art des Gerichts (optional)',
     drinkTypeTitle: 'Was für ein Drink darf es sein?',
     drinkFreeLabel: 'Oder eigene Idee …',
     drinkFreePlaceholder: 'z. B. Espresso-Drinks, Sommer-Aperitif, 90er-Klassiker',
@@ -127,6 +128,8 @@ export const de = {
   tastes: ['scharf', 'umami', 'süß', 'sauer', 'rauchig', 'frisch', 'herzhaft', 'cremig'],
   tastesCocktail: ['fruchtig', 'frisch', 'sauer', 'süß', 'bitter', 'herb', 'cremig', 'rauchig', 'würzig'],
   drinkTypes: ['Cocktail', 'Longdrink', 'Shot', 'Aperitif', 'Sour', 'Tiki', 'Highball', 'Frozen', 'Heißer Drink', 'Bowle & Punsch'],
+  /** Meal type (kochen) — course/occasion based; broadens the spectrum. */
+  gerichtTypen: ['Frühstück', 'Hauptgericht', 'Dessert', 'Snack', 'Vorspeise', 'Beilage', 'Meal-Prep'],
   spirits: ['Gin', 'Rum', 'Whiskey', 'Tequila', 'Wodka', 'Aperitivo'],
   stream: {
     conjuring: 'Der Zauberkoch denkt nach …',
