@@ -17,6 +17,7 @@ import { FeedbackBar } from '../components/recipe/FeedbackBar';
 import { RecipeView } from '../components/recipe/RecipeView';
 import { ShareDialog } from '../components/recipe/ShareDialog';
 import { Button, Chip, Segmented, Switch } from '../components/ui';
+import { Tooltip } from '../components/ui/Tooltip';
 import { Dialog } from '../components/ui/Dialog';
 import { Sheet } from '../components/ui/Sheet';
 import { useSnackbar } from '../components/ui/Snackbar';
@@ -314,47 +315,52 @@ export function GeneratePage() {
             actions={
               gen.phase === 'done' && !error
                 ? [
-                    <FavoriteButton
-                      key="fav"
-                      active={gen.isFavorite}
-                      onToggle={() => void toggleFavorite()}
-                      label={t('recipe.favorite')}
-                    />,
+                    <Tooltip key="fav" text={t('tips.favorite')}>
+                      <FavoriteButton active={gen.isFavorite} onToggle={() => void toggleFavorite()} label={t('recipe.favorite')} />
+                    </Tooltip>,
                     recipeId != null && (
-                      <Button
-                        key="shop"
-                        variant="outlined"
-                        onClick={() => void withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(recipeId))}
-                      >
-                        <Icon name="cart" size={18} /> {t('recipe.toShoppingList')}
-                      </Button>
+                      <Tooltip key="shop" text={t('tips.shopping')}>
+                        <Button
+                          variant="outlined"
+                          onClick={() => void withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(recipeId))}
+                        >
+                          <Icon name="cart" size={18} /> {t('recipe.toShoppingList')}
+                        </Button>
+                      </Tooltip>
                     ),
                     recipeId != null && (
-                      <Button key="share" variant="outlined" onClick={() => setShareOpen(true)}>
-                        <Icon name="share" size={18} /> {t('recipe.share')}
-                      </Button>
+                      <Tooltip key="share" text={t('tips.share')}>
+                        <Button variant="outlined" onClick={() => setShareOpen(true)}>
+                          <Icon name="share" size={18} /> {t('recipe.share')}
+                        </Button>
+                      </Tooltip>
                     ),
                     data.schritte.length > 0 && (
-                      <Button key="cook" onClick={() => setCookOpen(true)}>
-                        <Icon name="chefhat" size={18} /> {t('recipe.cookMode')}
-                      </Button>
+                      <Tooltip key="cook" text={t('tips.cook')}>
+                        <Button onClick={() => setCookOpen(true)}>
+                          <Icon name="chefhat" size={18} /> {t('recipe.cookMode')}
+                        </Button>
+                      </Tooltip>
                     ),
                     recipeId != null && (
-                      <Button
-                        key="adapt"
-                        variant="tonal"
-                        onClick={() => {
-                          setAdaptTarget(recipeId);
-                          setAdaptOpen(true);
-                        }}
-                      >
-                        <Icon name="sparkles" size={18} /> {t('adapt.button')}
-                      </Button>
+                      <Tooltip key="adapt" text={t('tips.adapt')}>
+                        <Button
+                          variant="tonal"
+                          onClick={() => {
+                            setAdaptTarget(recipeId);
+                            setAdaptOpen(true);
+                          }}
+                        >
+                          <Icon name="sparkles" size={18} /> {t('adapt.button')}
+                        </Button>
+                      </Tooltip>
                     ),
                     gen.canRegenerate && (
-                      <Button key="regen" variant="text" onClick={regenerateGeneration}>
-                        <Icon name="dice" size={18} /> {t('stream.regenerate')}
-                      </Button>
+                      <Tooltip key="regen" text={t('tips.regenerate')}>
+                        <Button variant="text" onClick={regenerateGeneration}>
+                          <Icon name="dice" size={18} /> {t('stream.regenerate')}
+                        </Button>
+                      </Tooltip>
                     ),
                   ]
                     .filter((el): el is React.ReactElement => Boolean(el))
@@ -506,9 +512,11 @@ export function GeneratePage() {
                     </Chip>
                   );
                 })}
-                <Chip selected={false} onToggle={() => setCuisineEditOpen(true)}>
-                  <Icon name="edit" size={13} /> {t('wizard.cuisineEdit')}
-                </Chip>
+                <Tooltip text={t('tips.cuisineEdit')}>
+                  <Chip selected={false} onToggle={() => setCuisineEditOpen(true)}>
+                    <Icon name="edit" size={13} /> {t('wizard.cuisineEdit')}
+                  </Chip>
+                </Tooltip>
               </div>
               <div className="wiz__free">
                 <label htmlFor="kueche-frei">{t('wizard.cuisineFreeLabel')}</label>
@@ -579,9 +587,11 @@ export function GeneratePage() {
                 </>
               ) : (
                 <>
-                  <Button variant="tonal" onClick={() => setConstraintsOpen(true)}>
-                    <Icon name="settings" size={18} /> {t('wizard.constraints')}
-                  </Button>
+                  <Tooltip text={t('tips.constraints')}>
+                    <Button variant="tonal" onClick={() => setConstraintsOpen(true)}>
+                      <Icon name="settings" size={18} /> {t('wizard.constraints')}
+                    </Button>
+                  </Tooltip>
                   <div>
                     <span className="wiz__row-label">{t('wizard.fridgeTitle')}</span>
                     {pantry.length > 0 && (
@@ -614,9 +624,11 @@ export function GeneratePage() {
                       maxLength={60}
                     />
                     <div style={{ marginTop: 'var(--space-3)' }}>
-                      <Button variant="outlined" onClick={() => scanInputRef.current?.click()} disabled={scanning}>
-                        <Icon name="camera" size={18} /> {scanning ? t('wizard.fridgeScanning') : t('wizard.fridgeScan')}
-                      </Button>
+                      <Tooltip text={t('tips.fridgeScan')}>
+                        <Button variant="outlined" onClick={() => scanInputRef.current?.click()} disabled={scanning}>
+                          <Icon name="camera" size={18} /> {scanning ? t('wizard.fridgeScanning') : t('wizard.fridgeScan')}
+                        </Button>
+                      </Tooltip>
                       <input
                         ref={scanInputRef}
                         type="file"
@@ -652,14 +664,18 @@ export function GeneratePage() {
         {step < 2 ? (
           <Button onClick={() => setStep(step + 1)}>{t('wizard.next')} →</Button>
         ) : (
-          <Button big onClick={() => generate()}><Icon name="wand" size={20} /> {t('wizard.generate')}</Button>
+          <Tooltip text={t('tips.generate')}>
+            <Button big onClick={() => generate()}><Icon name="wand" size={20} /> {t('wizard.generate')}</Button>
+          </Tooltip>
         )}
       </div>
 
       <div className="wiz__surprise">
-        <Button variant="outlined" onClick={() => generate({ ueberrasch_mich: true, kueche: '', kueche_freitext: '', gericht_typ: '', drink_typ: '' })}>
-          <Icon name="gift" size={18} /> {t('wizard.surpriseMe')}
-        </Button>
+        <Tooltip text={t('tips.surprise')}>
+          <Button variant="outlined" onClick={() => generate({ ueberrasch_mich: true, kueche: '', kueche_freitext: '', gericht_typ: '', drink_typ: '' })}>
+            <Icon name="gift" size={18} /> {t('wizard.surpriseMe')}
+          </Button>
+        </Tooltip>
       </div>
 
       {/* Constraints bottom sheet */}

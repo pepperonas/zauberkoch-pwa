@@ -214,3 +214,46 @@
   padding: 0 var(--space-2);
   white-space: nowrap;
 }
+
+/* Supplementary hover tooltip (see Tooltip.tsx) — desktop hover only. */
+.tt { position: relative; display: inline-flex; }
+.tt__bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 12px;
+  border-radius: var(--shape-sm);
+  background: var(--c-surface-container-highest);
+  color: var(--c-on-surface);
+  box-shadow: var(--elev-2);
+  font: var(--type-label-sm);
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.tt__bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--c-surface-container-highest);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tt:hover .tt__bubble,
+  .tt:focus-within .tt__bubble {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt__bubble { transition: opacity 0.12s ease; transform: translateX(-50%); }
+  .tt:hover .tt__bubble, .tt:focus-within .tt__bubble { transform: translateX(-50%); }
+}

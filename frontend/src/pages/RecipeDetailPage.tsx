@@ -12,6 +12,7 @@ import { RecipeView } from '../components/recipe/RecipeView';
 import { ShareDialog } from '../components/recipe/ShareDialog';
 import { Dialog } from '../components/ui/Dialog';
 import { Button } from '../components/ui';
+import { Tooltip } from '../components/ui/Tooltip';
 import { useSnackbar } from '../components/ui/Snackbar';
 import { strings, t } from '../i18n';
 import { api } from '../lib/api';
@@ -115,29 +116,43 @@ export function RecipeDetailPage() {
         onPortionenChange={setPortionen}
         actions={
           <>
-            <Button variant={isFav ? 'tonal' : 'outlined'} onClick={toggleFavorite} aria-pressed={isFav}>
-              <Icon name={isFav ? 'star' : 'starOff'} size={18} /> {t('recipe.favorite')}
-            </Button>
-            <Button variant="outlined" onClick={() => void toShopping()}><Icon name="cart" size={18} /> {t('recipe.toShoppingList')}</Button>
-            <Button variant="outlined" onClick={() => setShareOpen(true)}><Icon name="share" size={18} /> {t('recipe.share')}</Button>
-            <Button variant="outlined" onClick={() => void copy()}><Icon name="copy" size={18} /> {t('recipe.copy')}</Button>
+            <Tooltip text={t('tips.favorite')}>
+              <Button variant={isFav ? 'tonal' : 'outlined'} onClick={toggleFavorite} aria-pressed={isFav}>
+                <Icon name={isFav ? 'star' : 'starOff'} size={18} /> {t('recipe.favorite')}
+              </Button>
+            </Tooltip>
+            <Tooltip text={t('tips.shopping')}>
+              <Button variant="outlined" onClick={() => void toShopping()}><Icon name="cart" size={18} /> {t('recipe.toShoppingList')}</Button>
+            </Tooltip>
+            <Tooltip text={t('tips.share')}>
+              <Button variant="outlined" onClick={() => setShareOpen(true)}><Icon name="share" size={18} /> {t('recipe.share')}</Button>
+            </Tooltip>
+            <Tooltip text={t('tips.copy')}>
+              <Button variant="outlined" onClick={() => void copy()}><Icon name="copy" size={18} /> {t('recipe.copy')}</Button>
+            </Tooltip>
             {recipe.schritte.length > 0 && (
-              <Button onClick={() => setCookOpen(true)}><Icon name="chefhat" size={18} /> {t('recipe.cookMode')}</Button>
+              <Tooltip text={t('tips.cook')}>
+                <Button onClick={() => setCookOpen(true)}><Icon name="chefhat" size={18} /> {t('recipe.cookMode')}</Button>
+              </Tooltip>
             )}
-            <Button
-              variant="tonal"
-              onClick={() => navigate('/', { state: { adaptId: recipeId, openAdapt: true } })}
-            >
-              <Icon name="sparkles" size={18} /> {t('adapt.button')}
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => void api.markCooked(recipeId).then((r) => { setGekocht(r.gekocht_count); show(t('notes.cooked')); })}
-            >
-              <Icon name="checkCircle" size={18} /> {(gekocht ?? detail.data.gekocht_count) > 0
-                ? strings.notes.cookedCount(gekocht ?? detail.data.gekocht_count)
-                : t('notes.cooked')}
-            </Button>
+            <Tooltip text={t('tips.adapt')}>
+              <Button
+                variant="tonal"
+                onClick={() => navigate('/', { state: { adaptId: recipeId, openAdapt: true } })}
+              >
+                <Icon name="sparkles" size={18} /> {t('adapt.button')}
+              </Button>
+            </Tooltip>
+            <Tooltip text={t('tips.cooked')}>
+              <Button
+                variant="outlined"
+                onClick={() => void api.markCooked(recipeId).then((r) => { setGekocht(r.gekocht_count); show(t('notes.cooked')); })}
+              >
+                <Icon name="checkCircle" size={18} /> {(gekocht ?? detail.data.gekocht_count) > 0
+                  ? strings.notes.cookedCount(gekocht ?? detail.data.gekocht_count)
+                  : t('notes.cooked')}
+              </Button>
+            </Tooltip>
           </>
         }
       />
