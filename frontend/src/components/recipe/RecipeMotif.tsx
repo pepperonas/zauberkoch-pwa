@@ -1075,8 +1075,8 @@ function Sandwich({ id, ...svg }: SvgProps) {
 function Shot({ id, v = 0, ...svg }: SvgProps) {
   return (
     <svg {...svg}>
-      <Ground rx={24} />
-      <g transform="rotate(-5 60 74)">
+      <Ground rx={30} />
+      <g transform="rotate(-5 60 74) translate(60 103) scale(1.22) translate(-60 -103)">
         <defs>
           <linearGradient id={`${id}-l`} x1="0" y1="1" x2="0" y2="0">
             <stop offset="0" stopColor="#c77c1a" />
