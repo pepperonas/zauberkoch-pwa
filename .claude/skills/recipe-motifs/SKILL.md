@@ -11,46 +11,40 @@ Erzeuge das neue Motiv **exakt in diesem Stil-System** und registriere es vollst
 
 ## Stil-Spezifikation (verbindlich)
 
-Referenz-Ästhetik: flache, freundliche Vektor-Illustration mit weicher Tiefe
-(wie klassische Material-Cocktail-Apps) — kein Foto-Realismus, keine Outlines
-um alles, keine harten Schwarztöne.
+Referenz-Ästhetik: **Google Material Design Flat Illustration (~2016)** —
+wie in klassischen Material-Apps. Explizit KEIN Emoji-Look.
 
-1. **Canvas**: `viewBox="0 0 120 120"`, Motiv mittig, unten ~12 px Luft.
-2. **Bodenschatten** (immer zuerst): `<ellipse cx="60" cy="~105" rx="26–40" ry="5–6" fill="#000" opacity="0.08" />`.
-3. **Glas/Keramik**: Silhouette als `<path>` mit leichter Verjüngung und
-   gerundeten Ecken (`Q`-Kurven an den Standfüßen). Glas = `fill="#fff" opacity="0.5"`,
-   Keramik = eigener vertikaler `linearGradient` (oben heller).
-4. **Flüssigkeit**: eigener vertikaler `linearGradient` (`x1=0 y1=0 x2=0 y2=1`,
-   oben hell, unten satt), 2–4 px innerhalb der Glaswand, oben ~1/4 Luft (Füllstand).
-   Gradient-IDs IMMER mit dem `id`-Prop prefixen: `` id={`${id}-liq`} `` —
-   sonst kollidieren mehrere Karten in einer Liste.
-5. **Eis**: gedrehte `<rect rx="4–5">` in `#fff` mit `opacity 0.4–0.5`,
-   optional kleinerer Highlight-Rect obendrauf.
-6. **Glanz**: Rim-Linie (`stroke="#fff" strokeWidth="3" opacity 0.85`) +
-   eine vertikale/gebogene Shine-Linie (`opacity 0.3–0.5`, `strokeLinecap="round"`).
-7. **Garnitur/Toppings**: einfache geometrische Formen mit je einem helleren
-   Akzent (Zitrusrad = Kreis + hellerer Innenkreis + Segmentlinien; Kirsche =
-   Kreis + Mini-Highlight-Kreis; Lachs = gerundetes Rect + heller Streifen).
-   Naturfarben, satt aber nicht neon.
-8. **Farbwelt**: warm & appetitlich — Gelb `#ffe27a→#f5b73c`, Amber
-   `#f0a95c→#c96f2e`, Rosé `#ff9c9c→#e85d75`, Limette `#7ed26a/#c9ef9a`,
-   Tomate `#e6503f`, Basilikum `#4fae5c`, Keramik-Teal `#3f7d8c→#2c5a66`,
-   Reis/Teller `#fdfaf3/#f7f3ec`. Neue Farben nur in dieser Sättigungs-Liga.
-   Feste Farben (theme-unabhängig) — die Motive funktionieren auf Light & Dark.
-9. **Verboten**: Text, Emojis, Filter/Blur, `<image>`, Animationen,
-   CSS-Variablen in Fills, IDs ohne `${id}`-Prefix.
+1. **Canvas**: `viewBox="0 0 120 120"`, Objekt füllt ~60–70 %, viel Whitespace.
+2. **Rotation**: das gesamte Objekt 5–10° gedreht (`<g transform="rotate(±6 60 62)">`)
+   — der flache Bodenschatten bleibt AUSSERHALB der Rotation (horizontal).
+3. **Bodenschatten**: flache Ellipse ohne Blur (`<Ground/>`, #263238, opacity 0.08).
+4. **Reine Farbflächen**: einfache geometrische Formen (Trapeze, Rechtecke,
+   Kreise, Pfade mit wenigen Punkten). Formen trennen sich NUR durch Farbe —
+   **keine Konturen/Outlines, keine Glanz-/Shine-Linien, keine Highlights,
+   kein 3D, keine Blur-Schatten**. (Strokes sind nur als "Band-Formen"
+   erlaubt, z. B. Spaghetti-Stränge — nie als Umrandung.)
+5. **Gradients**: nur lineare Verläufe INNERHALB einer Fläche, subtil
+   (dunkler → heller Ton derselben Farbe, z. B. Flüssigkeit, Keramik).
+   IDs IMMER `${id}`-geprefixt.
+6. **Transparenz**: halbtransparente Überlagerungen 0.3–0.6 für Glas
+   (#90a4ae, ~0.35–0.45), Eis (weiß, ~0.4), Dampf (#b0bec5, ~0.45),
+   Bubbles (weiß, ~0.55).
+7. **Farben**: max. 4–6 pro Grafik, gedeckt aber satt (Material-600/400-Niveau:
+   #e53935, #fb8c00, #fbc02d, #7cb342, #00838f, #c62828, #6d4c41, #37474f …).
+8. **Verboten**: Text, Emojis, Filter/Blur, `<image>`, Animationen,
+   Highlight-Punkte auf Früchten, weiße Rim-/Shine-Striche.
 
 ## Generator-Prompt (für neue Motive, auch außerhalb von Claude Code nutzbar)
 
-> Erzeuge eine React-SVG-Komponente `function <Name>({ id, ...svg }: SvgProps)`
-> für das Motiv „<BESCHREIBUNG>" im Zauberkoch-Illustrationsstil:
-> flacher Vektor-Look, viewBox 0 0 120 120, weicher Bodenschatten-Ellipse
-> (#000, opacity 0.08), Hauptobjekt aus Pfaden mit gerundeten Ecken,
-> vertikale Flüssigkeits-/Material-Gradienten (oben hell), translucentes
-> Weiß für Glas (opacity 0.5) und Eis (0.4–0.5), Rim- und Shine-Highlights
-> in Weiß, geometrische Garnitur mit hellerem Akzent pro Form, warme
-> Naturfarben. Alle Gradient-IDs als `${id}-<name>`. Keine Filter, kein
-> Text, keine Outlines um alles.
+> Erzeuge eine React-SVG-Komponente `function <Name>({ id, v = 0, ...svg }: SvgProps)`
+> für das Motiv „<BESCHREIBUNG>" im Stil von Google Material Design Flat
+> Illustrations (~2016): reine Vektorgrafik aus einfachen geometrischen
+> Formen, KEINE Outlines/Strokes als Kontur, KEINE Glanzeffekte/Highlights,
+> KEIN Emoji-Look/3D, flacher blur-freier Bodenschatten (außerhalb der
+> Rotation), das Objekt 5–10° rotiert, max. 4–6 gedeckte satte Farben,
+> subtile lineare Gradients innerhalb der Flächen (dunkel→hell derselben
+> Farbe, IDs als `${id}-<name>`), halbtransparente Überlagerungen (0.3–0.6)
+> für Glas/Eis/Dampf, Objekt füllt 60–70 % der viewBox 0 0 120 120.
 
 ## Varianten-System
 

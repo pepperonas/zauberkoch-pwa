@@ -16,7 +16,7 @@ from app.core.config import get_settings
 logger = logging.getLogger("zauberkoch.og")
 
 W, H = 1200, 630
-STYLE_VERSION = 4  # bump to invalidate cached PNGs after a redesign
+STYLE_VERSION = 5  # bump to invalidate cached PNGs after a redesign
 FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 MOTIF_DIR = Path(__file__).resolve().parent.parent / "assets" / "motifs"
 
