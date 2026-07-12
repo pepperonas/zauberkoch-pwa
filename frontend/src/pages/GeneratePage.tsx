@@ -25,10 +25,11 @@ import { strings, t } from '../i18n';
 import { downscaleToJpegBase64 } from '../lib/imageScale';
 import { cuisineAllowsMeal } from '../lib/mealCompat';
 import { api } from '../lib/api';
-import type { GenerateParams, Modus, Schwierigkeit } from '../lib/types';
+import type { GenerateParams, Me, Modus, Preferences, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
 import { slowSpatial, staggerIn } from '../motion/tokens';
 import { useApp } from '../state/app';
+import { useLocalStorageState } from '../state/useLocalStorageState';
 import {
   cancelGeneration,
   markGenerationSeen,
@@ -53,14 +54,26 @@ export function GeneratePage() {
   const [gerichtTyp, setGerichtTyp] = useState('');
   const [geschmack, setGeschmack] = useState<string[]>([]);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
-  const [vegetarisch, setVegetarisch] = useState(false);
-  const [vegan, setVegan] = useState(false);
-  const [glutenfrei, setGlutenfrei] = useState(false);
-  const [laktosefrei, setLaktosefrei] = useState(false);
-  const [proteinreich, setProteinreich] = useState(false);
-  const [ketogen, setKetogen] = useState(false);
-  const [maxZeit, setMaxZeit] = useState<number | null>(null);
-  const [schwierigkeit, setSchwierigkeit] = useState<Schwierigkeit | null>(null);
+  // Diet flags live in the persistent profile (single source of truth, merged
+  // into every generation server-side). The Feinschliff switches read them and
+  // write them back — so they reflect the profile AND persist everywhere.
+  const dietPrefs = me?.preferences;
+  const diet = {
+    vegetarisch: dietPrefs?.vegetarisch ?? false,
+    vegan: dietPrefs?.vegan ?? false,
+    glutenfrei: dietPrefs?.glutenfrei ?? false,
+    laktosefrei: dietPrefs?.laktosefrei ?? false,
+    proteinreich: dietPrefs?.proteinreich ?? false,
+    ketogen: dietPrefs?.ketogen ?? false,
+  };
+  // Time/difficulty have no profile home -> remembered per device (localStorage),
+  // so they survive reload + navigation.
+  const [maxZeitRaw, setMaxZeitRaw] = useLocalStorageState<string>('zk-wiz-maxzeit', () => '');
+  const [schwierigkeitRaw, setSchwierigkeitRaw] = useLocalStorageState<string>('zk-wiz-schwierigkeit', () => '');
+  const maxZeit = maxZeitRaw ? Number(maxZeitRaw) : null;
+  const schwierigkeit = (schwierigkeitRaw || null) as Schwierigkeit | null;
+  const setMaxZeit = (v: number | null) => setMaxZeitRaw(v == null ? '' : String(v));
+  const setSchwierigkeit = (v: Schwierigkeit | null) => setSchwierigkeitRaw(v ?? '');
   const [personen, setPersonen] = useState(me?.preferences?.standard_personen ?? 2);
   const [fridge, setFridge] = useState<string[]>([]);
   const [fridgeInput, setFridgeInput] = useState('');
@@ -133,12 +146,12 @@ export function GeneratePage() {
       gericht_typ: mode === 'cocktail' ? '' : gerichtTyp,
       drink_typ: mode === 'cocktail' ? (drinkTypFrei.trim() || drinkTyp) : '',
       geschmack,
-      vegetarisch,
-      vegan,
-      glutenfrei,
-      laktosefrei,
-      proteinreich,
-      ketogen,
+      vegetarisch: diet.vegetarisch,
+      vegan: diet.vegan,
+      glutenfrei: diet.glutenfrei,
+      laktosefrei: diet.laktosefrei,
+      proteinreich: diet.proteinreich,
+      ketogen: diet.ketogen,
       max_zeit_min: maxZeit,
       schwierigkeit,
       personen,
@@ -148,12 +161,24 @@ export function GeneratePage() {
       ...overrides,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, kueche, kuecheFrei, gerichtTyp, drinkTyp, drinkTypFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, proteinreich, ketogen, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
+    [mode, kueche, kuecheFrei, gerichtTyp, drinkTyp, drinkTypFrei, geschmack, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
   );
 
   const invalidateRecipes = useCallback(
     () => void queryClient.invalidateQueries({ queryKey: ['recipes'] }),
     [queryClient],
+  );
+
+  // Persist a diet-flag change to the profile (optimistic cache update + PUT).
+  const savePrefs = useCallback(
+    (patch: Partial<Preferences>) => {
+      const base = me?.preferences;
+      if (!base) return;
+      const next: Preferences = { ...base, ...patch };
+      queryClient.setQueryData<Me | null>(['me'], (old) => (old ? { ...old, preferences: next } : old));
+      void api.putPreferences(next).catch(() => refreshMe());
+    },
+    [me, queryClient, refreshMe],
   );
 
   const generate = (overrides: Partial<GenerateParams> = {}) => {
@@ -641,29 +666,32 @@ export function GeneratePage() {
       <Sheet open={constraintsOpen} onClose={() => setConstraintsOpen(false)} label={t('wizard.constraints')}>
         <div className="stack">
           <h3>{t('wizard.constraints')}</h3>
+          <p className="muted" style={{ font: 'var(--type-label-sm)', marginTop: 'calc(-1 * var(--space-2))' }}>
+            {t('wizard.dietPersistHint')}
+          </p>
           <div className="wiz__row">
             <span className="wiz__row-label">{t('wizard.vegetarian')}</span>
-            <Switch checked={vegetarisch} onChange={setVegetarisch} label={t('wizard.vegetarian')} />
+            <Switch checked={diet.vegetarisch} onChange={(v) => savePrefs({ vegetarisch: v })} label={t('wizard.vegetarian')} />
           </div>
           <div className="wiz__row">
             <span className="wiz__row-label">{t('wizard.vegan')}</span>
-            <Switch checked={vegan} onChange={(v) => { setVegan(v); if (v) setVegetarisch(true); }} label={t('wizard.vegan')} />
+            <Switch checked={diet.vegan} onChange={(v) => savePrefs({ vegan: v, ...(v ? { vegetarisch: true } : {}) })} label={t('wizard.vegan')} />
           </div>
           <div className="wiz__row">
             <span className="wiz__row-label">{t('wizard.glutenFree')}</span>
-            <Switch checked={glutenfrei} onChange={setGlutenfrei} label={t('wizard.glutenFree')} />
+            <Switch checked={diet.glutenfrei} onChange={(v) => savePrefs({ glutenfrei: v })} label={t('wizard.glutenFree')} />
           </div>
           <div className="wiz__row">
             <span className="wiz__row-label">{t('wizard.lactoseFree')}</span>
-            <Switch checked={laktosefrei} onChange={setLaktosefrei} label={t('wizard.lactoseFree')} />
+            <Switch checked={diet.laktosefrei} onChange={(v) => savePrefs({ laktosefrei: v })} label={t('wizard.lactoseFree')} />
           </div>
           <div className="wiz__row">
             <span className="wiz__row-label">{t('wizard.highProtein')}</span>
-            <Switch checked={proteinreich} onChange={setProteinreich} label={t('wizard.highProtein')} />
+            <Switch checked={diet.proteinreich} onChange={(v) => savePrefs({ proteinreich: v })} label={t('wizard.highProtein')} />
           </div>
           <div className="wiz__row">
             <span className="wiz__row-label">{t('wizard.keto')}</span>
-            <Switch checked={ketogen} onChange={setKetogen} label={t('wizard.keto')} />
+            <Switch checked={diet.ketogen} onChange={(v) => savePrefs({ ketogen: v })} label={t('wizard.keto')} />
           </div>
           <div>
             <span className="wiz__row-label">{t('wizard.maxTime')}</span>

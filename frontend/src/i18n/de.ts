@@ -56,6 +56,7 @@ export const de = {
     tasteTitle: 'Worauf hast du Lust?',
     detailsTitle: 'Noch Wünsche?',
     constraints: 'Rahmenbedingungen',
+    dietPersistHint: 'Ernährung wird in deinem Profil gespeichert und gilt für jedes Rezept.',
     vegetarian: 'Vegetarisch',
     vegan: 'Vegan',
     glutenFree: 'Glutenfrei',
