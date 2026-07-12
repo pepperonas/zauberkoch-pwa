@@ -159,11 +159,3 @@ def logout(
     return response
 
 
-@router.get("/invite/{code}")
-def check_invite(code: str, request: Request, db: DbSession = Depends(get_db)) -> dict:
-    """Pre-login validation so the landing page can give instant feedback."""
-    check_ip_limit(request, scope="auth", limit=20, window_s=60)
-    row = db.execute(
-        select(Invite).where(Invite.code == code.strip().lower(), Invite.used_at.is_(None))
-    ).scalar_one_or_none()
-    return {"valid": row is not None}

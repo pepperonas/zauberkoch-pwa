@@ -59,13 +59,17 @@ def test_try_forces_safe_params(client, mock_ai):
     assert p.regenerate is False
 
 
+def test_no_public_invite_oracle(client):
+    # invite validity must not be probeable without an OAuth flow
+    assert client.get("/api/v1/auth/invite/zk-abcdefghjkmnp").status_code == 404
+
+
 def test_invites_provisioned_and_signup_flow(client, db_session, logged_in, monkeypatch):  # noqa: F811
     codes = client.get("/api/v1/me/invites").json()["items"]
     assert len(codes) == 5
     assert all(not c["used"] for c in codes)
     code = codes[0]["code"]
-
-    assert client.get(f"/api/v1/auth/invite/{code}").json()["valid"] is True
+    assert len(code) >= 15  # >= 64 bits of entropy ("zk-" + 13 chars)
 
     # bob is NOT allowlisted, but carries the invite code
     r = do_login_callback(client, monkeypatch, claims=fake_claims(email="bob@example.com", sub="sub-bob"), invite=code)
@@ -73,7 +77,6 @@ def test_invites_provisioned_and_signup_flow(client, db_session, logged_in, monk
     assert client.get("/api/v1/me").json()["email"] == "bob@example.com"
 
     # single-use: same code must not work again
-    assert client.get(f"/api/v1/auth/invite/{code}").json()["valid"] is False
     r = do_login_callback(client, monkeypatch, claims=fake_claims(email="carol@example.com", sub="sub-c"), invite=code)
     assert "login_error=not_allowed" in r.headers["location"]
 

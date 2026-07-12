@@ -68,6 +68,13 @@ def put_preferences(
 
 
 INVITES_PER_USER = 5
+# 13 chars over a 31-symbol unambiguous lowercase alphabet ≈ 64.4 bits entropy
+# (codes are lowercased on validation, so the alphabet must be lowercase-safe)
+_CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"
+
+
+def _new_invite_code() -> str:
+    return "zk-" + "".join(secrets.choice(_CODE_ALPHABET) for _ in range(13))
 
 
 @router.get("/invites")
@@ -77,7 +84,7 @@ def my_invites(user: User = Depends(get_current_user), db: DbSession = Depends(g
 
     rows = list(db.execute(_select(Invite).where(Invite.created_by == user.id).order_by(Invite.id)).scalars())
     while len(rows) < INVITES_PER_USER:
-        invite = Invite(code=f"zk-{secrets.token_hex(4)}", created_by=user.id)
+        invite = Invite(code=_new_invite_code(), created_by=user.id)
         db.add(invite)
         db.commit()
         rows.append(invite)
