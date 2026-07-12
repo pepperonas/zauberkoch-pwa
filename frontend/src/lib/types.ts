@@ -103,6 +103,7 @@ export interface RecipeListItem {
   tags: string[];
   zeit_gesamt: number | null;
   schwierigkeit: Schwierigkeit | null;
+  glas?: string | null;
   is_favorite: boolean;
   created_at: string;
 }

@@ -186,6 +186,7 @@ def test_history_and_detail(client, logged_in, mock_ai):
     listing = client.get("/api/v1/recipes").json()
     assert len(listing["items"]) == 1
     assert listing["items"][0]["titel"] == RECIPE["titel"]
+    assert "glas" in listing["items"][0]  # card motif matching needs it
 
     search = client.get("/api/v1/recipes?q=limone").json()
     assert len(search["items"]) == 1

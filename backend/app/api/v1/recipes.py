@@ -295,6 +295,7 @@ def list_recipes(
                 "tags": recipe.get("tags", []),
                 "zeit_gesamt": recipe.get("zeit_gesamt"),
                 "schwierigkeit": recipe.get("schwierigkeit"),
+                "glas": recipe.get("glas"),  # cocktail glass type -> card motif
                 "is_favorite": r.id in fav_ids,
                 "created_at": r.created_at.isoformat(),
             }

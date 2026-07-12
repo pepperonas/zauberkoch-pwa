@@ -10,6 +10,7 @@ import { api } from '../../lib/api';
 import type { RecipeListItem } from '../../lib/types';
 import { riseIn, spring, stagger } from '../../motion/springs';
 import { useSnackbar } from '../ui/Snackbar';
+import { motifForRecipe, RecipeMotif } from './RecipeMotif';
 import { fmtMin } from './RecipeView';
 import './recipe.css';
 
@@ -70,11 +71,16 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
           {item.is_favorite ? '⭐' : '☆'}
         </motion.button>
       </div>
-      <h3 style={{ margin: 'var(--space-2) 0' }}>{item.titel}</h3>
-      <p className="muted" style={{ font: 'var(--type-body)' }}>{item.teaser}</p>
-      <div className="hero__stats">
-        {item.zeit_gesamt != null && <span className="stat">🕐 {fmtMin(item.zeit_gesamt)}</span>}
-        {item.schwierigkeit && <span className="stat">📶 {item.schwierigkeit}</span>}
+      <div className="recipecard__body">
+        <div className="recipecard__text">
+          <h3 style={{ margin: 'var(--space-2) 0' }}>{item.titel}</h3>
+          <p className="muted" style={{ font: 'var(--type-body)' }}>{item.teaser}</p>
+          <div className="hero__stats">
+            {item.zeit_gesamt != null && <span className="stat">🕐 {fmtMin(item.zeit_gesamt)}</span>}
+            {item.schwierigkeit && <span className="stat">📶 {item.schwierigkeit}</span>}
+          </div>
+        </div>
+        <RecipeMotif motif={motifForRecipe(item)} className="recipecard__motif" />
       </div>
     </motion.div>
   );

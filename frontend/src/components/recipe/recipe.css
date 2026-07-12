@@ -147,3 +147,17 @@
   font-size: 1.3rem;
   color: var(--c-on-surface-variant);
 }
+.recipecard__body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.recipecard__text {
+  flex: 1;
+  min-width: 0;
+}
+.recipecard__motif {
+  flex: none;
+  width: 88px;
+  height: 88px;
+}
