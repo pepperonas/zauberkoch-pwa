@@ -1,0 +1,24 @@
+import { chromium } from '@playwright/test';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 420, height: 720 } });
+await p.goto('http://localhost:5199/', { waitUntil: 'networkidle' });
+await p.getByText('Dev-Login', { exact: false }).first().click().catch(()=>{});
+await p.waitForTimeout(1500);
+await p.goto('http://localhost:5199/verlauf', { waitUntil: 'networkidle' });
+await p.waitForTimeout(1000);
+await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+await p.waitForTimeout(300);
+const beforeY = await p.evaluate(() => window.scrollY);
+await p.locator('a[href^="/rezept/"]').last().click().catch(()=>{});
+await p.waitForSelector('.hero__title, .hero', { timeout: 8000 }).catch(()=>{});
+await p.waitForTimeout(500);
+const afterY = await p.evaluate(() => window.scrollY);
+const title = await p.locator('.hero__title').first().textContent().catch(()=>null);
+console.log(JSON.stringify({ beforeY, afterY, url: p.url(), title }));
+await p.screenshot({ path: '/tmp/zk-recipe-top2.png' });
+// now test BACK (POP) preserves the list scroll
+await p.goBack({ waitUntil: 'networkidle' });
+await p.waitForTimeout(600);
+const backY = await p.evaluate(() => window.scrollY);
+console.log(JSON.stringify({ backY, backUrl: p.url() }));
+await b.close();

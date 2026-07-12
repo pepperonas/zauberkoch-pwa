@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { lazy, Suspense, useState } from 'react';
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useLayoutEffect, useState } from 'react';
+import { Link, NavLink, Route, Routes, useLocation, useNavigationType } from 'react-router-dom';
 
 import { Icon, type IconName } from './components/icons';
 import { ProfileSheet } from './components/ProfileSheet';
@@ -54,6 +54,18 @@ const GenerationBar = lazyPage('genbar', () =>
   import('./components/GenerationPill').then((m) => ({ default: m.GenerationBar })),
 );
 
+// Opening a page (e.g. a recipe from a scrolled list) should start at the top.
+// Only reset on forward navigations — leave POP (browser back/forward) so the
+// previous list keeps its scroll position.
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const navType = useNavigationType();
+  useLayoutEffect(() => {
+    if (navType !== 'POP') window.scrollTo(0, 0);
+  }, [pathname, navType]);
+  return null;
+}
+
 const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
   { to: '/', icon: 'sparkles', label: strings.nav.generate },
   { to: '/favoriten', icon: 'star', label: strings.nav.favorites },
@@ -74,6 +86,7 @@ export default function App() {
 
   return (
     <div className="shell">
+      <ScrollToTop />
       <header className="shell__header">
         {/* SPA link — a real <a href> would hard-reload and kill a running generation */}
         <Link to="/" className="shell__logo">
