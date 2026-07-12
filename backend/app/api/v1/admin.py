@@ -55,6 +55,34 @@ def stats(
         .order_by(func.count().desc())
     ).all()
 
+    # Daily time series for the trend sparklines (bucketed from the rows above,
+    # no extra query). Day axis = the last `days` calendar days ending today.
+    from collections import defaultdict
+
+    today = datetime.now(timezone.utc).date()
+    day_list = [today - timedelta(days=i) for i in range(days - 1, -1, -1)]
+    day_index = {d.isoformat(): i for i, d in enumerate(day_list)}
+    gens_by_day = [0] * len(day_list)
+    cost_by_day = [0.0] * len(day_list)
+    user_series: dict[int, list[int]] = defaultdict(lambda: [0] * len(day_list))
+    for r in rows:
+        i = day_index.get(r.created_at.date().isoformat())
+        if i is None:
+            continue
+        gens_by_day[i] += 1
+        user_series[r.user_id][i] += 1
+        if not r.cached:
+            cost_by_day[i] += (
+                r.input_tokens / 1e6 * PRICE_IN
+                + r.output_tokens / 1e6 * PRICE_OUT
+                + r.cache_read_tokens / 1e6 * PRICE_CACHE_READ
+                + r.cache_write_tokens / 1e6 * PRICE_CACHE_WRITE
+            )
+    daily = [
+        {"day": d.isoformat(), "gens": gens_by_day[i], "cost_usd": round(cost_by_day[i], 3)}
+        for i, d in enumerate(day_list)
+    ]
+
     feedback_rows = db.execute(
         select(Recipe.prompt_version, Recipe.feedback, func.count())
         .where(Recipe.feedback.is_not(None))
@@ -79,8 +107,10 @@ def stats(
         ),
         "cost_usd": round(cost, 2),
         "median_duration_ms": durations[len(durations) // 2] if durations else 0,
+        "daily": daily,
         "per_user": [
-            {"email": users.get(uid, f"#{uid}"), "count": n} for uid, n in per_user_rows
+            {"email": users.get(uid, f"#{uid}"), "count": n, "series": user_series[uid]}
+            for uid, n in per_user_rows
         ],
         "feedback": feedback,
         "limits": {

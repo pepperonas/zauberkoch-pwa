@@ -56,6 +56,13 @@ def test_admin_stats_shape(client, db_session, admin, monkeypatch, mock_ai):
     assert stats["feedback"][version]["up"] == 1
     assert stats["limits"]["per_user"] == get_settings().daily_limit_per_user
 
+    # daily trend series (7-day axis) — sparkline data
+    assert len(stats["daily"]) == 7
+    assert sum(d["gens"] for d in stats["daily"]) == 2  # both generations today
+    assert stats["daily"][-1]["gens"] == 2  # newest bucket = today
+    u = stats["per_user"][0]
+    assert len(u["series"]) == 7 and sum(u["series"]) == 2
+
 
 def test_admin_allowlist_crud(client, admin):
     r = client.post("/api/v1/admin/allowlist", json={"email": "Neu@Example.COM"}, headers=admin)

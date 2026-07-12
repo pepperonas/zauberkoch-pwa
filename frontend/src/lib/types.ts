@@ -152,7 +152,8 @@ export interface AdminStats {
   cache_hit_rate: number;
   cost_usd: number;
   median_duration_ms: number;
-  per_user: { email: string; count: number }[];
+  daily: { day: string; gens: number; cost_usd: number }[];
+  per_user: { email: string; count: number; series: number[] }[];
   feedback: Record<string, { up: number; down: number }>;
   limits: { per_user: number; global: number };
 }

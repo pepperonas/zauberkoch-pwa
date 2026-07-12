@@ -1,0 +1,84 @@
+/* Admin dashboard — sticky sub-nav + grouped sections (M3 dark). */
+
+.admin__subnav {
+  position: sticky;
+  z-index: 9;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin: 0 calc(-1 * var(--space-4));
+  padding: var(--space-2) var(--space-4);
+  background: color-mix(in srgb, var(--c-surface) 90%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--c-outline-variant);
+}
+.admin__nav {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.admin__nav::-webkit-scrollbar { display: none; }
+.admin__navbtn {
+  flex: none;
+  padding: 6px var(--space-3);
+  border-radius: var(--shape-full);
+  font: var(--type-label);
+  color: var(--c-on-surface-variant);
+  white-space: nowrap;
+}
+.admin__navbtn--active {
+  background: var(--c-primary-container);
+  color: var(--c-on-primary-container);
+}
+.admin__days { display: flex; gap: var(--space-1); flex: none; }
+.admin__day {
+  padding: 6px var(--space-3);
+  border-radius: var(--shape-full);
+  font: var(--type-label);
+  color: var(--c-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+.admin__day--active { background: var(--c-secondary-container); color: var(--c-on-secondary-container); }
+
+.admin__section { scroll-margin-top: 132px; margin-top: var(--space-8); }
+.admin__section > h2 {
+  font: var(--type-title-lg);
+  margin-bottom: var(--space-4);
+  display: flex; align-items: center; gap: var(--space-2);
+}
+
+/* KPI cards */
+.admin__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+.admin__kpi {
+  background: var(--c-surface-container);
+  border-radius: var(--shape-lg);
+  padding: var(--space-4);
+}
+.admin__kpi-label { font: var(--type-label-sm); color: var(--c-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em; }
+.admin__kpi-value { font: var(--type-display-md); font-size: clamp(1.5rem, 6vw, 2rem); font-variant-numeric: tabular-nums; margin: var(--space-1) 0; color: var(--c-on-surface); }
+.admin__kpi-sub { font: var(--type-label-sm); color: var(--c-on-surface-variant); }
+
+/* Trend card */
+.admin__trend { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); }
+.admin__trend-cell { min-width: 0; }
+.admin__trend-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.admin-spark { display: block; width: 100%; }
+.admin-spark svg { width: 100%; height: auto; }
+
+/* Usage / rows */
+.admin__urow { display: flex; align-items: center; gap: var(--space-3); min-height: 52px; padding: var(--space-1) 0; }
+.admin__urow + .admin__urow { border-top: 1px solid var(--c-outline-variant); }
+.admin__uemail { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin__uspark { flex: none; width: 88px; }
+.admin__unums { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* System info tiles */
+.admin__sys { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3); }
