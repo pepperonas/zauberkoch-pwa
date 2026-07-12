@@ -49,6 +49,36 @@ def test_user_prompt_variation_hint_only_on_regenerate():
     assert "ANDERE Variante" in recipe_v2.build_user_prompt(GenerateParams(modus="kochen", regenerate=True))
 
 
+def test_v4_variation_lists_already_received_titles():
+    from app.prompts import recipe_v4
+    from app.services import ai
+
+    assert ai.prompt_version() == recipe_v4.PROMPT_VERSION == "v4"
+    # system block unchanged vs v3 -> Anthropic prompt cache keeps hitting
+    from app.prompts import recipe_v3
+
+    assert recipe_v4.SYSTEM_PROMPT == recipe_v3.SYSTEM_PROMPT
+
+    params = GenerateParams(modus="kochen", regenerate=True, vermeiden_titel=["Pasta al Limone", "Risotto"])
+    prompt = recipe_v4.build_user_prompt(params)
+    assert "Bereits erhalten" in prompt
+    assert "„Pasta al Limone“" in prompt and "„Risotto“" in prompt
+
+    # never rendered without regenerate, and absent when list is empty
+    assert "Bereits erhalten" not in recipe_v4.build_user_prompt(
+        GenerateParams(modus="kochen", vermeiden_titel=["Pasta al Limone"])
+    )
+    assert "Bereits erhalten" not in recipe_v4.build_user_prompt(GenerateParams(modus="kochen", regenerate=True))
+
+
+def test_vermeiden_titel_and_personen_do_not_change_cache_key():
+    from app.services.cache import params_hash
+
+    a = GenerateParams(modus="kochen", kueche="Italienisch", personen=2)
+    b = GenerateParams(modus="kochen", kueche="Italienisch", personen=4, vermeiden_titel=["X"], regenerate=True)
+    assert params_hash(a) == params_hash(b)
+
+
 def test_cocktail_prompt_respects_alcohol_free():
     params = GenerateParams(modus="cocktail", alkoholfrei=True, basis_spirituose="Gin")
     prompt = recipe_v2.build_user_prompt(params)
@@ -75,3 +105,7 @@ def test_llm_schema_is_fully_hardened():
     _assert_hardened(schema)
     assert "titel" in schema["properties"]
     assert "zutaten" in schema["required"]
+    # empty ingredient/step lists must be schema-impossible (seen once in
+    # prod); the API supports only minItems 0|1 — larger values are a 400
+    assert schema["properties"]["zutaten"]["minItems"] == 1
+    assert schema["properties"]["schritte"]["minItems"] == 1

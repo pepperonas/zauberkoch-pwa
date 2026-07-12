@@ -37,6 +37,7 @@ def mock_ai(monkeypatch):
 
     async def fake_events(params: GenerateParams):
         calls["count"] += 1
+        calls["last_params"] = params
         recipe = dict(RECIPE)
         if params.regenerate:
             recipe = {**RECIPE, "titel": "Variante: " + RECIPE["titel"]}
@@ -96,6 +97,8 @@ def test_repeat_by_same_user_yields_fresh_variation(client, logged_in, mock_ai):
     assert mock_ai["count"] == 2
     assert dict(events)["meta"]["titel"].startswith("Variante:")
     assert len(client.get("/api/v1/recipes").json()["items"]) == 2  # both in history
+    # the variation prompt is steered away from what the user already got
+    assert "Pasta al Limone" in mock_ai["last_params"].vermeiden_titel
 
 
 def test_cache_serves_other_users_first_request(client, db_session, logged_in, mock_ai, monkeypatch):
@@ -123,13 +126,28 @@ def test_regenerate_bypasses_cache(client, logged_in, mock_ai):
     assert meta["titel"].startswith("Variante:")
 
 
+def test_personen_change_scales_cached_recipe(client, logged_in, mock_ai):
+    """Only the personen count changed -> no new generation, cached recipe
+    is served scaled (personen is excluded from the cache key)."""
+    generate(client, logged_in)  # for 2
+    events = generate(client, logged_in, {**PARAMS, "personen": 4})
+    saved = events[-1][1]
+    assert saved["cached"] is True  # free + instant
+    assert mock_ai["count"] == 1
+    data = dict(events)
+    assert data["meta"]["portionen"] == 4
+    zutaten = [d for name, d in events if name == "zutat"]
+    assert zutaten[0]["menge"] == 500  # 250 g Spaghetti x2
+    assert zutaten[2]["menge"] == 120  # 60 g Parmesan x2
+
+
 def test_user_daily_limit(client, logged_in, mock_ai, monkeypatch):
     from app.core.config import get_settings
 
     monkeypatch.setattr(get_settings(), "daily_limit_per_user", 2)
     generate(client, logged_in)
-    generate(client, logged_in, {**PARAMS, "personen": 3})
-    r = client.post("/api/v1/recipes/generate", json={**PARAMS, "personen": 4}, headers=logged_in)
+    generate(client, logged_in, {**PARAMS, "geschmack": ["umami"]})
+    r = client.post("/api/v1/recipes/generate", json={**PARAMS, "geschmack": ["sauer"]}, headers=logged_in)
     assert r.status_code == 429
     body = r.json()["error"]
     assert body["code"] == "daily_limit_user"
@@ -141,7 +159,7 @@ def test_global_daily_limit(client, logged_in, mock_ai, monkeypatch):
 
     monkeypatch.setattr(get_settings(), "daily_limit_global", 1)
     generate(client, logged_in)
-    r = client.post("/api/v1/recipes/generate", json={**PARAMS, "personen": 5}, headers=logged_in)
+    r = client.post("/api/v1/recipes/generate", json={**PARAMS, "kueche": "Thai"}, headers=logged_in)
     assert r.status_code == 429
     assert r.json()["error"]["code"] == "daily_limit_global"
 

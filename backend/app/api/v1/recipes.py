@@ -17,7 +17,7 @@ from app.db import get_db
 from app.models import Favorite, Generation, Recipe, User
 from app.schemas.recipe import GenerateParams
 from app.api.v1.me import load_preferences
-from app.services import ai, cache, ratelimit
+from app.services import ai, aggregation, cache, ratelimit
 from app.services.json_stream import replay_events
 
 logger = logging.getLogger("zauberkoch.recipes")
@@ -57,6 +57,27 @@ def _persist_recipe(db: DbSession, user_id: int, params: GenerateParams, recipe:
     return row
 
 
+def _scale_recipe(recipe: dict, personen: int) -> dict:
+    """Serve a cached recipe for a different personen count: pure amount
+    scaling (personen is excluded from the cache key for exactly this)."""
+    base = recipe.get("portionen") or 0
+    if not personen or not base or base == personen:
+        return recipe
+    factor = personen / base
+
+    def nice(value: float | str | None) -> float | str | None:
+        if isinstance(value, float):
+            rounded = round(value, 2)
+            return int(rounded) if rounded.is_integer() else rounded
+        return value
+
+    return {
+        **recipe,
+        "portionen": personen,
+        "zutaten": [{**z, "menge": nice(aggregation.scale(z.get("menge"), factor))} for z in recipe.get("zutaten", [])],
+    }
+
+
 # Live generations keep running after a client disconnect so the paid result
 # is persisted + cached; hold task references to protect them from GC.
 _live_tasks: set[asyncio.Task] = set()
@@ -74,7 +95,8 @@ async def generate(
             detail={"code": "adult_required", "message": "Bitte zuerst bestätigen, dass du 18+ bist."},
         )
 
-    # Merge the user's persistent preferences (diet flags OR'ed, no-gos united)
+    # Merge the user's persistent preferences (diet flags OR'ed, no-gos united).
+    # vermeiden_titel is strictly server-injected — discard client values.
     prefs = load_preferences(user)
     params = params.model_copy(
         update={
@@ -83,19 +105,33 @@ async def generate(
             "glutenfrei": params.glutenfrei or prefs.glutenfrei,
             "laktosefrei": params.laktosefrei or prefs.laktosefrei,
             "vermeiden": sorted({*params.vermeiden, *prefs.vermeiden}),
+            "vermeiden_titel": [],
         }
     )
 
     h = cache.params_hash(params)
     current_version = ai.prompt_version()
+    params_json = json.dumps(params.cache_relevant(), ensure_ascii=False, sort_keys=True)
+
+    def _known_titles() -> list[str]:
+        """Titles the user already received for these params (newest first)."""
+        return list(
+            db.execute(
+                select(Recipe.titel)
+                .where(Recipe.user_id == user.id, Recipe.params_json == params_json)
+                .order_by(Recipe.id.desc())
+                .limit(5)
+            ).scalars()
+        )
+
     cached = None if params.regenerate else cache.get_cached(db, h, current_version)
 
     if cached is not None:
         # A cached recipe the user has already received is a repeat, not a
-        # convenience — generate a fresh variation instead. The cache still
-        # serves first-time requests (other users, retry after an error).
+        # convenience — generate a fresh variation instead. Exception: only
+        # the personen count changed -> pure scaling, served from cache. The
+        # cache still serves first-time requests (other users, error retry).
         titel = json.loads(cached.recipe_json).get("titel", "")
-        params_json = json.dumps(params.cache_relevant(), ensure_ascii=False, sort_keys=True)
         seen = db.execute(
             select(Recipe).where(
                 Recipe.user_id == user.id,
@@ -104,9 +140,15 @@ async def generate(
                 Recipe.titel == titel,
             )
         ).scalars().first()
-        if seen is not None:
+        if seen is not None and json.loads(seen.recipe_json).get("portionen") == params.personen:
             cached = None
             params = params.model_copy(update={"regenerate": True})  # -> variation hint
+
+    if params.regenerate:
+        # Steer the variation away from everything already received (v4 prompt)
+        titles = _known_titles()
+        if titles:
+            params = params.model_copy(update={"vermeiden_titel": titles})
 
     if cached is None:
         # Real generation: consume the daily budget up front (cache hits are free)
@@ -157,7 +199,7 @@ async def generate(
 
     async def event_stream() -> AsyncGenerator[str, None]:
         if cached is not None:
-            recipe = json.loads(cached.recipe_json)
+            recipe = _scale_recipe(json.loads(cached.recipe_json), params.personen)
             cache.register_hit(db, cached)
             row = _persist_recipe(db, user_id, params, recipe, cached.prompt_version, cached.model)
             _log_cache_hit(cached.prompt_version, cached.model)

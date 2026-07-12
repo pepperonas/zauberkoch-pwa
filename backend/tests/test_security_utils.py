@@ -34,8 +34,10 @@ def test_params_hash_is_order_and_case_invariant():
     assert params_hash(a) == params_hash(b)
 
 
-def test_params_hash_ignores_regenerate_but_not_content():
+def test_params_hash_ignores_meta_but_not_content():
     base = GenerateParams(modus="kochen", kueche="Thai")
     assert params_hash(base) == params_hash(GenerateParams(modus="kochen", kueche="Thai", regenerate=True))
+    # personen = pure scaling, never a new dish -> same cache key
+    assert params_hash(base) == params_hash(GenerateParams(modus="kochen", kueche="Thai", personen=6))
     assert params_hash(base) != params_hash(GenerateParams(modus="kochen", kueche="Indisch"))
-    assert params_hash(base) != params_hash(GenerateParams(modus="kochen", kueche="Thai", personen=6))
+    assert params_hash(base) != params_hash(GenerateParams(modus="kochen", kueche="Thai", vegan=True))

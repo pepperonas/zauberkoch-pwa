@@ -62,6 +62,11 @@ def recipe_llm_schema() -> dict:
 
     schema = Recipe.model_json_schema()
     harden(schema)
+    # A recipe without ingredients or steps is worthless — observed once in
+    # prod (empty schritte). Structured outputs only support minItems 0|1,
+    # which is exactly enough to make empty arrays schema-impossible.
+    schema["properties"]["zutaten"]["minItems"] = 1
+    schema["properties"]["schritte"]["minItems"] = 1
     return schema
 
 
@@ -92,10 +97,15 @@ class GenerateParams(BaseModel):
     # Meta
     ueberrasch_mich: bool = False
     regenerate: bool = False  # bypass cache, ask for a variation
+    # Titles the user already received for these params — SERVER-injected on
+    # variations (client-sent values are discarded); steers re-rolls away
+    # from near-duplicates.
+    vermeiden_titel: list[str] = Field(default=[], max_length=10)
 
     def cache_relevant(self) -> dict:
-        """Normalized params for the cache key (regenerate excluded)."""
-        data = self.model_dump(exclude={"regenerate"})
+        """Normalized params for the cache key. Excluded: regenerate +
+        vermeiden_titel (meta) and personen (pure scaling, never a new dish)."""
+        data = self.model_dump(exclude={"regenerate", "vermeiden_titel", "personen"})
         data["geschmack"] = sorted(g.strip().lower() for g in data["geschmack"] if g.strip())
         data["vorhandene_zutaten"] = sorted(z.strip().lower() for z in data["vorhandene_zutaten"] if z.strip())
         data["vermeiden"] = sorted(v.strip().lower() for v in data["vermeiden"] if v.strip())
