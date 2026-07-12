@@ -45,6 +45,10 @@ Port 8742 vor der Einrichtung auf Kollision prüfen: `ssh root@69.62.121.168 'ss
 
 **Usage-/Kosten-Report:** `ssh root@69.62.121.168 'cd /opt/zauberkoch-api && .venv/bin/python -m scripts.stats 30'`
 
+## Brand-Assets (Favicon / PWA-Icons / OG)
+
+Alle statischen Brand-Assets in `frontend/public/` (`icon.svg`, `favicon.ico`, `favicon-16/32.png`, `apple-touch-icon.png`, `icon-192/512.png`, `icon-maskable-512.png`, `og-v2.png`) werden aus EINEM Master-Logo generiert: `cd frontend && npm run gen:assets` (`scripts/generate-assets.mjs`, Playwright-Chromium, kein `sharp`). Die Farb-Single-Source-of-Truth ist das `COLORS`-Objekt im Script (spiegelt `tokens.css`). **Theme-Wechsel = `COLORS` ändern + `npm run gen:assets` + committen**; der Deploy rsync't `public/` nur, er generiert nichts. Bei OG-Änderung den Dateinamen versionieren (`og-v2` → `og-v3`, FB/LinkedIn-Cache) und `index.html`-Meta nachziehen. Visuelle Abnahme: `frontend/scripts/asset-preview.html`. Details: CLAUDE.md → „Brand-Assets".
+
 ## Regel-Deploy
 
 `./deploy/deploy.sh [backend|frontend|all]` — erzwingt vorher `pytest` + `npm test`. Details in `deploy/deploy.sh` und `.claude/skills/deploy/`.

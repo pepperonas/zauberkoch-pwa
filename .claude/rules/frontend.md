@@ -15,3 +15,5 @@ description: Frontend-Regeln (React 19, M3 Expressive handgebaut, TS strict)
 - Nutzer-/KI-Content nie via `dangerouslySetInnerHTML` rendern.
 - Touch-Targets ≥ 48 px; interaktive Elemente mit sichtbarem `:focus-visible`.
 - PWA: bei App-Shell-Änderungen SW-Cache `zauberkoch-vN` bumpen + in CLAUDE.md nachführen.
+- **Icons in der UI** nur über `<Icon name="…" />` (`src/components/icons/`) — keine Emojis in Komponenten/Strings (Ausnahme: Kessel-Animation). Neuer Glyph = `glyphs.tsx` + `icons.test.ts`.
+- **Brand-Assets** (Favicon/PWA/OG in `public/`) sind generiert, nicht handgepflegt: `npm run gen:assets` (`scripts/generate-assets.mjs`). Theme-/Farbänderung = `COLORS` im Script anpassen + neu generieren + committen; OG bei Änderung versionieren (`og-vN.png`).
