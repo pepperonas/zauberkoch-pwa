@@ -10,7 +10,7 @@ import path from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { chromium } from '@playwright/test';
 
-import { RecipeMotif, type Motif } from '../src/components/recipe/RecipeMotif';
+import { MOTIF_VARIANTS, RecipeMotif, type Motif } from '../src/components/recipe/RecipeMotif';
 
 const MOTIFS: Motif[] = [
   'highball', 'tumbler', 'coupe', 'tiki', 'martini', 'wine', 'flute', 'mule',
@@ -23,12 +23,18 @@ const MOTIFS: Motif[] = [
 const OUT = path.resolve(process.cwd(), '../backend/app/assets/motifs') + path.sep;
 fs.mkdirSync(OUT, { recursive: true });
 
+// Seeds chosen so variantFor(seed, count) hits 0,1,2 in order:
+// '' -> 0; 'a' (97) -> 97%3=1, 97%2=1; 'b' (98) -> 98%3=2
+const SEEDS = ['', 'a', 'b'];
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 480, height: 480 } });
 for (const motif of MOTIFS) {
-  const svg = renderToStaticMarkup(<RecipeMotif motif={motif} size={480} />);
-  await page.setContent(`<!doctype html><style>*{margin:0}</style>${svg}`);
-  await page.locator('svg').screenshot({ path: `${OUT}${motif}.png`, omitBackground: true });
-  console.log('exported', motif);
+  for (let v = 0; v < (MOTIF_VARIANTS[motif] ?? 1); v += 1) {
+    const seed = SEEDS[v];
+    const svg = renderToStaticMarkup(<RecipeMotif motif={motif} seed={seed} size={480} />);
+    await page.setContent(`<!doctype html><style>*{margin:0}</style>${svg}`);
+    await page.locator('svg').screenshot({ path: `${OUT}${motif}-v${v}.png`, omitBackground: true });
+    console.log('exported', `${motif}-v${v}`);
+  }
 }
 await browser.close();

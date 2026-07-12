@@ -279,7 +279,7 @@ function RecipeRow({
         style={{ width: '100%', textAlign: 'left', minHeight: 'var(--touch-target)' }}
       >
         <span className="row" style={{ minWidth: 0 }}>
-          <RecipeMotif motif={motifForRecipe(item)} size={44} />
+          <RecipeMotif motif={motifForRecipe(item)} seed={item.titel} size={44} />
           <span style={{ minWidth: 0 }}>
             <span style={{ display: 'block', font: 'var(--type-title)' }}>{item.titel}</span>
             <span className="muted" style={{ font: 'var(--type-label-sm)' }}>

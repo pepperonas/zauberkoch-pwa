@@ -106,6 +106,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
           </div>
           <RecipeMotif
             className="hero__motif"
+            seed={meta.titel}
             motif={motifForRecipe({ mode, titel: meta.titel, tags: meta.tags, kueche: meta.kueche, glas: data.glas })}
           />
         </motion.section>

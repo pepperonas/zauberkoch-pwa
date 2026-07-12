@@ -67,13 +67,27 @@ def test_adopt_copies_recipe(client, db_session, logged_in, mock_ai, monkeypatch
 
 
 def test_og_motif_assets_and_matcher():
-    from app.services.og_image import MOTIF_DIR, motif_for_recipe
+    from app.services.og_image import MOTIF_DIR, MOTIF_VARIANTS, motif_for_recipe, variant_for
 
-    # every motif the matcher can return must have an exported PNG
-    names = {n for n, _ in __import__("app.services.og_image", fromlist=["x"])._GLASS_CHECKS}
-    names |= {n for n, _ in __import__("app.services.og_image", fromlist=["x"])._DISH_CHECKS}
-    for name in names:
-        assert (MOTIF_DIR / f"{name}.png").exists(), f"missing motif asset: {name}"
+    # every declared motif variant must have an exported PNG
+    for name, count in MOTIF_VARIANTS.items():
+        for v in range(count):
+            assert (MOTIF_DIR / f"{name}-v{v}.png").exists(), f"missing motif asset: {name}-v{v}"
+
+    # hash parity constants — mirrored in frontend RecipeMotif.test.ts
+    assert variant_for("Spaghetti alle Vongole", 3) == 0
+    assert variant_for("Jungle Bird", 3) == 1
+    assert variant_for("Tequila Sunrise", 3) == 2
+    assert variant_for("Spaghetti alle Vongole", 2) == 1
+
+    # semantic hints beat the hash (mirrored in RecipeMotif.test.ts)
+    from app.services.og_image import variant_for_motif
+
+    assert variant_for_motif("bowl", "Thailändisches Massaman-Curry mit Rindfleisch") == 1
+    assert variant_for_motif("pasta", "Spaghetti Carbonara") == 2
+    assert variant_for_motif("pasta", "Pasta al Pesto Genovese") == 1
+    assert variant_for_motif("steak", "Wiener Schnitzel") == 1
+    assert variant_for_motif("highball", "Mojito Royal") == 2
 
     assert motif_for_recipe({"titel": "Jungle Bird", "glas": "Tiki-Becher"}, "cocktail") == "tiki"
     assert motif_for_recipe({"titel": "Espresso Martini", "glas": "Cocktailschale"}, "cocktail") == "coupe"

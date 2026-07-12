@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { motifForRecipe } from './RecipeMotif';
+import { motifForRecipe, MOTIF_VARIANTS, variantFor, variantForMotif } from './RecipeMotif';
 
 describe('motifForRecipe', () => {
   it('picks cocktail motifs by glass type first', () => {
@@ -49,5 +49,30 @@ describe('motifForRecipe', () => {
     expect(motifForRecipe({ mode: 'kochen', titel: 'Kartoffelgratin' })).toBe('auflauf');
     // "Fleisch"/"Eis" substrings must not trigger dessert
     expect(motifForRecipe({ mode: 'kochen', titel: 'Fleischbällchen in Tomatensauce' })).toBe('steak');
+  });
+});
+
+describe('variantFor (must match backend variant_for)', () => {
+  it('is deterministic and language-portable', () => {
+    // constants mirrored in backend/tests/test_share.py — keep in sync
+    expect(variantFor('Spaghetti alle Vongole', 3)).toBe(0);
+    expect(variantFor('Jungle Bird', 3)).toBe(1);
+    expect(variantFor('Tequila Sunrise', 3)).toBe(2);
+    expect(variantFor('Spaghetti alle Vongole', 2)).toBe(1);
+    expect(variantFor('', 3)).toBe(0);
+    expect(variantFor('anything', 1)).toBe(0);
+  });
+
+  it('semantic hints beat the hash (mirrored in backend test_share.py)', () => {
+    expect(variantForMotif('bowl', 'Thailändisches Massaman-Curry mit Rindfleisch')).toBe(1);
+    expect(variantForMotif('pasta', 'Spaghetti Carbonara')).toBe(2);
+    expect(variantForMotif('pasta', 'Pasta al Pesto Genovese')).toBe(1);
+    expect(variantForMotif('steak', 'Wiener Schnitzel')).toBe(1);
+    expect(variantForMotif('highball', 'Mojito Royal')).toBe(2);
+  });
+
+  it('declares at least 40 distinct visuals', () => {
+    const total = Object.values(MOTIF_VARIANTS).reduce((a, b) => a + b, 0);
+    expect(total).toBeGreaterThanOrEqual(40);
   });
 });

@@ -88,7 +88,7 @@ export function PlanPage() {
             {day.entries.map((entry) => (
               <div key={entry.id} className="row row--between" style={{ minHeight: 48 }}>
                 <span className="row" style={{ minWidth: 0 }}>
-                  <RecipeMotif motif={motifForRecipe(entry)} size={36} />
+                  <RecipeMotif motif={motifForRecipe(entry)} seed={entry.titel} size={36} />
                   <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {entry.titel}
                   </span>
@@ -152,7 +152,7 @@ function RecipePicker({ day, onClose, onPicked }: { day: string | null; onClose:
               if (day) void api.planAdd(day, item.id).then(onPicked);
             }}
           >
-            <RecipeMotif motif={motifForRecipe(item)} size={40} />
+            <RecipeMotif motif={motifForRecipe(item)} seed={item.titel} size={40} />
             <span style={{ minWidth: 0 }}>
               <span style={{ display: 'block' }}>{item.titel}</span>
               <span className="muted" style={{ font: 'var(--type-label-sm)' }}>

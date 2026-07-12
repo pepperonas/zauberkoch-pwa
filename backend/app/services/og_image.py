@@ -16,7 +16,7 @@ from app.core.config import get_settings
 logger = logging.getLogger("zauberkoch.og")
 
 W, H = 1200, 630
-STYLE_VERSION = 2  # bump to invalidate cached PNGs after a redesign
+STYLE_VERSION = 3  # bump to invalidate cached PNGs after a redesign
 FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 MOTIF_DIR = Path(__file__).resolve().parent.parent / "assets" / "motifs"
 
@@ -55,6 +55,52 @@ _DISH_CHECKS = [
     ("steak", r"steak|braten|filet|kotelett|schnitzel|rind|lamm|entrecôte|ribs|grill|bbq|hähnchen|fleisch|frikadelle|köfte"),
     ("pfanne", r"pfanne|wok|stir|geschnetzelt|shakshuka|rührei"),
 ]
+
+
+# Variant counts — MUST stay in sync with frontend RecipeMotif.MOTIF_VARIANTS
+MOTIF_VARIANTS = {
+    "highball": 3, "tumbler": 3, "coupe": 3, "tiki": 1, "martini": 2, "wine": 2, "flute": 1, "mule": 1,
+    "pasta": 3, "bowl": 3, "suppe": 2, "pfanne": 2, "pizza": 2, "salat": 2, "burger": 1, "fisch": 2,
+    "steak": 2, "dessert": 2, "taco": 1, "auflauf": 1, "pancakes": 1, "sandwich": 1,
+}
+
+
+def variant_for(seed: str, count: int) -> int:
+    """Identical to the frontend's variantFor (sum of UTF-16 code units)."""
+    if count <= 1:
+        return 0
+    return sum(ord(c) for c in seed) % count
+
+
+# Semantic hints — MUST stay in sync with frontend VARIANT_HINTS
+_VARIANT_HINTS: dict[str, list[tuple[str, int]]] = {
+    "pasta": [(r"pesto", 1), (r"carbonara|rahm|sahne|käse", 2), (r"pomodoro|tomate|arrabbiata|bolognese|napoli|vongole", 0)],
+    "bowl": [(r"curry|dal|masala|tikka", 1), (r"poke|lachs|thunfisch", 0), (r"buddha|falafel|kichererbse|veggie|gemüse", 2)],
+    "tumbler": [(r"negroni|americano|sour", 2), (r"cola|cuba libre|libre", 1), (r"whisk|old fashioned", 0)],
+    "coupe": [(r"espresso|kaffee", 1), (r"gimlet|basil|grün|matcha", 2), (r"daiquiri|clover|cosmo", 0)],
+    "highball": [(r"mojito|minze|hugo", 2), (r"sunrise|campari|paloma|zombie", 1)],
+    "suppe": [(r"tomate|gulasch|linsen|kürbis", 0), (r"kräuter|erbse|spinat|brokkoli|grün", 1)],
+    "pfanne": [(r"ei|shakshuka|omelett", 1)],
+    "steak": [(r"schnitzel|kotelett|paniert|cordon", 1)],
+    "wine": [(r"rotwein|glühwein|sangria|tinto", 1), (r"spritz|weiß|hugo", 0)],
+    "fisch": [(r"ganz|forelle|dorade|gegrillt", 1)],
+    "dessert": [(r"schoko|brownie|mousse au", 1)],
+    "pizza": [(r"verdure|vegetari|funghi|pilz|gemüse", 1)],
+    "salat": [(r"feta|hirten|griech", 1)],
+    "martini": [(r"twist|zitrone|lemon", 1), (r"dry|dirty|olive", 0)],
+}
+
+
+def variant_for_motif(motif: str, seed: str) -> int:
+    """Variant for a motif + title: semantic hint first, hash otherwise."""
+    count = MOTIF_VARIANTS.get(motif, 1)
+    if count <= 1:
+        return 0
+    lower = seed.lower()
+    for pattern, v in _VARIANT_HINTS.get(motif, []):
+        if re.search(pattern, lower):
+            return v
+    return variant_for(seed, count)
 
 
 def motif_for_recipe(recipe: dict, mode: str) -> str:
@@ -137,12 +183,18 @@ def _pill(draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, font: Image
     return x + tw + 2 * pad_x + 16
 
 
+def _motif_path(recipe: dict, mode: str) -> Path:
+    motif = motif_for_recipe(recipe, mode)
+    v = variant_for_motif(motif, recipe.get("titel", ""))
+    candidate = MOTIF_DIR / f"{motif}-v{v}.png"
+    return candidate if candidate.exists() else MOTIF_DIR / f"{motif}.png"
+
+
 def _paste_motif(img: Image.Image, recipe: dict, mode: str, pal: dict) -> None:
     """Recipe motif on the right: soft tonal disc + the pre-rendered art."""
-    motif = motif_for_recipe(recipe, mode)
-    path = MOTIF_DIR / f"{motif}.png"
+    path = _motif_path(recipe, mode)
     if not path.exists():
-        logger.warning("motif asset %s missing — OG rendered without art", motif)
+        logger.warning("motif asset %s missing — OG rendered without art", path.name)
         return
 
     cx, cy = W - 268, H // 2 - 12  # motif center
@@ -242,8 +294,7 @@ def render_story(recipe: dict, mode: str) -> Image.Image:
     draw.text((84, 168), "Dein KI-Koch", font=sub_font, fill=tuple(min(c + 70, 255) for c in pal["on"]))
 
     # motif stage
-    motif = motif_for_recipe(recipe, mode)
-    mp = MOTIF_DIR / f"{motif}.png"
+    mp = _motif_path(recipe, mode)
     cx, cy = SW_ // 2, 700
     overlay = Image.new("RGBA", (SW_, SH_), (0, 0, 0, 0))
     odraw = ImageDraw.Draw(overlay)

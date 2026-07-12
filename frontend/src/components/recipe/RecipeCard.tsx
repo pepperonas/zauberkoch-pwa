@@ -80,7 +80,7 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
             {item.schwierigkeit && <span className="stat">📶 {item.schwierigkeit}</span>}
           </div>
         </div>
-        <RecipeMotif motif={motifForRecipe(item)} className="recipecard__motif" />
+        <RecipeMotif motif={motifForRecipe(item)} seed={item.titel} className="recipecard__motif" />
       </div>
     </motion.div>
   );

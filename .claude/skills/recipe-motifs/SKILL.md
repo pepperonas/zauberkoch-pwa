@@ -52,6 +52,24 @@ um alles, keine harten Schwarztöne.
 > Naturfarben. Alle Gradient-IDs als `${id}-<name>`. Keine Filter, kein
 > Text, keine Outlines um alles.
 
+## Varianten-System
+
+Jedes Motiv kann mehrere **Varianten** haben (deterministisch per Titel-Hash,
+damit dasselbe Rezept immer dieselbe Grafik behält, verschiedene Gerichte
+derselben Kategorie aber unterschiedlich aussehen):
+
+- Anzahl in `MOTIF_VARIANTS` (RecipeMotif.tsx) **UND** `MOTIF_VARIANTS`
+  (backend og_image.py) — beide müssen identisch sein (Paritäts-Tests!).
+- Hash: Summe der UTF-16-Code-Units modulo Anzahl (`variantFor` / `variant_for`)
+  — bei Änderungen beide Seiten + die gespiegelten Test-Konstanten anpassen.
+- Eine Variante ist ein **anderes Gericht derselben Kategorie** (Pomodoro →
+  Pesto → Carbonara), nie nur ein Umfärben: Flüssigkeits-/Saucen-Farbwelt des
+  echten Gerichts + mindestens ein struktureller Unterschied (Garnitur,
+  Topping, Glas-Inhalt).
+- Komponente: `function Name({ id, v = 0, ...svg }: SvgProps)`, v0 = Basis.
+- Nach JEDER Motiv-Änderung: `cd frontend && npm run export:motifs`
+  (schreibt `backend/app/assets/motifs/<name>-v<k>.png`).
+
 ## Registrierung (Pflicht-Checkliste)
 
 1. Komponente in `RecipeMotif.tsx` ergänzen (unter den bestehenden).
@@ -60,4 +78,5 @@ um alles, keine harten Schwarztöne.
    Gerichte über Titel/Tags/Küche). Reihenfolge beachten: spezifisch vor generisch.
 4. Testfälle in `RecipeMotif.test.ts` für die neuen Keywords.
 5. Visuell prüfen: Verlauf-Seite mit Mock-Items in Light UND Dark screenshotten.
-6. `npm test` + `npx tsc --noEmit` grün; SW-Cache-Bump nur bei Shell-Änderung.
+6. Bei neuen Varianten: `MOTIF_VARIANTS` in beiden Sprachen erhöhen + `npm run export:motifs` + backend `STYLE_VERSION` bumpen (OG-Cache).
+7. `npm test` + `pytest` + `npx tsc --noEmit` grün; SW-Cache-Bump nur bei Shell-Änderung.

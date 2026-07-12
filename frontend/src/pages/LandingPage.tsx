@@ -173,7 +173,7 @@ function GalleryCard({ item, index, highlight }: { item: GalleryItem; index: num
             {item.schwierigkeit && <span className="stat">📶 {item.schwierigkeit}</span>}
           </div>
         </div>
-        <RecipeMotif motif={motifForRecipe({ ...item, tags: item.tags })} className="recipecard__motif" />
+        <RecipeMotif motif={motifForRecipe({ ...item, tags: item.tags })} seed={item.titel} className="recipecard__motif" />
       </div>
     </motion.a>
   );
