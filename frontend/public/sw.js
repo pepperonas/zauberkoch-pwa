@@ -1,7 +1,7 @@
 /* Zauberkoch Service Worker.
  * Cache version — BUMP on every app-shell change (+ update CLAUDE.md).
  */
-const CACHE = 'zauberkoch-v25';
+const CACHE = 'zauberkoch-v26';
 const API_CACHE = 'zauberkoch-api-v1';
 const SHELL = ['/', '/icon.svg', '/manifest.webmanifest', '/theme-init.js', '/fonts/inter.woff2', '/fonts/bricolage.woff2'];
 
@@ -44,10 +44,12 @@ self.addEventListener('fetch', (event) => {
   // Other API calls: network only
   if (url.pathname.startsWith('/api/')) return;
 
-  // Navigations: network-first (fresh shell), cache fallback for offline
+  // Navigations: network-first (fresh shell), cache fallback for offline.
+  // cache: 'reload' bypasses the browser HTTP cache — a heuristically
+  // cached index.html would otherwise pin users to old chunk references.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'reload' })
         .then((res) => {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put('/', copy));
