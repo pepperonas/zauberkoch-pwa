@@ -4,13 +4,18 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 
 import { ConjureStage } from '../components/recipe/ConjureStage';
 import { CuisineHero } from '../components/recipe/CuisineHero';
+import { motifForRecipe, RecipeMotif } from '../components/recipe/RecipeMotif';
 import { RecipeView, type RecipeViewData } from '../components/recipe/RecipeView';
 import { Button, Chip } from '../components/ui';
 import { strings, t } from '../i18n';
+import { api } from '../lib/api';
 import { tryRecipe } from '../lib/sse';
+import type { GalleryItem } from '../lib/types';
+import { fmtMin } from '../components/recipe/RecipeView';
 import { riseIn, spring, stagger } from '../motion/springs';
 import type { GenEvent } from '../state/generation';
 
@@ -100,6 +105,8 @@ export function LandingPage() {
 
       <TryWizard onLogin={login} />
 
+      <Discover />
+
       <section className="section">
         <h2>{t('landing.exampleTitle')}</h2>
         <div className="stack" style={{ marginTop: 'var(--space-4)' }}>
@@ -136,6 +143,58 @@ export function LandingPage() {
         {strings.auth.loginRequired}
       </p>
     </div>
+  );
+}
+
+/* ---------- recipe of the day + community gallery ---------- */
+
+function GalleryCard({ item, index, highlight }: { item: GalleryItem; index: number; highlight?: boolean }) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.a
+      href={`/r/${item.token}`}
+      className={`card ${highlight ? '' : 'card--outlined'} recipecard`}
+      style={highlight ? { background: 'var(--c-surface-container)' } : undefined}
+      {...(reduced ? {} : riseIn)}
+      transition={stagger(index, 0.08)}
+      whileTap={reduced ? undefined : { scale: 0.98 }}
+    >
+      <span className="hero__kueche">
+        {highlight ? `⭐ ${t('landing.dailyTitle')} · ` : ''}
+        {item.mode === 'cocktail' ? '🍸 ' : ''}
+        {item.kueche}
+      </span>
+      <div className="recipecard__body">
+        <div className="recipecard__text">
+          <h3 style={{ margin: 'var(--space-2) 0' }}>{item.titel}</h3>
+          <p className="muted" style={{ font: 'var(--type-body)' }}>{item.teaser}</p>
+          <div className="hero__stats">
+            {item.zeit_gesamt != null && <span className="stat">🕐 {fmtMin(item.zeit_gesamt)}</span>}
+            {item.schwierigkeit && <span className="stat">📶 {item.schwierigkeit}</span>}
+          </div>
+        </div>
+        <RecipeMotif motif={motifForRecipe({ ...item, tags: item.tags })} className="recipecard__motif" />
+      </div>
+    </motion.a>
+  );
+}
+
+function Discover() {
+  const daily = useQuery({ queryKey: ['daily'], queryFn: () => api.daily(), staleTime: 10 * 60_000 });
+  const gallery = useQuery({ queryKey: ['discover'], queryFn: () => api.discover(), staleTime: 10 * 60_000 });
+  const dailyItem = daily.data?.item ?? null;
+  const rest = (gallery.data?.items ?? []).filter((i) => i.token !== dailyItem?.token).slice(0, 8);
+  if (!dailyItem && rest.length === 0) return null;
+  return (
+    <section className="section">
+      <h2>🌍 {t('landing.discoverTitle')}</h2>
+      <div className="stack" style={{ marginTop: 'var(--space-4)' }}>
+        {dailyItem && <GalleryCard item={dailyItem} index={0} highlight />}
+        {rest.map((item, i) => (
+          <GalleryCard key={item.token} item={item} index={i + 1} />
+        ))}
+      </div>
+    </section>
   );
 }
 

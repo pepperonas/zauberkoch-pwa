@@ -165,3 +165,46 @@ def test_shopping_clear_all_and_replace_restores(client, logged_in, mock_ai):  #
     r = client.post("/api/v1/shopping/replace", json={"items": restore}, headers=logged_in)
     names = [i["name"] for i in r.json()["items"]]
     assert names == ["Zitronen", "Olivenöl"]
+
+
+# ---- gallery / discover / story / sitemap ------------------------------------
+
+def test_public_gallery_flow(client, logged_in, mock_ai):  # noqa: F811
+    recipe_id, share = _shared_recipe(client, logged_in)
+
+    # not listed by default
+    assert client.get("/api/v1/share/discover").json()["items"] == []
+
+    # opt in -> appears in gallery, daily and sitemap
+    r = client.patch(f"/api/v1/recipes/{recipe_id}/share", json={"public": True}, headers=logged_in)
+    assert r.json() == {"public": True}
+    items = client.get("/api/v1/share/discover").json()["items"]
+    assert len(items) == 1 and items[0]["token"] == share["share_token"]
+    assert client.get("/api/v1/share/daily").json()["item"]["titel"] == "Pasta al Limone"
+    sitemap = client.get("/sitemap.xml").text
+    assert f"/r/{share['share_token']}" in sitemap
+    assert "<urlset" in sitemap
+
+    # revoke kills listing too
+    client.delete(f"/api/v1/recipes/{recipe_id}/share", headers=logged_in)
+    assert client.get("/api/v1/share/discover").json()["items"] == []
+
+
+def test_patch_share_requires_share(client, logged_in, mock_ai):  # noqa: F811
+    from tests.test_generation import generate as gen
+
+    recipe_id = gen(client, logged_in)[-1][1]["recipe_id"]
+    r = client.patch(f"/api/v1/recipes/{recipe_id}/share", json={"public": True}, headers=logged_in)
+    assert r.status_code == 409
+
+
+def test_story_png_renders(client, logged_in, mock_ai):  # noqa: F811
+    _, share = _shared_recipe(client, logged_in)
+    r = client.get(f"/api/v1/share/{share['share_token']}/story.png")
+    assert r.status_code == 200
+
+    from io import BytesIO
+
+    from PIL import Image
+
+    assert Image.open(BytesIO(r.content)).size == (1080, 1920)

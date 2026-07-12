@@ -9,7 +9,8 @@ import secrets
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from pydantic import BaseModel
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
@@ -57,17 +58,59 @@ def create_share(recipe_id: int, user: User = Depends(get_current_user), db: DbS
     return {"share_token": row.share_token, "share_url": _share_url(row.share_token)}
 
 
+class ShareConfig(BaseModel):
+    public: bool
+
+
+@router.patch("/recipes/{recipe_id}/share", dependencies=[Depends(require_csrf)])
+def configure_share(
+    recipe_id: int,
+    body: ShareConfig,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    """Opt a shared recipe in/out of the public gallery + sitemap."""
+    row = _owned_recipe(recipe_id, user, db)
+    if row.share_token is None:
+        raise HTTPException(status_code=409, detail={"code": "not_shared", "message": "Rezept ist nicht geteilt."})
+    row.public_listed = body.public
+    db.commit()
+    return {"public": row.public_listed}
+
+
 @router.delete("/recipes/{recipe_id}/share", dependencies=[Depends(require_csrf)])
 def revoke_share(recipe_id: int, user: User = Depends(get_current_user), db: DbSession = Depends(get_db)) -> dict:
     row = _owned_recipe(recipe_id, user, db)
     if row.share_token is not None:
         og_image.evict(row.share_token)
         row.share_token = None
+        row.public_listed = False
         db.commit()
     return {"share_token": None}
 
 
 # ---- public endpoints -------------------------------------------------------
+
+@router.get("/share/discover")
+def discover(request: Request, db: DbSession = Depends(get_db)) -> dict:
+    """Public gallery of opt-in shared recipes (landing page, no auth)."""
+    check_ip_limit(request, scope="share", limit=60, window_s=60)
+    return {"items": [_gallery_item(r) for r in _public_recipes(db)]}
+
+
+@router.get("/share/daily")
+def daily(request: Request, db: DbSession = Depends(get_db)) -> dict:
+    """Recipe of the day: deterministic date rotation through the gallery —
+    zero AI cost, same pick for everyone, changes at midnight."""
+    check_ip_limit(request, scope="share", limit=60, window_s=60)
+    from datetime import date
+
+    rows = _public_recipes(db, limit=100)
+    if not rows:
+        return {"item": None}
+    return {"item": _gallery_item(rows[date.today().toordinal() % len(rows)])}
+
+
 
 @router.get("/share/{token}")
 def get_shared(token: str, request: Request, db: DbSession = Depends(get_db)) -> dict:
@@ -100,6 +143,41 @@ def shared_og(token: str, request: Request, db: DbSession = Depends(get_db)) -> 
     check_ip_limit(request, scope="share", limit=60, window_s=60)
     row = _by_token(token, db)
     path = og_image.get_or_render(token, json.loads(row.recipe_json), row.mode)
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
+def _gallery_item(row: Recipe) -> dict:
+    recipe = json.loads(row.recipe_json)
+    return {
+        "token": row.share_token,
+        "titel": row.titel,
+        "teaser": recipe.get("teaser", ""),
+        "kueche": row.kueche,
+        "mode": row.mode,
+        "glas": recipe.get("glas"),
+        "zeit_gesamt": recipe.get("zeit_gesamt"),
+        "schwierigkeit": recipe.get("schwierigkeit"),
+        "tags": recipe.get("tags", []),
+    }
+
+
+def _public_recipes(db: DbSession, limit: int = 24) -> list[Recipe]:
+    return list(
+        db.execute(
+            select(Recipe)
+            .where(Recipe.share_token.is_not(None), Recipe.public_listed.is_(True))
+            .order_by(Recipe.created_at.desc())
+            .limit(limit)
+        ).scalars()
+    )
+
+
+@router.get("/share/{token}/story.png")
+def shared_story(token: str, request: Request, db: DbSession = Depends(get_db)) -> FileResponse:
+    """9:16 story image (Insta/WhatsApp-Status) with the recipe motif."""
+    check_ip_limit(request, scope="share", limit=60, window_s=60)
+    row = _by_token(token, db)
+    path = og_image.get_or_render_story(token, json.loads(row.recipe_json), row.mode)
     return FileResponse(path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
@@ -202,3 +280,17 @@ def shared_page(token: str, request: Request, db: DbSession = Depends(get_db)) -
     shell = _TITLE_RE.sub(f"<title>{page_title}</title>", shell, count=1)
     page = shell.replace("</head>", f"{_meta_block(row, token)}{_jsonld(row, token)}</head>", 1)
     return HTMLResponse(page, headers={"Cache-Control": "no-cache"})
+
+
+@html_router.get("/sitemap.xml")
+def sitemap(db: DbSession = Depends(get_db)) -> Response:
+    """Dynamic sitemap: root + every public gallery recipe (long-tail SEO)."""
+    base = get_settings().zk_base_url.rstrip("/")
+    urls = [f"<url><loc>{base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>"]
+    for row in _public_recipes(db, limit=500):
+        urls.append(f"<url><loc>{base}/r/{row.share_token}</loc><changefreq>monthly</changefreq></url>")
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + "".join(urls) + "</urlset>"
+    )
+    return Response(xml, media_type="application/xml", headers={"Cache-Control": "public, max-age=3600"})

@@ -119,6 +119,8 @@ export interface RecipeDetail {
   mode: Modus;
   recipe: Recipe;
   is_favorite: boolean;
+  public_listed?: boolean;
+  shared?: boolean;
   feedback: number | null;
   notiz: string;
   gekocht_count: number;
@@ -161,4 +163,16 @@ export interface AllowlistItem {
 export interface InviteItem {
   code: string;
   used: boolean;
+}
+
+export interface GalleryItem {
+  token: string;
+  titel: string;
+  teaser: string;
+  kueche: string;
+  mode: Modus;
+  glas?: string | null;
+  zeit_gesamt?: number | null;
+  schwierigkeit?: string | null;
+  tags: string[];
 }

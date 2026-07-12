@@ -221,6 +221,96 @@ def render_og(recipe: dict, mode: str) -> Image.Image:
     return img.convert("RGB")
 
 
+SW_, SH_ = 1080, 1920
+
+
+def render_story(recipe: dict, mode: str) -> Image.Image:
+    """9:16 share image (Insta story / WhatsApp status): motif front and
+    center, title below, stat pills, brand footer."""
+    pal = PALETTES.get(mode, PALETTES["kochen"])
+    img = Image.new("RGBA", (SW_, SH_), (*pal["bg"], 255))
+    draw = ImageDraw.Draw(img)
+
+    # glow top + accent bar
+    glow = Image.new("L", (SW_, SH_), 0)
+    ImageDraw.Draw(glow).ellipse([SW_ - 800, -500, SW_ + 400, 700], fill=70)
+    img.paste(Image.new("RGB", (SW_, SH_), pal["container"]), (0, 0), glow)
+
+    brand_font = _font("Bricolage.ttf", 56, 750)
+    draw.text((84, 96), "Zauberkoch", font=brand_font, fill=pal["primary"])
+    sub_font = _font("Inter.ttf", 34, 500)
+    draw.text((84, 168), "Dein KI-Koch", font=sub_font, fill=tuple(min(c + 70, 255) for c in pal["on"]))
+
+    # motif stage
+    motif = motif_for_recipe(recipe, mode)
+    mp = MOTIF_DIR / f"{motif}.png"
+    cx, cy = SW_ // 2, 700
+    overlay = Image.new("RGBA", (SW_, SH_), (0, 0, 0, 0))
+    odraw = ImageDraw.Draw(overlay)
+    odraw.ellipse([cx - 400, cy - 400, cx + 400, cy + 400], fill=(*pal["container"], 110))
+    odraw.ellipse([cx - 330, cy - 330, cx + 330, cy + 330], fill=(*pal["container"], 170))
+    img.alpha_composite(overlay)
+    if mp.exists():
+        art = Image.open(mp).convert("RGBA").resize((660, 660), Image.LANCZOS)
+        img.alpha_composite(art, (cx - 330, cy - 330))
+
+    draw = ImageDraw.Draw(img)
+    y = 1180
+    kueche_font = _font("Inter.ttf", 40, 650)
+    label = (recipe.get("kueche") or "").upper()
+    lw = draw.textlength(label, font=kueche_font)
+    draw.text(((SW_ - lw) // 2, y), label, font=kueche_font, fill=pal["primary"])
+    y += 84
+
+    title_font = _font("Bricolage.ttf", 92, 750)
+    for line in _wrap(draw, recipe.get("titel", ""), title_font, SW_ - 160, 3):
+        tw = draw.textlength(line, font=title_font)
+        draw.text(((SW_ - tw) // 2, y), line, font=title_font, fill=pal["on"])
+        y += 106
+
+    # centered stat pills
+    pill_font = _font("Inter.ttf", 38, 550)
+    stats: list[str] = []
+    if recipe.get("zeit_gesamt"):
+        stats.append(_fmt_min(int(recipe["zeit_gesamt"])))
+    if recipe.get("schwierigkeit"):
+        stats.append(str(recipe["schwierigkeit"]))
+    if stats:
+        y += 24
+        widths = [int(draw.textlength(t_, font=pill_font)) + 2 * 30 for t_ in stats]
+        total = sum(widths) + 20 * (len(stats) - 1)
+        px = (SW_ - total) // 2
+        for stat, w in zip(stats, widths):
+            draw.rounded_rectangle([px, y, px + w, y + 38 + 36], radius=(38 + 36) // 2, fill=pal["container"])
+            draw.text((px + 30, y + 16), stat, font=pill_font, fill=pal["primary"])
+            px += w + 20
+
+    footer_font = _font("Bricolage.ttf", 48, 700)
+    footer = "zauberkoch.de"
+    fw = draw.textlength(footer, font=footer_font)
+    draw.text(((SW_ - fw) // 2, SH_ - 160), footer, font=footer_font, fill=pal["primary"])
+    hint_font = _font("Inter.ttf", 32, 450)
+    hint = "Rezept ansehen & nachkochen"
+    hw = draw.textlength(hint, font=hint_font)
+    draw.text(((SW_ - hw) // 2, SH_ - 96), hint, font=hint_font, fill=tuple(min(c + 70, 255) for c in pal["on"]))
+
+    return img.convert("RGB")
+
+
+def story_png_path(token: str) -> Path:
+    settings = get_settings()
+    og_dir = settings.db_path.parent / "og"
+    og_dir.mkdir(parents=True, exist_ok=True)
+    return og_dir / f"{token}-story-v{STYLE_VERSION}.png"
+
+
+def get_or_render_story(token: str, recipe: dict, mode: str) -> Path:
+    path = story_png_path(token)
+    if not path.exists():
+        render_story(recipe, mode).save(path, "PNG", optimize=True)
+    return path
+
+
 def og_png_path(token: str) -> Path:
     settings = get_settings()
     og_dir = settings.db_path.parent / "og"
@@ -237,4 +327,5 @@ def get_or_render(token: str, recipe: dict, mode: str) -> Path:
 
 def evict(token: str) -> None:
     og_png_path(token).unlink(missing_ok=True)
+    story_png_path(token).unlink(missing_ok=True)
     (og_png_path(token).parent / f"{token}.png").unlink(missing_ok=True)  # pre-v2 cache

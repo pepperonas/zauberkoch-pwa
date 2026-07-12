@@ -162,7 +162,7 @@ export function RecipeDetailPage() {
       <FeedbackBar recipeId={recipeId} initial={detail.data.feedback ?? null} />
 
 
-      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={recipe.titel} />
+      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={recipe.titel} publicListed={detail.data?.public_listed ?? false} />
       <AnimatePresence>
         {cookOpen && <CookMode schritte={recipe.schritte} mode={mode} onClose={() => setCookOpen(false)} />}
       </AnimatePresence>

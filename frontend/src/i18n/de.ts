@@ -34,6 +34,7 @@ export const de = {
     inviteLabel: 'Du hast einen Invite-Code?',
     invitePlaceholder: 'zk-…',
     discoverTitle: 'Aus der Community',
+    dailyTitle: 'Rezept des Tages',
   },
   wizard: {
     modeKochen: 'Kochen',
@@ -158,6 +159,9 @@ export const de = {
     shareCopyLink: 'Link kopieren',
     shareNative: 'Link teilen',
     shareRevoke: 'Link widerrufen',
+    sharePublic: 'In der öffentlichen Galerie zeigen',
+    sharePublicHint: 'Dein Rezept erscheint auf der Startseite und ist über Google auffindbar.',
+    shareStory: 'Story-Bild',
     shareRevoked: 'Share-Link widerrufen',
     favoriteRemoved: 'Aus Favoriten entfernt',
     cookMode: 'Koch-Modus',

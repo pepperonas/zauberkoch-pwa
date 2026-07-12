@@ -1,6 +1,6 @@
 /** Typed API client. Session lives in an httpOnly cookie; CSRF via header. */
 
-import type { AdminStats, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, InviteItem } from './types';
+import type { AdminStats, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, InviteItem, GalleryItem } from './types';
 
 let csrfToken = '';
 
@@ -101,6 +101,10 @@ export const api = {
 
   adminStats: (days = 30) => request<AdminStats>(`/admin/stats?days=${days}`),
   invites: () => request<{ items: InviteItem[] }>('/me/invites'),
+  sharePublic: (id: number, pub: boolean) =>
+    request<{ public: boolean }>(`/recipes/${id}/share`, { method: 'PATCH', body: JSON.stringify({ public: pub }) }),
+  discover: () => request<{ items: GalleryItem[] }>('/share/discover'),
+  daily: () => request<{ item: GalleryItem | null }>('/share/daily'),
   adminAllowlist: () => request<{ items: AllowlistItem[] }>('/admin/allowlist'),
   adminAllowlistAdd: (email: string) =>
     request<{ email: string }>('/admin/allowlist', { method: 'POST', body: JSON.stringify({ email }) }),

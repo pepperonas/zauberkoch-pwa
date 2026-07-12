@@ -402,6 +402,8 @@ def get_recipe(recipe_id: int, user: User = Depends(get_current_user), db: DbSes
         is not None
     )
     return {
+        "public_listed": row.public_listed,
+        "shared": row.share_token is not None,
         "id": row.id,
         "mode": row.mode,
         "recipe": json.loads(row.recipe_json),
