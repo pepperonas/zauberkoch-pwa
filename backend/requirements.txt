@@ -7,3 +7,4 @@ pydantic-settings>=2.6
 anthropic>=0.40
 httpx>=0.27
 Pillow>=10.4
+jinja2>=3.1

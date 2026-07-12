@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     daily_limit_global: int = 200
     daily_limit_anon: int = 15  # global cap for logged-out taster generations
 
+    # Outgoing mail (verification / password-reset). Empty host = mail disabled
+    # (send is a no-op + logs a warning; useful in dev/tests).
+    smtp_host: str = ""
+    smtp_port: int = 465  # 465 = implicit TLS (SMTP_SSL)
+    smtp_user: str = ""
+    smtp_pass: str = ""
+    smtp_from: str = "support@celox.io"
+    smtp_from_name: str = "Zauberkoch"
+
     @property
     def admin_emails(self) -> set[str]:
         return {e.strip().lower() for e in self.zk_admin_emails.split(",") if e.strip()}
