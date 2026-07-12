@@ -1,0 +1,10 @@
+/* Legal pages: quiet document treatment, readable measure */
+.legal { max-width: 65ch; }
+.legal h1 { margin: var(--space-4) 0 var(--space-5); }
+.legal h2 { font: var(--type-title-lg); margin: var(--space-6) 0 var(--space-2); }
+.legal h3 { font: var(--type-title); margin: var(--space-4) 0 var(--space-1); }
+.legal p, .legal li { color: var(--c-on-surface-variant); line-height: 1.65; margin-bottom: var(--space-2); }
+.legal ul { padding-left: 1.2em; margin: var(--space-2) 0; }
+.legal strong { color: var(--c-on-surface); }
+.legal address { font-style: normal; color: var(--c-on-surface); line-height: 1.65; }
+.legal a { text-decoration: underline; text-underline-offset: 3px; }

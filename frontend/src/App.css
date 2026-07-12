@@ -58,6 +58,13 @@
   text-align: center;
   padding: var(--space-6) 0 calc(var(--space-8) + 72px);
 }
+.shell__legal {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.shell__legal a { color: var(--c-on-surface-variant); text-decoration: underline; text-underline-offset: 3px; }
 
 /* Bottom navigation */
 .nav {

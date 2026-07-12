@@ -81,6 +81,12 @@ export function LandingPage() {
               </Button>
             )}
           </div>
+          <p className="muted" style={{ marginTop: 'var(--space-3)', font: 'var(--type-label-sm)', maxWidth: '46ch' }}>
+            {t('legal.consentHint')}{' '}
+            (<a href="/nutzungsbedingungen" style={{ textDecoration: 'underline' }}>{t('legal.terms')}</a>
+            {' · '}
+            <a href="/datenschutz" style={{ textDecoration: 'underline' }}>{t('legal.privacy')}</a>)
+          </p>
           <div style={{ marginTop: 'var(--space-4)', maxWidth: 280 }}>
             <label className="muted" htmlFor="invite" style={{ font: 'var(--type-label-sm)' }}>
               🎟️ {t('landing.inviteLabel')}

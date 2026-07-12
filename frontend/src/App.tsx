@@ -41,6 +41,9 @@ const PlanPage = lazyPage('plan', () => import('./pages/PlanPage').then((m) => (
 const SharePage = lazyPage('share', () => import('./pages/SharePage').then((m) => ({ default: m.SharePage })));
 const LandingPage = lazyPage('landing', () => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 const AdminPage = lazyPage('admin', () => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+const ImpressumPage = lazyPage('impressum', () => import('./pages/legal/ImpressumPage').then((m) => ({ default: m.ImpressumPage })));
+const DatenschutzPage = lazyPage('datenschutz', () => import('./pages/legal/DatenschutzPage').then((m) => ({ default: m.DatenschutzPage })));
+const TermsPage = lazyPage('terms', () => import('./pages/legal/TermsPage').then((m) => ({ default: m.TermsPage })));
 // Lazy on purpose: keeps motion-dom's full engine out of the entry chunk
 // (a component imported by the entry hoists its whole dep graph there).
 const GenerationPill = lazyPage('genpill', () =>
@@ -124,11 +127,17 @@ export default function App() {
             <Route path="/plan" element={<PlanPage />} />
             <Route path="/r/:token" element={<SharePage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/impressum" element={<ImpressumPage />} />
+            <Route path="/datenschutz" element={<DatenschutzPage />} />
+            <Route path="/nutzungsbedingungen" element={<TermsPage />} />
             <Route path="*" element={<GeneratePage />} />
           </Routes>
         ) : (
           <Routes>
             <Route path="/r/:token" element={<SharePage />} />
+            <Route path="/impressum" element={<ImpressumPage />} />
+            <Route path="/datenschutz" element={<DatenschutzPage />} />
+            <Route path="/nutzungsbedingungen" element={<TermsPage />} />
             <Route path="*" element={<LandingPage />} />
           </Routes>
         )}
@@ -142,7 +151,16 @@ export default function App() {
         </Suspense>
       )}
 
-      <footer className="shell__footer">{t('app.footer')}</footer>
+      <footer className="shell__footer">
+        <nav className="shell__legal" aria-label="Rechtliches">
+          <Link to="/impressum">{t('legal.impressum')}</Link>
+          <span aria-hidden>·</span>
+          <Link to="/datenschutz">{t('legal.privacy')}</Link>
+          <span aria-hidden>·</span>
+          <Link to="/nutzungsbedingungen">{t('legal.terms')}</Link>
+        </nav>
+        {t('app.footer')}
+      </footer>
 
       {me && (
         <nav className="nav" aria-label="Hauptnavigation">

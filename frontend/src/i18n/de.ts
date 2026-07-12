@@ -243,6 +243,12 @@ export const de = {
     loading: 'Der Zauberkoch überlegt …',
     failed: 'Gerade nicht möglich — versuch es gleich nochmal.',
   },
+  legal: {
+    impressum: 'Impressum',
+    privacy: 'Datenschutz',
+    terms: 'Nutzungsbedingungen',
+    consentHint: 'Mit der Anmeldung akzeptierst du die Nutzungsbedingungen und die Datenschutzerklärung.',
+  },
   undo: 'Rückgängig',
   units: {
     /** Human duration from minutes: "45 Min." / "2 h 30 Min." / "3 Tage". */
