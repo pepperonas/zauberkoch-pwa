@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "e2e": "playwright test",
-    "export:motifs": "npx esbuild scripts/export-motifs.tsx --bundle --platform=node --format=esm --jsx=automatic --packages=external --outfile=.export-motifs.mjs && node .export-motifs.mjs && rm -f .export-motifs.mjs"
+    "export:motifs": "npx esbuild scripts/export-motifs.tsx --bundle --platform=node --format=esm --jsx=automatic --packages=external --outfile=.export-motifs.mjs && node .export-motifs.mjs && rm -f .export-motifs.mjs",
+    "gen:assets": "node scripts/generate-assets.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",

@@ -1,6 +1,6 @@
 /** Typed API client. Session lives in an httpOnly cookie; CSRF via header. */
 
-import type { AdminStats, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, InviteItem, GalleryItem, PlanWeek, SubstituteResult } from './types';
+import type { AdminInvite, AdminStats, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, InviteItem, GalleryItem, PlanWeek, SubstituteResult } from './types';
 
 let csrfToken = '';
 
@@ -120,6 +120,11 @@ export const api = {
     request<{ email: string }>('/admin/allowlist', { method: 'POST', body: JSON.stringify({ email }) }),
   adminAllowlistRemove: (email: string) =>
     request<{ deleted: string }>(`/admin/allowlist/${encodeURIComponent(email)}`, { method: 'DELETE' }),
+  adminInvites: () => request<{ items: AdminInvite[] }>('/admin/invites'),
+  adminInvitesCreate: (count: number) =>
+    request<{ created: string[] }>('/admin/invites', { method: 'POST', body: JSON.stringify({ count }) }),
+  adminInviteRevoke: (code: string) =>
+    request<{ deleted: string }>(`/admin/invites/${encodeURIComponent(code)}`, { method: 'DELETE' }),
   shoppingReplace: (items: Pick<ShoppingItem, 'name' | 'menge' | 'einheit' | 'checked'>[]) =>
     request<{ items: ShoppingItem[] }>('/shopping/replace', {
       method: 'POST',

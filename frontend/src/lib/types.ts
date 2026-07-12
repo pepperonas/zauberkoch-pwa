@@ -161,6 +161,13 @@ export interface AllowlistItem {
   created_at: string;
 }
 
+export interface AdminInvite {
+  code: string;
+  used: boolean;
+  used_by: string | null;
+  created_at: string;
+}
+
 export interface InviteItem {
   code: string;
   used: boolean;
