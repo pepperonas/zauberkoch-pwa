@@ -65,6 +65,8 @@ export function GeneratePage() {
   const pantrySelected = pantry.filter((p) => !pantryOff.has(p));
   const [spirit, setSpirit] = useState('');
   const [alkoholfrei, setAlkoholfrei] = useState(false);
+  const [drinkTyp, setDrinkTyp] = useState('');
+  const [drinkTypFrei, setDrinkTypFrei] = useState('');
 
   // Stream state lives in the global store — survives navigation.
   const gen = useGeneration();
@@ -100,8 +102,9 @@ export function GeneratePage() {
   const buildParams = useCallback(
     (overrides: Partial<GenerateParams> = {}): GenerateParams => ({
       modus: mode,
-      kueche,
-      kueche_freitext: kuecheFrei,
+      kueche: mode === 'cocktail' ? '' : kueche,
+      kueche_freitext: mode === 'cocktail' ? '' : kuecheFrei,
+      drink_typ: mode === 'cocktail' ? (drinkTypFrei.trim() || drinkTyp) : '',
       geschmack,
       vegetarisch,
       vegan,
@@ -118,7 +121,7 @@ export function GeneratePage() {
       ...overrides,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, kueche, kuecheFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, proteinreich, ketogen, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
+    [mode, kueche, kuecheFrei, drinkTyp, drinkTypFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, proteinreich, ketogen, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
   );
 
   const invalidateRecipes = useCallback(
@@ -151,6 +154,7 @@ export function GeneratePage() {
       setAdultOpen(true);
       return;
     }
+    if (next !== mode) setGeschmack([]);
     setMode(next);
   };
 
@@ -317,7 +321,7 @@ export function GeneratePage() {
   }
 
   /* ---------- render: wizard ---------- */
-  const steps = [t('wizard.stepCuisine'), t('wizard.stepTaste'), t('wizard.stepDetails')];
+  const steps = [mode === 'cocktail' ? t('wizard.stepDrinkType') : t('wizard.stepCuisine'), t('wizard.stepTaste'), t('wizard.stepDetails')];
 
   return (
     <div>
@@ -354,7 +358,31 @@ export function GeneratePage() {
           exit={reduced ? undefined : { opacity: 0, x: -40 }}
           transition={springSnappy}
         >
-          {step === 0 && (
+          {step === 0 && mode === 'cocktail' && (
+            <section>
+              <h2 className="wiz__step-title">{t('wizard.drinkTypeTitle')}</h2>
+              <div className="chips">
+                {strings.drinkTypes.map((d) => (
+                  <Chip key={d} selected={drinkTyp === d} onToggle={() => setDrinkTyp(drinkTyp === d ? '' : d)}>
+                    {d}
+                  </Chip>
+                ))}
+              </div>
+              <div className="wiz__free">
+                <label htmlFor="drink-frei">{t('wizard.drinkFreeLabel')}</label>
+                <input
+                  id="drink-frei"
+                  className="input"
+                  value={drinkTypFrei}
+                  onChange={(e) => setDrinkTypFrei(e.target.value)}
+                  placeholder={t('wizard.drinkFreePlaceholder')}
+                  maxLength={64}
+                />
+              </div>
+            </section>
+          )}
+
+          {step === 0 && mode !== 'cocktail' && (
             <section>
               <h2 className="wiz__step-title">{t('wizard.cuisineTitle')}</h2>
               <div className="chips">
@@ -385,7 +413,7 @@ export function GeneratePage() {
             <section>
               <h2 className="wiz__step-title">{t('wizard.tasteTitle')}</h2>
               <div className="chips">
-                {strings.tastes.map((taste) => (
+                {(mode === 'cocktail' ? strings.tastesCocktail : strings.tastes).map((taste) => (
                   <Chip
                     key={taste}
                     selected={geschmack.includes(taste)}
@@ -514,7 +542,7 @@ export function GeneratePage() {
       </div>
 
       <div className="wiz__surprise">
-        <Button variant="outlined" onClick={() => generate({ ueberrasch_mich: true, kueche: '', kueche_freitext: '' })}>
+        <Button variant="outlined" onClick={() => generate({ ueberrasch_mich: true, kueche: '', kueche_freitext: '', drink_typ: '' })}>
           🎁 {t('wizard.surpriseMe')}
         </Button>
       </div>

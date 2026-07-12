@@ -91,6 +91,17 @@ def test_cocktail_prompt_respects_alcohol_free():
     assert "Basis-Spirituose" not in prompt  # spirit must be ignored when alcohol-free
 
 
+def test_cocktail_prompt_maps_drink_typ():
+    params = GenerateParams(modus="cocktail", drink_typ="Longdrink", basis_spirituose="Rum")
+    prompt = recipe_v2.build_user_prompt(params)
+    assert "Drink-Typ: „Longdrink“" in prompt
+    # drink_typ changes the cache key, kochen ignores it in the prompt
+    from app.services.cache import params_hash
+
+    assert params_hash(params) != params_hash(GenerateParams(modus="cocktail", drink_typ="Shot", basis_spirituose="Rum"))
+    assert "Drink-Typ" not in recipe_v2.build_user_prompt(GenerateParams(modus="kochen", drink_typ="Shot"))
+
+
 def _assert_hardened(node: dict) -> None:
     if node.get("type") == "object" and "properties" in node:
         assert node.get("additionalProperties") is False

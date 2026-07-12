@@ -92,6 +92,7 @@ class GenerateParams(BaseModel):
     personen: int = Field(default=2, ge=1, le=12)
     vorhandene_zutaten: list[str] = Field(default=[], max_length=30)
     # Cocktail-specific
+    drink_typ: str = Field(default="", max_length=64)  # Longdrink, Shot, Aperitif, ...
     basis_spirituose: str = Field(default="", max_length=64)
     alkoholfrei: bool = False
     glas_vorgabe: str = Field(default="", max_length=64)
@@ -114,6 +115,7 @@ class GenerateParams(BaseModel):
         data["kueche"] = data["kueche"].strip().lower()
         data["kueche_freitext"] = data["kueche_freitext"].strip().lower()
         data["basis_spirituose"] = data["basis_spirituose"].strip().lower()
+        data["drink_typ"] = data["drink_typ"].strip().lower()
         data["glas_vorgabe"] = data["glas_vorgabe"].strip().lower()
         return data
 

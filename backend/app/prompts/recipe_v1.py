@@ -76,6 +76,8 @@ def build_user_prompt(params: GenerateParams) -> str:
             lines.append(f"Basis-Spirituose: „{_clean(p.basis_spirituose)}“.")
         if p.glas_vorgabe:
             lines.append(f"Glas-Vorgabe: „{_clean(p.glas_vorgabe)}“.")
+        if p.drink_typ:
+            lines.append(f"Drink-Typ: „{_clean(p.drink_typ)}“.")
         lines.append(f"Anzahl Drinks: {p.personen}.")
     else:
         lines.append("Erstelle ein Kochrezept.")

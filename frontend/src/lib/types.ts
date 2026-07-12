@@ -67,6 +67,7 @@ export interface GenerateParams {
   schwierigkeit?: Schwierigkeit | null;
   personen?: number;
   vorhandene_zutaten?: string[];
+  drink_typ?: string;
   basis_spirituose?: string;
   alkoholfrei?: boolean;
   glas_vorgabe?: string;
