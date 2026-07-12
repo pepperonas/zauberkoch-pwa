@@ -46,6 +46,8 @@ export const de = {
     stepDetails: 'Extras',
     cuisineTitle: 'Welche Küche darf es sein?',
     gerichtTypLabel: 'Art des Gerichts (optional)',
+    cuisineBlocked: (typ: string) => `Passt nicht zu „${typ}“`,
+    gerichtTypBlocked: (kueche: string) => `Passt nicht zu „${kueche}“`,
     drinkTypeTitle: 'Was für ein Drink darf es sein?',
     drinkFreeLabel: 'Oder eigene Idee …',
     drinkFreePlaceholder: 'z. B. Espresso-Drinks, Sommer-Aperitif, 90er-Klassiker',

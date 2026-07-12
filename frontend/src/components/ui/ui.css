@@ -66,6 +66,11 @@
   color: var(--c-on-primary-container);
   box-shadow: none;
 }
+.chip--disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
 
 /* ---------- Segmented button ---------- */
 .seg {

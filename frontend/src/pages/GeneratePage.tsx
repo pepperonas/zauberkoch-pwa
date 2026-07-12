@@ -23,6 +23,7 @@ import { useSnackbar } from '../components/ui/Snackbar';
 import { useShoppingUndo } from '../state/useShoppingUndo';
 import { strings, t } from '../i18n';
 import { downscaleToJpegBase64 } from '../lib/imageScale';
+import { cuisineAllowsMeal } from '../lib/mealCompat';
 import { api } from '../lib/api';
 import type { GenerateParams, Modus, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
@@ -93,6 +94,15 @@ export function GeneratePage() {
   useEffect(() => {
     if (gen.phase === 'done' || gen.phase === 'limit') markGenerationSeen();
   }, [gen.phase]);
+
+  // Meal-type × cuisine sanity (kochen): the effective cuisine (chip OR
+  // free-text) and the meal type gate each other's chips. Chip-vs-chip
+  // conflicts can't be created (the bad chip is disabled); the only open path
+  // is typing a conflicting free-text after picking a meal type -> drop it.
+  const effCuisine = kuecheFrei.trim() || kueche;
+  useEffect(() => {
+    if (gerichtTyp && effCuisine && !cuisineAllowsMeal(effCuisine, gerichtTyp)) setGerichtTyp('');
+  }, [effCuisine, gerichtTyp]);
 
   // Hero moment: the emotional peak when a live run lands while we're watching.
   // Spark burst + one-shot card settle-pop + reveal glow sweep + haptics.
@@ -440,19 +450,37 @@ export function GeneratePage() {
             <section>
               <span className="wiz__row-label">{t('wizard.gerichtTypLabel')}</span>
               <div className="chips" style={{ marginTop: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
-                {strings.gerichtTypen.map((g) => (
-                  <Chip key={g} selected={gerichtTyp === g} onToggle={() => setGerichtTyp(gerichtTyp === g ? '' : g)}>
-                    {g}
-                  </Chip>
-                ))}
+                {strings.gerichtTypen.map((g) => {
+                  const blocked = !!effCuisine && !cuisineAllowsMeal(effCuisine, g);
+                  return (
+                    <Chip
+                      key={g}
+                      selected={gerichtTyp === g}
+                      disabled={blocked}
+                      title={blocked ? strings.wizard.gerichtTypBlocked(effCuisine) : undefined}
+                      onToggle={() => setGerichtTyp(gerichtTyp === g ? '' : g)}
+                    >
+                      {g}
+                    </Chip>
+                  );
+                })}
               </div>
               <h2 className="wiz__step-title">{t('wizard.cuisineTitle')}</h2>
               <div className="chips">
-                {(me?.preferences?.kuechen?.length ? me.preferences.kuechen : strings.cuisines).map((c) => (
-                  <Chip key={c} selected={kueche === c} onToggle={() => setKueche(kueche === c ? '' : c)}>
-                    {c}
-                  </Chip>
-                ))}
+                {(me?.preferences?.kuechen?.length ? me.preferences.kuechen : strings.cuisines).map((c) => {
+                  const blocked = !!gerichtTyp && !cuisineAllowsMeal(c, gerichtTyp);
+                  return (
+                    <Chip
+                      key={c}
+                      selected={kueche === c}
+                      disabled={blocked}
+                      title={blocked ? strings.wizard.cuisineBlocked(gerichtTyp) : undefined}
+                      onToggle={() => setKueche(kueche === c ? '' : c)}
+                    >
+                      {c}
+                    </Chip>
+                  );
+                })}
                 <Chip selected={false} onToggle={() => setCuisineEditOpen(true)}>
                   <Icon name="edit" size={13} /> {t('wizard.cuisineEdit')}
                 </Chip>

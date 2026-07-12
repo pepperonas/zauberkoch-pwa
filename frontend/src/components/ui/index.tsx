@@ -60,21 +60,25 @@ export function IconButton({ label, active = false, children, className = '', ..
 interface ChipProps {
   selected: boolean;
   onToggle: () => void;
+  disabled?: boolean;
+  title?: string;
   children: ReactNode;
 }
 
-export function Chip({ selected, onToggle, children }: ChipProps) {
+export function Chip({ selected, onToggle, disabled = false, title, children }: ChipProps) {
   const reduced = useReducedMotion();
   return (
     <motion.button
-      className="chip"
+      className={`chip ${disabled ? 'chip--disabled' : ''}`}
       aria-pressed={selected}
-      onClick={onToggle}
-      whileTap={reduced ? undefined : { scale: 0.92 }}
-      animate={reduced ? undefined : { scale: selected ? [1, 1.08, 1] : 1 }}
+      disabled={disabled}
+      title={title}
+      onClick={disabled ? undefined : onToggle}
+      whileTap={reduced || disabled ? undefined : { scale: 0.92 }}
+      animate={reduced || disabled ? undefined : { scale: selected ? [1, 1.08, 1] : 1 }}
       transition={springBouncy}
     >
-      {selected ? <><Icon name="check" size={13} />{' '}</> : null}
+      {selected && !disabled ? <><Icon name="check" size={13} />{' '}</> : null}
       {children}
     </motion.button>
   );
