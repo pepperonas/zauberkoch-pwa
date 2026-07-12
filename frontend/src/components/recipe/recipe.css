@@ -9,7 +9,6 @@
     radial-gradient(120% 90% at 85% -10%, color-mix(in srgb, var(--c-hero-glow) 55%, transparent), transparent 60%),
     var(--c-surface-container);
 }
-.hero__svg { position: absolute; right: -12px; bottom: -18px; width: 150px; opacity: 0.9; pointer-events: none; }
 .hero { display: flex; align-items: center; gap: var(--space-3); }
 .hero__content { flex: 1; min-width: 0; }
 .hero__motif { flex: none; width: 118px; height: 118px; }

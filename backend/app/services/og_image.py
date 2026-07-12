@@ -16,7 +16,7 @@ from app.core.config import get_settings
 logger = logging.getLogger("zauberkoch.og")
 
 W, H = 1200, 630
-STYLE_VERSION = 5  # bump to invalidate cached PNGs after a redesign
+STYLE_VERSION = 6  # bump to invalidate cached PNGs after a redesign
 FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 MOTIF_DIR = Path(__file__).resolve().parent.parent / "assets" / "motifs"
 
@@ -74,10 +74,10 @@ def variant_for(seed: str, count: int) -> int:
 
 # Semantic hints — MUST stay in sync with frontend VARIANT_HINTS
 _VARIANT_HINTS: dict[str, list[tuple[str, int]]] = {
-    "pasta": [(r"pesto", 1), (r"carbonara|rahm|sahne|käse", 2), (r"pomodoro|tomate|arrabbiata|bolognese|napoli|vongole", 0)],
+    "pasta": [(r"pesto", 1), (r"carbonara|rahm|sahne|käse|vongole|aglio", 2), (r"pomodoro|tomate|arrabbiata|bolognese|napoli", 0)],
     "bowl": [(r"curry|dal|masala|tikka", 1), (r"poke|lachs|thunfisch", 0), (r"buddha|falafel|kichererbse|veggie|gemüse", 2)],
     "tumbler": [(r"negroni|americano|sour", 2), (r"cola|cuba libre|libre", 1), (r"whisk|old fashioned", 0)],
-    "coupe": [(r"espresso|kaffee", 1), (r"gimlet|basil|grün|matcha", 2), (r"daiquiri|clover|cosmo", 0)],
+    "coupe": [(r"espresso|kaffee", 1), (r"gimlet|basil|grün|matcha|sour|fizz", 2), (r"daiquiri|clover|cosmo", 0)],
     "highball": [(r"mojito|minze|hugo", 2), (r"sunrise|campari|paloma|zombie", 1)],
     "suppe": [(r"tomate|gulasch|linsen|kürbis", 0), (r"kräuter|erbse|spinat|brokkoli|grün", 1)],
     "pfanne": [(r"ei|shakshuka|omelett", 1)],

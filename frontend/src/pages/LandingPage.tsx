@@ -8,7 +8,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import { Icon, type IconName } from '../components/icons';
 import { ConjureStage } from '../components/recipe/ConjureStage';
-import { CuisineHero } from '../components/recipe/CuisineHero';
 import { motifForRecipe, RecipeMotif } from '../components/recipe/RecipeMotif';
 import { RecipeView, type RecipeViewData } from '../components/recipe/RecipeView';
 import { Button, Chip } from '../components/ui';
@@ -44,6 +43,7 @@ const EXAMPLES = [
     kueche: 'Klassiker',
     mode: 'cocktail' as const,
     titel: 'Gin Sour Royal',
+    glas: 'Coupette',
     teaser: 'Feiner Eiweiß-Schaum, spritzige Zitrusnote, ein Hauch Wacholder — frisch, sauer, perfekt austariert.',
     stats: [{ icon: 'cocktail', text: '2 Drinks' }, { icon: 'glass', text: 'Coupette' }] as { icon: IconName; text: string }[],
   },
@@ -121,20 +121,32 @@ export function LandingPage() {
             <motion.a
               key={ex.titel}
               href={ex.href}
-              className="card card--outlined"
-              style={{ position: 'relative', overflow: 'hidden', display: 'block', color: 'inherit' }}
+              className="card card--outlined recipecard"
               {...(reduced ? {} : riseIn)}
               transition={stagger(i, 0.12)}
               whileTap={reduced ? undefined : { scale: 0.98 }}
             >
-              <CuisineHero kueche={ex.kueche} mode={ex.mode} />
               <span className="hero__kueche">{ex.kueche}</span>
-              <h3 style={{ margin: 'var(--space-2) 0' }}>{ex.titel}</h3>
-              <p className="muted">{ex.teaser}</p>
-              <div className="hero__stats">
-                {ex.stats.map((s) => (
-                  <span key={s.text} className="stat"><Icon name={s.icon} size={15} /> {s.text}</span>
-                ))}
+              <div className="recipecard__body">
+                <div className="recipecard__text">
+                  <h3 style={{ margin: 'var(--space-2) 0' }}>{ex.titel}</h3>
+                  <p className="muted">{ex.teaser}</p>
+                  <div className="hero__stats">
+                    {ex.stats.map((s) => (
+                      <span key={s.text} className="stat"><Icon name={s.icon} size={15} /> {s.text}</span>
+                    ))}
+                  </div>
+                </div>
+                <RecipeMotif
+                  motif={motifForRecipe({
+                    mode: ex.mode,
+                    titel: ex.titel,
+                    kueche: ex.kueche,
+                    glas: 'glas' in ex ? ex.glas : null,
+                  })}
+                  seed={ex.titel}
+                  className="recipecard__motif"
+                />
               </div>
             </motion.a>
           ))}

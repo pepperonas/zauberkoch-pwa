@@ -88,6 +88,8 @@ def test_og_motif_assets_and_matcher():
     assert variant_for_motif("pasta", "Pasta al Pesto Genovese") == 1
     assert variant_for_motif("steak", "Wiener Schnitzel") == 1
     assert variant_for_motif("highball", "Mojito Royal") == 2
+    assert variant_for_motif("pasta", "Spaghetti alle Vongole") == 2
+    assert variant_for_motif("coupe", "Gin Sour Royal") == 2
 
     assert motif_for_recipe({"titel": "Jungle Bird", "glas": "Tiki-Becher"}, "cocktail") == "tiki"
     assert motif_for_recipe({"titel": "Espresso Martini", "glas": "Cocktailschale"}, "cocktail") == "coupe"

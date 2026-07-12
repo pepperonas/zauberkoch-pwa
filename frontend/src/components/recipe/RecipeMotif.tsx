@@ -82,10 +82,10 @@ export function variantFor(seed: string, count: number): number {
  * variant instead of the hash ("Carbonara" -> the carbonara plate). MUST
  * stay in sync with backend og_image._VARIANT_HINTS. */
 const VARIANT_HINTS: Partial<Record<Motif, [RegExp, number][]>> = {
-  pasta: [[/pesto/, 1], [/carbonara|rahm|sahne|käse/, 2], [/pomodoro|tomate|arrabbiata|bolognese|napoli|vongole/, 0]],
+  pasta: [[/pesto/, 1], [/carbonara|rahm|sahne|käse|vongole|aglio/, 2], [/pomodoro|tomate|arrabbiata|bolognese|napoli/, 0]],
   bowl: [[/curry|dal|masala|tikka/, 1], [/poke|lachs|thunfisch/, 0], [/buddha|falafel|kichererbse|veggie|gemüse/, 2]],
   tumbler: [[/negroni|americano|sour/, 2], [/cola|cuba libre|libre/, 1], [/whisk|old fashioned/, 0]],
-  coupe: [[/espresso|kaffee/, 1], [/gimlet|basil|grün|matcha/, 2], [/daiquiri|clover|cosmo/, 0]],
+  coupe: [[/espresso|kaffee/, 1], [/gimlet|basil|grün|matcha|sour|fizz/, 2], [/daiquiri|clover|cosmo/, 0]],
   highball: [[/mojito|minze|hugo/, 2], [/sunrise|campari|paloma|zombie/, 1]],
   suppe: [[/tomate|gulasch|linsen|kürbis/, 0], [/kräuter|erbse|spinat|brokkoli|grün/, 1]],
   pfanne: [[/ei|shakshuka|omelett/, 1]],

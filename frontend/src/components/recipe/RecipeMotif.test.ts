@@ -69,6 +69,8 @@ describe('variantFor (must match backend variant_for)', () => {
     expect(variantForMotif('pasta', 'Pasta al Pesto Genovese')).toBe(1);
     expect(variantForMotif('steak', 'Wiener Schnitzel')).toBe(1);
     expect(variantForMotif('highball', 'Mojito Royal')).toBe(2);
+    expect(variantForMotif('pasta', 'Spaghetti alle Vongole')).toBe(2);
+    expect(variantForMotif('coupe', 'Gin Sour Royal')).toBe(2);
   });
 
   it('declares at least 40 distinct visuals', () => {
