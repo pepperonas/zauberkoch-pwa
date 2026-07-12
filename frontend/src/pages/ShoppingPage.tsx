@@ -1,14 +1,19 @@
-/** Shopping list: check with elastic animation, drag reorder, export/share. */
+/** Shopping list: check with elastic animation, drag reorder, export/share.
+ * Two views: the aggregated check-off list, and a per-recipe planning view
+ * (expand a dish -> read its ingredients -> add them to the list). */
 
 import { AnimatePresence, motion, useReducedMotion, Reorder } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { Button, IconButton } from '../components/ui';
+import { motifForRecipe, RecipeMotif } from '../components/recipe/RecipeMotif';
+import { Button, IconButton, Segmented } from '../components/ui';
 import { t } from '../i18n';
 import { api } from '../lib/api';
-import type { ShoppingItem } from '../lib/types';
-import { spring, springBouncy } from '../motion/springs';
+import { formatZutatMenge } from '../lib/units';
+import type { RecipeListItem, ShoppingItem } from '../lib/types';
+import { riseIn, spring, springBouncy, stagger } from '../motion/springs';
+import { useLocalStorageState } from '../state/useLocalStorageState';
 import { useShoppingUndo } from '../state/useShoppingUndo';
 
 function itemLabel(item: ShoppingItem): string {
@@ -16,9 +21,12 @@ function itemLabel(item: ShoppingItem): string {
   return menge ? `${menge} ${item.name}` : item.name;
 }
 
+type View = 'liste' | 'gerichte';
+
 export function ShoppingPage() {
   const reduced = useReducedMotion();
   const queryClient = useQueryClient();
+  const [view, setView] = useLocalStorageState<View>('zk-shopping-view', () => 'liste');
   const [input, setInput] = useState('');
   const [order, setOrder] = useState<ShoppingItem[]>([]);
 
@@ -66,10 +74,37 @@ export function ShoppingPage() {
 
   const anyChecked = order.some((i) => i.checked);
 
+  if (view === 'gerichte') {
+    return (
+      <div>
+        <h1 className="page__title">{t('shopping.title')}</h1>
+        <div className="stack">
+          <Segmented<View>
+            options={[
+              { value: 'liste', label: t('shopping.viewList') },
+              { value: 'gerichte', label: t('shopping.viewByRecipe') },
+            ]}
+            value={view}
+            onChange={setView}
+          />
+          <ByRecipeView />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="page__title">{t('shopping.title')}</h1>
       <div className="stack">
+        <Segmented<View>
+          options={[
+            { value: 'liste', label: t('shopping.viewList') },
+            { value: 'gerichte', label: t('shopping.viewByRecipe') },
+          ]}
+          value={view}
+          onChange={setView}
+        />
         <input
           className="input"
           value={input}
@@ -164,5 +199,131 @@ export function ShoppingPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/* ---------- per-recipe planning view ---------- */
+
+function ByRecipeView() {
+  const reduced = useReducedMotion();
+  const [q, setQ] = useState('');
+  const [openId, setOpenId] = useState<number | null>(null);
+  const recipes = useQuery({ queryKey: ['recipes', 'shopping-picker'], queryFn: () => api.recipes() });
+
+  const query = q.trim().toLowerCase();
+  const items = (recipes.data?.items ?? []).filter(
+    (r) => !query || r.titel.toLowerCase().includes(query) || r.kueche.toLowerCase().includes(query),
+  );
+
+  return (
+    <>
+      <input
+        className="input"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder={t('shopping.filterPlaceholder')}
+        aria-label={t('shopping.filterPlaceholder')}
+      />
+      {recipes.isLoading ? (
+        <p className="muted">{t('common.loading')}</p>
+      ) : (recipes.data?.items ?? []).length === 0 ? (
+        <p className="muted">{t('shopping.noRecipes')}</p>
+      ) : items.length === 0 ? (
+        <p className="muted">{t('shopping.noMatches')}</p>
+      ) : (
+        items.map((item, i) => (
+          <RecipeRow
+            key={item.id}
+            item={item}
+            index={i}
+            open={openId === item.id}
+            onToggle={() => setOpenId(openId === item.id ? null : item.id)}
+            reduced={!!reduced}
+          />
+        ))
+      )}
+    </>
+  );
+}
+
+function RecipeRow({
+  item,
+  index,
+  open,
+  onToggle,
+  reduced,
+}: {
+  item: RecipeListItem;
+  index: number;
+  open: boolean;
+  onToggle: () => void;
+  reduced: boolean;
+}) {
+  const { withUndo } = useShoppingUndo();
+  const detail = useQuery({
+    queryKey: ['recipes', 'detail', item.id],
+    queryFn: () => api.recipe(item.id),
+    enabled: open,
+  });
+
+  return (
+    <motion.div
+      className="card card--outlined"
+      {...(reduced ? {} : riseIn)}
+      transition={stagger(Math.min(index, 8))}
+    >
+      <button
+        className="row row--between"
+        onClick={onToggle}
+        aria-expanded={open}
+        style={{ width: '100%', textAlign: 'left', minHeight: 'var(--touch-target)' }}
+      >
+        <span className="row" style={{ minWidth: 0 }}>
+          <RecipeMotif motif={motifForRecipe(item)} size={44} />
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: 'block', font: 'var(--type-title)' }}>{item.titel}</span>
+            <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
+              {item.mode === 'cocktail' ? '🍸 ' : ''}{item.kueche}
+            </span>
+          </span>
+        </span>
+        <motion.span aria-hidden animate={{ rotate: open ? 180 : 0 }} transition={spring} className="muted">
+          ▾
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={spring}
+            style={{ marginTop: 'var(--space-3)' }}
+          >
+            {detail.isLoading ? (
+              <p className="muted">{t('common.loading')}</p>
+            ) : detail.data ? (
+              <>
+                {detail.data.recipe.zutaten.map((z, zi) => (
+                  <div key={zi} className="row" style={{ minHeight: 32 }}>
+                    <span className="zutat__menge">{formatZutatMenge(z, 1)}</span>
+                    <span>{z.name}</span>
+                  </div>
+                ))}
+                <div className="actions" style={{ marginTop: 'var(--space-3)' }}>
+                  <Button
+                    variant="tonal"
+                    onClick={() => void withUndo(t('shopping.recipeAdded'), () => api.shoppingFromRecipe(item.id))}
+                  >
+                    🛒 {t('shopping.addRecipeToList')}
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

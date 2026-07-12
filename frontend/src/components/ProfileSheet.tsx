@@ -22,6 +22,7 @@ export function ProfileSheet({ open, onClose }: Props) {
   const { show } = useSnackbar();
   const [prefs, setPrefs] = useState<Preferences | null>(null);
   const [input, setInput] = useState('');
+  const [pantryInput, setPantryInput] = useState('');
 
   useEffect(() => {
     if (open && me) setPrefs({ ...me.preferences });
@@ -37,6 +38,15 @@ export function ProfileSheet({ open, onClose }: Props) {
       set({ vermeiden: [...prefs.vermeiden, item] });
     }
     setInput('');
+  };
+
+  const pantry = prefs.vorraete ?? [];
+  const addPantry = () => {
+    const item = pantryInput.trim();
+    if (item && !pantry.some((p) => p.toLowerCase() === item.toLowerCase()) && pantry.length < 40) {
+      set({ vorraete: [...pantry, item] });
+    }
+    setPantryInput('');
   };
 
   const save = async () => {
@@ -92,6 +102,31 @@ export function ProfileSheet({ open, onClose }: Props) {
             <div className="chips" style={{ marginTop: 'var(--space-3)' }}>
               {prefs.vermeiden.map((item) => (
                 <Chip key={item} selected onToggle={() => set({ vermeiden: prefs.vermeiden.filter((x) => x !== item) })}>
+                  {item} ✕
+                </Chip>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <span className="wiz__row-label">{t('profile.pantry')}</span>
+          <p className="muted" style={{ font: 'var(--type-label-sm)', margin: 'var(--space-1) 0 0' }}>
+            {t('profile.pantryHint')}
+          </p>
+          <input
+            className="input"
+            style={{ marginTop: 'var(--space-2)' }}
+            value={pantryInput}
+            onChange={(e) => setPantryInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addPantry()}
+            placeholder={t('profile.pantryPlaceholder')}
+            maxLength={60}
+          />
+          {pantry.length > 0 && (
+            <div className="chips" style={{ marginTop: 'var(--space-3)' }}>
+              {pantry.map((item) => (
+                <Chip key={item} selected onToggle={() => set({ vorraete: pantry.filter((x) => x !== item) })}>
                   {item} ✕
                 </Chip>
               ))}

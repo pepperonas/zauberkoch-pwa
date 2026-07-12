@@ -69,6 +69,14 @@ def test_preferences_custom_cuisines(client, logged_in):
     assert client.put("/api/v1/me/preferences", json=too_many, headers=logged_in).status_code == 422
 
 
+def test_preferences_pantry(client, logged_in):
+    prefs = {"vorraete": ["Zwiebeln", " zwiebeln", "Reis", "Olivenöl"]}
+    r = client.put("/api/v1/me/preferences", json=prefs, headers=logged_in)
+    assert r.status_code == 200
+    assert r.json()["preferences"]["vorraete"] == ["Zwiebeln", "Reis", "Olivenöl"]
+    assert client.get("/api/v1/me").json()["preferences"]["vorraete"] == ["Zwiebeln", "Reis", "Olivenöl"]
+
+
 def test_preferences_affect_cache_key(client, logged_in, mock_ai):
     generate(client, logged_in)  # live #1 (no prefs)
     client.put("/api/v1/me/preferences", json={"vermeiden": ["Sellerie"]}, headers=logged_in)

@@ -49,6 +49,7 @@ export function motifForRecipe(item: MatchInput): Motif {
   if (/ramen|udon|soba|pho|suppe|eintopf|chowder|brühe|minestrone|gulasch/.test(hay)) return 'suppe';
   if (/lasagne|auflauf|gratin|moussaka|casserole|überbacken|parmigiana/.test(hay)) return 'auflauf';
   if (/pasta|spaghetti|tagliatelle|linguine|penne|nudel|gnocchi|carbonara|orecchiette/.test(hay)) return 'pasta';
+  if (/bowl|poke|buddha|curry|risotto|porridge|dal/.test(hay)) return 'bowl';
   if (/dessert|kuchen|torte|tiramisu|mousse|pudding|brownie|cheesecake|crumble|panna cotta|sorbet/.test(hay)) return 'dessert';
   if (/salat|caesar|caprese|tabouleh|slaw/.test(hay)) return 'salat';
   if (/fisch|lachs|forelle|dorade|thunfisch|garnele|scampi|muschel|kabeljau|zander|pulpo/.test(hay)) return 'fisch';

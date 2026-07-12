@@ -56,6 +56,10 @@ export function GeneratePage() {
   const [personen, setPersonen] = useState(me?.preferences?.standard_personen ?? 2);
   const [fridge, setFridge] = useState<string[]>([]);
   const [fridgeInput, setFridgeInput] = useState('');
+  // Pantry staples arrive pre-selected; tapping deselects them for this run.
+  const [pantryOff, setPantryOff] = useState<Set<string>>(new Set());
+  const pantry = me?.preferences?.vorraete ?? [];
+  const pantrySelected = pantry.filter((p) => !pantryOff.has(p));
   const [spirit, setSpirit] = useState('');
   const [alkoholfrei, setAlkoholfrei] = useState(false);
 
@@ -103,12 +107,13 @@ export function GeneratePage() {
       max_zeit_min: maxZeit,
       schwierigkeit,
       personen,
-      vorhandene_zutaten: fridge,
+      vorhandene_zutaten: [...pantrySelected, ...fridge],
       basis_spirituose: spirit,
       alkoholfrei,
       ...overrides,
     }),
-    [mode, kueche, kuecheFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mode, kueche, kuecheFrei, geschmack, vegetarisch, vegan, glutenfrei, laktosefrei, maxZeit, schwierigkeit, personen, fridge, spirit, alkoholfrei, pantryOff, me],
   );
 
   const invalidateRecipes = useCallback(
@@ -408,6 +413,26 @@ export function GeneratePage() {
                   </Button>
                   <div>
                     <span className="wiz__row-label">{t('wizard.fridgeTitle')}</span>
+                    {pantry.length > 0 && (
+                      <div className="wiz__fridge-list">
+                        {pantry.map((item) => (
+                          <Chip
+                            key={item}
+                            selected={!pantryOff.has(item)}
+                            onToggle={() =>
+                              setPantryOff((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(item)) next.delete(item);
+                                else next.add(item);
+                                return next;
+                              })
+                            }
+                          >
+                            {item}
+                          </Chip>
+                        ))}
+                      </div>
+                    )}
                     <input
                       className="input"
                       style={{ marginTop: 'var(--space-2)' }}

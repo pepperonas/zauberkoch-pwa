@@ -128,10 +128,13 @@ class Preferences(BaseModel):
     # Personalized cuisine chips for the wizard (empty = app defaults). UI-only:
     # the chosen cuisine still travels as a normal generation param.
     kuechen: list[str] = Field(default=[], max_length=40)
+    # Pantry staples: pre-selected chips in the wizard's fridge step. UI-only:
+    # selected items travel as normal vorhandene_zutaten params.
+    vorraete: list[str] = Field(default=[], max_length=40)
 
-    @field_validator("kuechen")
+    @field_validator("kuechen", "vorraete")
     @classmethod
-    def _clean_kuechen(cls, value: list[str]) -> list[str]:
+    def _clean_chip_list(cls, value: list[str]) -> list[str]:
         seen: set[str] = set()
         out: list[str] = []
         for item in value:

@@ -22,6 +22,7 @@ describe('motifForRecipe', () => {
     expect(motifForRecipe({ mode: 'kochen', titel: 'Tagliatelle al Ragù', tags: ['pasta'] })).toBe('pasta');
     expect(motifForRecipe({ mode: 'kochen', titel: 'Ramen mit Ei' })).toBe('suppe'); // soup beats noodle
     expect(motifForRecipe({ mode: 'kochen', titel: 'Grüne Currybowl' })).toBe('bowl');
+    expect(motifForRecipe({ mode: 'kochen', titel: 'Poke Bowl mit Lachs' })).toBe('bowl'); // bowl beats fish
   });
 
   it('covers the extended glass set', () => {

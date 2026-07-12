@@ -81,6 +81,8 @@ export interface Preferences {
   standard_personen: number;
   /** Personalized wizard cuisine chips (empty = app defaults). */
   kuechen?: string[];
+  /** Pantry staples — pre-selected chips in the wizard's fridge step. */
+  vorraete?: string[];
 }
 
 export interface Me {
