@@ -10,7 +10,7 @@ import type { Modus, Naehrwerte, RecipeMeta, Schritt, Zutat } from '../../lib/ty
 import { formatZutatMenge } from '../../lib/units';
 import { riseIn, spring, springBouncy, springSoft, stagger } from '../../motion/springs';
 import { NumberTicker } from './NumberTicker';
-import { CuisineHero } from './CuisineHero';
+import { motifForRecipe, RecipeMotif } from './RecipeMotif';
 import './recipe.css';
 
 export interface RecipeViewData {
@@ -75,7 +75,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
     <div>
       {meta && (
         <motion.section className="hero" {...(reduced ? {} : riseIn)} transition={spring}>
-          <CuisineHero kueche={meta.kueche} mode={mode} />
+          <div className="hero__content">
           <span className="hero__kueche">{meta.kueche}</span>
           <h1 className="hero__title">
             {streaming && !reduced
@@ -101,6 +101,11 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
             <span className="stat">📶 {meta.schwierigkeit}</span>
             {data.glas && <span className="stat">🥃 {data.glas}</span>}
           </div>
+          </div>
+          <RecipeMotif
+            className="hero__motif"
+            motif={motifForRecipe({ mode, titel: meta.titel, tags: meta.tags, kueche: meta.kueche, glas: data.glas })}
+          />
         </motion.section>
       )}
 

@@ -10,6 +10,10 @@
     var(--c-surface-container);
 }
 .hero__svg { position: absolute; right: -12px; bottom: -18px; width: 150px; opacity: 0.9; pointer-events: none; }
+.hero { display: flex; align-items: center; gap: var(--space-3); }
+.hero__content { flex: 1; min-width: 0; }
+.hero__motif { flex: none; width: 118px; height: 118px; }
+@media (max-width: 380px) { .hero__motif { width: 96px; height: 96px; } }
 .hero__kueche { font: var(--type-label); color: var(--c-primary); text-transform: uppercase; letter-spacing: 0.08em; }
 .hero__title { margin: var(--space-2) 0; }
 .hero__teaser { color: var(--c-on-surface-variant); max-width: 46ch; }
