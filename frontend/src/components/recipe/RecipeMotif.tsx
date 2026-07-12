@@ -1075,31 +1075,44 @@ function Sandwich({ id, ...svg }: SvgProps) {
 function Shot({ id, v = 0, ...svg }: SvgProps) {
   return (
     <svg {...svg}>
-      <Ground rx={17} />
-      <g transform="rotate(-6 60 82)">
+      <Ground rx={24} />
+      <g transform="rotate(-5 60 74)">
         <defs>
           <linearGradient id={`${id}-l`} x1="0" y1="1" x2="0" y2="0">
             <stop offset="0" stopColor="#c77c1a" />
             <stop offset="1" stopColor="#e8a33d" />
           </linearGradient>
         </defs>
-        <path d="M45 60 L49 99 Q49 101.5 52 101.5 L68 101.5 Q71 101.5 71 99 L75 60 Z" fill="#90a4ae" opacity="0.35" />
+        {/* Tapered shot glass — filled bigger so it reads at card size. */}
+        <path d="M38 45 L44 99 Q44.4 103 49 103 L71 103 Q75.6 103 76 99 L82 45 Z" fill="#90a4ae" opacity="0.32" />
         {v === 0 ? (
           <>
-            <path d="M48 71 L51 97 Q51 99 53 99 L67 99 Q69 99 69 97 L72 71 Z" fill={`url(#${id}-l)`} opacity="0.92" />
-            <g transform="translate(73 60) rotate(20)">
-              <path d="M-8 0 A8 8 0 0 1 8 0 Z" fill="#7cb342" />
-              <path d="M-5.6 0 A5.6 5.6 0 0 1 5.6 0 Z" fill="#dcedc8" />
+            <path d="M41.5 59 L45.6 96.5 Q45.9 100 49 100 L71 100 Q74.1 100 74.4 96.5 L78.5 59 Z" fill={`url(#${id}-l)`} opacity="0.92" />
+            <g transform="translate(80 46) rotate(20)">
+              <circle r="12" fill="#7cb342" />
+              <circle r="8.6" fill="#dcedc8" />
+              <rect x="-1" y="-8.6" width="2" height="17.2" fill="#7cb342" opacity="0.5" />
+              <rect x="-8.6" y="-1" width="17.2" height="2" fill="#7cb342" opacity="0.5" />
             </g>
           </>
         ) : (
           <>
-            <path d="M49.5 86 L51 97 Q51 99 53 99 L67 99 Q69 99 69 97 L70.5 86 Z" fill="#3e2723" />
-            <rect x="49.5" y="77" width="21" height="9" fill="#a1723b" />
-            <path d="M50 71 L70 71 L69.4 77 L50.6 77 Z" fill="#f5e6c8" />
+            {/* Layered coquito — dark base, cream, foam — with cinnamon stick + nutmeg dusting. */}
+            <path d="M44 82 L46 96.5 Q46.3 100 49.5 100 L70.5 100 Q73.7 100 74 96.5 L76 82 Z" fill="#3e2723" />
+            <rect x="44" y="69" width="32" height="13" fill="#a1723b" />
+            <path d="M42 58 L78 58 L76.5 69 L43.5 69 Z" fill="#f5e6c8" />
+            <g transform="rotate(18 69 44)">
+              <rect x="65.5" y="23" width="7" height="42" rx="3.5" fill="#8a4b22" />
+              <rect x="65.5" y="23" width="7" height="42" rx="3.5" fill="#5c3115" opacity="0.32" />
+            </g>
+            <g fill="#6d4522" opacity="0.7">
+              <circle cx="52" cy="61" r="1.4" />
+              <circle cx="60" cy="63" r="1.4" />
+              <circle cx="68" cy="61" r="1.4" />
+            </g>
           </>
         )}
-        <rect x="46" y="59" width="28" height="3.6" rx="1.8" fill="#cfd8dc" opacity="0.55" />
+        <rect x="39" y="44" width="43" height="4" rx="2" fill="#cfd8dc" opacity="0.55" />
       </g>
     </svg>
   );
