@@ -63,27 +63,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = useCallback(
     (origin?: { x: number; y: number }) => {
-      const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
+      type ViewTransition = { ready: Promise<void>; finished: Promise<void> };
+      const doc = document as Document & { startViewTransition?: (cb: () => void) => ViewTransition };
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       // Circular reveal (celox.io signature): the new theme wipes out of the
-      // toggle button. Fallback: the existing token color-morph.
+      // toggle button. The clip-path animation is driven from JS on the
+      // ::view-transition-new(root) pseudo-element (NOT CSS @keyframes) — the
+      // --vt-* custom properties don't reliably inherit into the view-
+      // transition pseudo tree on mobile browsers, which broke the reveal
+      // there. Fallback: the existing token color-morph.
       if (doc.startViewTransition && origin && !reduced) {
         const root = document.documentElement;
-        const radius = Math.hypot(
-          Math.max(origin.x, window.innerWidth - origin.x),
-          Math.max(origin.y, window.innerHeight - origin.y),
+        const x = origin.x;
+        const y = origin.y;
+        // Exact end radius: farthest viewport corner from the origin (px).
+        const endRadius = Math.hypot(
+          Math.max(x, window.innerWidth - x),
+          Math.max(y, window.innerHeight - y),
         );
-        root.style.setProperty('--vt-x', `${origin.x}px`);
-        root.style.setProperty('--vt-y', `${origin.y}px`);
-        root.style.setProperty('--vt-r', `${radius}px`);
-        doc.startViewTransition(() => {
+        // Mobile/touch: shorter reveal; the .zk-theme-vt class drops the
+        // header's backdrop-filter for the duration (per-frame blur behind an
+        // animated clip is the main mobile-GPU jank source).
+        const coarse = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+        const duration = coarse ? 520 : 900;
+        root.classList.add('zk-theme-vt');
+
+        const vt = doc.startViewTransition(() => {
           // Attribute must flip synchronously inside the VT callback; the
           // theme effect re-sets it later (idempotent).
           const next: Theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
           root.setAttribute('data-theme', next);
           flushSync(() => setTheme(next));
         });
+
+        vt.ready
+          .then(() =>
+            root.animate(
+              {
+                clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`],
+              },
+              {
+                duration,
+                easing: 'cubic-bezier(0.22, 0.08, 0, 1)',
+                pseudoElement: '::view-transition-new(root)',
+              },
+            ).finished,
+          )
+          .catch(() => {});
+
+        vt.finished.finally(() => root.classList.remove('zk-theme-vt'));
         return;
       }
       withColorMorph(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')));

@@ -56,17 +56,22 @@ img, svg { display: block; max-width: 100%; }
 }
 
 /* Theme toggle: MD3-expressive circular reveal via the View Transitions API.
-   The new theme wipes out of the toggle button (origin/radius set as inline
-   CSS vars by toggleTheme). JS gates on reduced motion + API support. */
+   The default cross-fade is disabled here; the actual clip-path reveal is
+   animated from JS on ::view-transition-new(root) in toggleTheme() (px values,
+   no custom-property inheritance into the pseudo tree — that broke on mobile).
+   The new theme sits ON TOP and is clipped open over the old one. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
-::view-transition-new(root) {
-  animation: zk-theme-reveal 1.15s cubic-bezier(0.2, 0, 0, 1) forwards;
-}
-@keyframes zk-theme-reveal {
-  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0%)); }
-  to { clip-path: circle(var(--vt-r, 150%) at var(--vt-x, 50%) var(--vt-y, 0%)); }
+::view-transition-new(root) { z-index: 2; }
+::view-transition-old(root) { z-index: 1; }
+
+/* During the reveal, drop the header's backdrop blur: recomputing a blur every
+   frame behind the animated clip is the main jank source on mobile GPUs. The
+   ~0.5 s without it is imperceptible. */
+html.zk-theme-vt .shell__header {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
