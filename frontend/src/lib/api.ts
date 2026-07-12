@@ -1,6 +1,6 @@
 /** Typed API client. Session lives in an httpOnly cookie; CSRF via header. */
 
-import type { AdminStats, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, InviteItem, GalleryItem } from './types';
+import type { AdminStats, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, InviteItem, GalleryItem, PlanWeek, SubstituteResult } from './types';
 
 let csrfToken = '';
 
@@ -101,6 +101,14 @@ export const api = {
 
   adminStats: (days = 30) => request<AdminStats>(`/admin/stats?days=${days}`),
   invites: () => request<{ items: InviteItem[] }>('/me/invites'),
+  planWeek: (start?: string) => request<PlanWeek>(`/plan${start ? `?start=${start}` : ''}`),
+  planAdd: (datum: string, recipe_id: number) =>
+    request<{ id: number }>('/plan', { method: 'POST', body: JSON.stringify({ datum, recipe_id }) }),
+  planRemove: (id: number) => request<{ deleted: number }>(`/plan/${id}`, { method: 'DELETE' }),
+  planToShopping: (start: string) =>
+    request<{ added_recipes: number }>('/plan/to-shopping', { method: 'POST', body: JSON.stringify({ start }) }),
+  substitute: (recipeId: number, zutat: string) =>
+    request<SubstituteResult>(`/recipes/${recipeId}/substitute`, { method: 'POST', body: JSON.stringify({ zutat }) }),
   sharePublic: (id: number, pub: boolean) =>
     request<{ public: boolean }>(`/recipes/${id}/share`, { method: 'PATCH', body: JSON.stringify({ public: pub }) }),
   discover: () => request<{ items: GalleryItem[] }>('/share/discover'),

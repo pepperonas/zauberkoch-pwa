@@ -115,6 +115,21 @@ function StepTimer({ seconds }: { seconds: number }) {
   );
 }
 
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((e: { results: { [i: number]: { [j: number]: { transcript: string } }; length: number } }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+function speechRecognition(): (new () => SpeechRecognitionLike) | null {
+  const w = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
 export function CookMode({ schritte, mode, onClose }: Props) {
   const reduced = useReducedMotion();
   const [index, setIndex] = useState(0);
@@ -130,6 +145,47 @@ export function CookMode({ schritte, mode, onClose }: Props) {
     },
     [total],
   );
+
+  // Hands-free: "weiter" / "zurück" / "beenden" (kitchen hands are messy)
+  const [voice, setVoice] = useState(false);
+  const voiceRef = useRef(false);
+  const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const voiceSupported = speechRecognition() != null;
+
+  const stopVoice = useCallback(() => {
+    voiceRef.current = false;
+    setVoice(false);
+    recRef.current?.stop();
+    recRef.current = null;
+  }, []);
+
+  const startVoice = useCallback(() => {
+    const Ctor = speechRecognition();
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = 'de-DE';
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.onresult = (e) => {
+      const last = e.results[e.results.length - 1]?.[0]?.transcript?.toLowerCase() ?? '';
+      if (/weiter|nächste/.test(last)) go(1);
+      else if (/zurück|vorherige/.test(last)) go(-1);
+      else if (/beenden|schließen|fertig/.test(last)) onClose();
+    };
+    rec.onend = () => {
+      if (voiceRef.current) rec.start(); // browsers stop after silence — keep listening
+    };
+    try {
+      rec.start();
+      recRef.current = rec;
+      voiceRef.current = true;
+      setVoice(true);
+    } catch {
+      /* mic denied */
+    }
+  }, [go, onClose]);
+
+  useEffect(() => () => stopVoice(), [stopVoice]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -161,9 +217,20 @@ export function CookMode({ schritte, mode, onClose }: Props) {
         <span className="cook__progress">
           {done ? '' : strings.cook.stepOf(index + 1, total)}
         </span>
-        <IconButton label={t('cook.exit')} onClick={onClose}>
-          ✕
-        </IconButton>
+        <span className="row" style={{ gap: 'var(--space-1)' }}>
+          {voiceSupported && (
+            <IconButton
+              label={voice ? t('cook.voiceOff') : t('cook.voiceOn')}
+              active={voice}
+              onClick={() => (voice ? stopVoice() : startVoice())}
+            >
+              🎤
+            </IconButton>
+          )}
+          <IconButton label={t('cook.exit')} onClick={onClose}>
+            ✕
+          </IconButton>
+        </span>
       </div>
 
       <AnimatePresence mode="wait" custom={direction}>

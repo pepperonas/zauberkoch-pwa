@@ -14,3 +14,4 @@
 .stream__toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap; }
 .limitbox { text-align: center; padding: var(--space-10) var(--space-5); }
 .limitbox__emoji { font-size: 3.5rem; margin-bottom: var(--space-4); }
+.plan__today { border-color: var(--c-primary); }

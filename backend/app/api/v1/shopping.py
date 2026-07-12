@@ -51,18 +51,11 @@ class FromRecipeBody(BaseModel):
     portionen: int | None = Field(default=None, ge=1, le=24)  # scale target, default recipe portions
 
 
-@router.post("/from-recipe", dependencies=[Depends(require_csrf)])
-def add_from_recipe(
-    body: FromRecipeBody,
-    user: User = Depends(get_current_user),
-    db: DbSession = Depends(get_db),
-) -> dict:
-    row = db.get(Recipe, body.recipe_id)
-    if row is None or row.user_id != user.id:
-        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
+def merge_recipe_into_list(db: DbSession, user: User, row: Recipe, portionen: int | None = None) -> None:
+    """Aggregate a recipe's ingredients into the list (shared with the planner)."""
     recipe = json.loads(row.recipe_json)
     base_portionen = max(int(recipe.get("portionen") or 1), 1)
-    factor = (body.portionen or base_portionen) / base_portionen
+    factor = (portionen or base_portionen) / base_portionen
 
     existing = _items(db, user)
     # merge target: same normalized name + same base unit, not yet checked
@@ -101,6 +94,18 @@ def add_from_recipe(
             db.add(item)
             index[key] = item
     db.commit()
+
+
+@router.post("/from-recipe", dependencies=[Depends(require_csrf)])
+def add_from_recipe(
+    body: FromRecipeBody,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    row = db.get(Recipe, body.recipe_id)
+    if row is None or row.user_id != user.id:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
+    merge_recipe_into_list(db, user, row, body.portionen)
     return {"items": [_serialize(i) for i in _items(db, user)]}
 
 

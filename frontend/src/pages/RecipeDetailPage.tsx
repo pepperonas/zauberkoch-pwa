@@ -9,6 +9,7 @@ import { CookMode } from '../components/recipe/CookMode';
 import { FeedbackBar } from '../components/recipe/FeedbackBar';
 import { RecipeView } from '../components/recipe/RecipeView';
 import { ShareDialog } from '../components/recipe/ShareDialog';
+import { Dialog } from '../components/ui/Dialog';
 import { Button } from '../components/ui';
 import { useSnackbar } from '../components/ui/Snackbar';
 import { strings, t } from '../i18n';
@@ -27,6 +28,7 @@ export function RecipeDetailPage() {
   const { withUndo } = useShoppingUndo();
   const [cookOpen, setCookOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [substTarget, setSubstTarget] = useState<string | null>(null);
   const [notiz, setNotiz] = useState<string | null>(null);
   const [gekocht, setGekocht] = useState<number | null>(null);
   const [portionen, setPortionen] = useState<number | null>(null);
@@ -98,6 +100,7 @@ export function RecipeDetailPage() {
       </div>
 
       <RecipeView
+        onSubstitute={(name) => setSubstTarget(name)}
         data={{
           meta: recipe,
           zutaten: recipe.zutaten,
@@ -162,10 +165,38 @@ export function RecipeDetailPage() {
       <FeedbackBar recipeId={recipeId} initial={detail.data.feedback ?? null} />
 
 
+      <SubstituteDialog recipeId={recipeId} zutat={substTarget} onClose={() => setSubstTarget(null)} />
+
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={recipe.titel} publicListed={detail.data?.public_listed ?? false} />
       <AnimatePresence>
         {cookOpen && <CookMode schritte={recipe.schritte} mode={mode} onClose={() => setCookOpen(false)} />}
       </AnimatePresence>
     </motion.div>
+  );
+}
+
+
+function SubstituteDialog({ recipeId, zutat, onClose }: { recipeId: number; zutat: string | null; onClose: () => void }) {
+  const options = useQuery({
+    queryKey: ['substitute', recipeId, zutat],
+    queryFn: () => api.substitute(recipeId, zutat as string),
+    enabled: zutat != null,
+    staleTime: Infinity,
+    retry: false,
+  });
+  return (
+    <Dialog open={zutat != null} onClose={onClose} label={zutat ? strings.subst.title(zutat) : ''}>
+      <div className="stack">
+        <h3>⇄ {zutat ? strings.subst.title(zutat) : ''}</h3>
+        {options.isLoading && <p className="muted">{t('subst.loading')}</p>}
+        {options.isError && <p className="muted">{t('subst.failed')}</p>}
+        {(options.data?.alternativen ?? []).map((alt) => (
+          <div key={alt.name}>
+            <strong>{alt.name}</strong>
+            <p className="muted" style={{ font: 'var(--type-body)' }}>{alt.hinweis}</p>
+          </div>
+        ))}
+      </div>
+    </Dialog>
   );
 }

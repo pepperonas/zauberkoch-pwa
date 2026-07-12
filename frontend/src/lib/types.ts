@@ -176,3 +176,23 @@ export interface GalleryItem {
   schwierigkeit?: string | null;
   tags: string[];
 }
+
+export interface PlanEntry {
+  id: number;
+  recipe_id: number;
+  titel: string;
+  kueche: string;
+  mode: Modus;
+  glas?: string | null;
+  tags: string[];
+  zeit_gesamt?: number | null;
+}
+
+export interface PlanWeek {
+  start: string;
+  days: { datum: string; entries: PlanEntry[] }[];
+}
+
+export interface SubstituteResult {
+  alternativen: { name: string; hinweis: string }[];
+}

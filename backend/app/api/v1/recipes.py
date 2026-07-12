@@ -573,3 +573,27 @@ def mark_cooked(
     row.gekocht_count += 1
     db.commit()
     return {"gekocht_count": row.gekocht_count}
+
+
+class SubstituteBody(BaseModel):
+    zutat: str = Field(min_length=1, max_length=60)
+
+
+@router.post("/{recipe_id}/substitute", dependencies=[Depends(require_csrf)])
+async def substitute(
+    recipe_id: int,
+    body: SubstituteBody,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    """2-3 pantry-realistic substitutes for a missing ingredient (tiny call)."""
+    row = db.get(Recipe, recipe_id)
+    if row is None or row.user_id != user.id:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
+    check_ip_limit(request, scope="substitute", limit=10, window_s=60)
+    try:
+        return await ai.substitute_options(json.loads(row.recipe_json), body.zutat)
+    except Exception:
+        logger.exception("substitute failed")
+        raise HTTPException(status_code=502, detail={"code": "substitute_failed", "message": "Gerade nicht möglich."})

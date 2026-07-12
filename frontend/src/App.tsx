@@ -37,6 +37,7 @@ const RecipeDetailPage = lazyPage('detail', () => import('./pages/RecipeDetailPa
 const FavoritesPage = lazyPage('favorites', () => import('./pages/FavoritesPage').then((m) => ({ default: m.FavoritesPage })));
 const HistoryPage = lazyPage('history', () => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })));
 const ShoppingPage = lazyPage('shopping', () => import('./pages/ShoppingPage').then((m) => ({ default: m.ShoppingPage })));
+const PlanPage = lazyPage('plan', () => import('./pages/PlanPage').then((m) => ({ default: m.PlanPage })));
 const SharePage = lazyPage('share', () => import('./pages/SharePage').then((m) => ({ default: m.SharePage })));
 const LandingPage = lazyPage('landing', () => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 const AdminPage = lazyPage('admin', () => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
@@ -51,6 +52,7 @@ const GenerationBar = lazyPage('genbar', () =>
 
 const NAV_ITEMS = [
   { to: '/', icon: '✨', label: strings.nav.generate },
+  { to: '/plan', icon: '📅', label: strings.nav.plan },
   { to: '/favoriten', icon: '⭐', label: strings.nav.favorites },
   { to: '/verlauf', icon: '🕘', label: strings.nav.history },
   { to: '/einkauf', icon: '🛒', label: strings.nav.shopping },
@@ -119,6 +121,7 @@ export default function App() {
             <Route path="/favoriten" element={<FavoritesPage />} />
             <Route path="/verlauf" element={<HistoryPage />} />
             <Route path="/einkauf" element={<ShoppingPage />} />
+            <Route path="/plan" element={<PlanPage />} />
             <Route path="/r/:token" element={<SharePage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="*" element={<GeneratePage />} />

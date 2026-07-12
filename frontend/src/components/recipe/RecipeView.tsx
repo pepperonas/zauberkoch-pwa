@@ -29,6 +29,8 @@ interface Props {
   streaming?: boolean;
   actions?: React.ReactNode;
   onPortionenChange?: (portionen: number) => void;
+  /** When set (detail page), each ingredient row offers "Ersatz finden". */
+  onSubstitute?: (name: string) => void;
 }
 
 function fmtMin(min: number | null | undefined): string {
@@ -36,7 +38,7 @@ function fmtMin(min: number | null | undefined): string {
   return strings.units.duration(min);
 }
 
-export function RecipeView({ data, mode, streaming = false, actions, onPortionenChange }: Props) {
+export function RecipeView({ data, mode, streaming = false, actions, onPortionenChange, onSubstitute }: Props) {
   const reduced = useReducedMotion();
   const { meta } = data;
   const basePortionen = meta?.portionen ?? 1;
@@ -148,6 +150,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
                   factor={factor}
                   streaming={streaming}
                   onToggle={toggleChecked}
+                  onSubstitute={onSubstitute}
                 />
               ))}
             </Fragment>
@@ -244,6 +247,7 @@ const ZutatRow = memo(function ZutatRow({
   factor,
   streaming,
   onToggle,
+  onSubstitute,
 }: {
   zutat: Zutat;
   index: number;
@@ -251,6 +255,7 @@ const ZutatRow = memo(function ZutatRow({
   factor: number;
   streaming: boolean;
   onToggle: (index: number) => void;
+  onSubstitute?: (name: string) => void;
 }) {
   const reduced = useReducedMotion();
   return (
@@ -285,6 +290,27 @@ const ZutatRow = memo(function ZutatRow({
           <motion.span className="zutat__strike" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={spring} />
         )}
       </span>
+      {onSubstitute && (
+        <span
+          className="zutat__subst"
+          role="button"
+          tabIndex={0}
+          aria-label={t('subst.button')}
+          title={t('subst.button')}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSubstitute(zutat.name);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.stopPropagation();
+              onSubstitute(zutat.name);
+            }
+          }}
+        >
+          ⇄
+        </span>
+      )}
     </motion.button>
   );
 });

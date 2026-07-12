@@ -165,3 +165,15 @@
   width: 88px;
   height: 88px;
 }
+
+.zutat__subst {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--shape-full);
+  color: var(--c-primary);
+  font-size: 1.05rem;
+}
+.zutat__subst:hover { background: var(--c-surface-container-high); }
