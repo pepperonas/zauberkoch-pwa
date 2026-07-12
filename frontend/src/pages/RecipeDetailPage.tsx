@@ -1,6 +1,6 @@
 /** Stored recipe detail: full RecipeView + actions (favorite, shopping, share, copy, cook mode). */
 
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,14 +17,12 @@ import { useSnackbar } from '../components/ui/Snackbar';
 import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 import { recipeToText } from '../lib/units';
-import { spring } from '../motion/springs';
 import { useShoppingUndo } from '../state/useShoppingUndo';
 
 export function RecipeDetailPage() {
   const { id } = useParams();
   const recipeId = Number(id);
   const navigate = useNavigate();
-  const reduced = useReducedMotion();
   const queryClient = useQueryClient();
   const { show } = useSnackbar();
   const { withUndo } = useShoppingUndo();
@@ -83,7 +81,7 @@ export function RecipeDetailPage() {
   };
 
   return (
-    <motion.div layoutId={reduced ? undefined : `recipe-card-${recipeId}`} transition={spring}>
+    <div>
       <div className="stream__toolbar">
         <Button variant="text" onClick={() => navigate(-1)}>← {t('wizard.back')}</Button>
         <AnimatePresence>
@@ -187,7 +185,7 @@ export function RecipeDetailPage() {
       <AnimatePresence>
         {cookOpen && <CookMode schritte={recipe.schritte} mode={mode} onClose={() => setCookOpen(false)} />}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 

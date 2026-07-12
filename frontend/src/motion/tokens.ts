@@ -31,6 +31,50 @@ export const effectsDefault: Transition = { type: 'spring', visualDuration: 0.3,
 /** prefers-reduced-motion fallback: a short, flat fade (no spatial travel). */
 export const reducedFade: Transition = { duration: 0.12, ease: 'linear' };
 
+/* ---------- Route / view transitions ---------- */
+
+/**
+ * MD3 emphasized easing tokens (as cubic-bezier). Page transitions use flat
+ * timed curves, NOT springs: a page that fades out must never wobble, and a
+ * predictable sub-500 ms budget keeps `mode="wait"` snappy. Only transform +
+ * opacity are animated (GPU-composited).
+ */
+export const emphasized = [0.2, 0, 0, 1] as const; // md.sys.motion.easing.emphasized
+export const emphasizedDecelerate = [0.05, 0.7, 0.1, 1] as const; // entering
+export const emphasizedAccelerate = [0.3, 0, 0.8, 0.15] as const; // leaving
+
+/** Entering page: decelerate in (medium duration). */
+export const pageEnterTx: Transition = { duration: 0.3, ease: emphasizedDecelerate };
+/** Leaving page: accelerate out (short duration) — keeps the wait brief. */
+export const pageExitTx: Transition = { duration: 0.19, ease: emphasizedAccelerate };
+
+/** Shared-axis (X) travel distance in px — MD3 spec ≈ 30dp. */
+export const SHARED_AXIS_DIST = 32;
+
+/**
+ * Page transition variants. `custom` is the navigation direction:
+ *   +1 forward (list → detail), -1 back, 0 top-level tab switch.
+ * dir ≠ 0 → Shared Axis X (slide + fade). dir === 0 → Fade Through (scale + fade).
+ */
+export const pageVariants = {
+  initial: (dir: number) =>
+    dir === 0
+      ? { opacity: 0, scale: 0.92 }
+      : { opacity: 0, x: dir > 0 ? SHARED_AXIS_DIST : -SHARED_AXIS_DIST },
+  animate: { opacity: 1, x: 0, scale: 1, transition: pageEnterTx },
+  exit: (dir: number) =>
+    dir === 0
+      ? { opacity: 0, scale: 0.96, transition: pageExitTx }
+      : { opacity: 0, x: dir > 0 ? -SHARED_AXIS_DIST : SHARED_AXIS_DIST, transition: pageExitTx },
+} as const;
+
+/** Reduced motion: opacity crossfade only, no spatial travel or scale. */
+export const pageVariantsReduced = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: reducedFade },
+  exit: { opacity: 0, transition: reducedFade },
+} as const;
+
 /* ---------- Helpers ---------- */
 
 /** Cascading entrance delay for staggered children. */

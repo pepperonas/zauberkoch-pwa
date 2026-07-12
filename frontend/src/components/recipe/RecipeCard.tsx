@@ -44,7 +44,6 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
       className="card card--outlined recipecard"
       role="button"
       tabIndex={0}
-      layoutId={reduced ? undefined : `recipe-card-${item.id}`}
       onClick={() => navigate(`/rezept/${item.id}`)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

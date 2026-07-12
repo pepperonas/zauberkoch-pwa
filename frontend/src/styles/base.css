@@ -70,8 +70,10 @@ img, svg { display: block; max-width: 100%; }
 
 /* During the reveal, drop the header's backdrop blur: recomputing a blur every
    frame behind the animated clip is the main jank source on mobile GPUs. The
-   ~0.5 s without it is imperceptible. */
-html.zk-theme-vt .shell__header {
+   ~0.5 s without it is imperceptible. The same applies while a route transition
+   slides the page under the sticky header. */
+html.zk-theme-vt .shell__header,
+html.zk-page-vt .shell__header {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }

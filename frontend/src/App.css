@@ -52,6 +52,12 @@
      not here — a permanent min-height made short pages scroll unnecessarily. */
 }
 
+/* Route-transition container. framer manages will-change during the animation
+   (transform/opacity only), so none is set permanently here. */
+.page-tx { transform-origin: center top; }
+/* Reserves viewport height while a lazy chunk loads → no CLS/footer jump. */
+.page-tx__spacer { min-height: 100dvh; }
+
 .shell__footer {
   font: var(--type-label-sm);
   color: var(--c-on-surface-variant);
