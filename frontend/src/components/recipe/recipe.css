@@ -11,8 +11,9 @@
 }
 .hero { display: flex; align-items: center; gap: var(--space-3); }
 .hero__content { flex: 1; min-width: 0; }
-.hero__motif { flex: none; width: 118px; height: 118px; }
-@media (max-width: 380px) { .hero__motif { width: 96px; height: 96px; } }
+.hero__motif { flex: none; width: 156px; height: 156px; }
+@media (max-width: 480px) { .hero__motif { width: 128px; height: 128px; } }
+@media (max-width: 360px) { .hero__motif { width: 108px; height: 108px; } }
 .hero__kueche { font: var(--type-label); color: var(--c-primary); text-transform: uppercase; letter-spacing: 0.08em; }
 .hero__title { margin: var(--space-2) 0; }
 .hero__teaser { color: var(--c-on-surface-variant); max-width: 46ch; }
