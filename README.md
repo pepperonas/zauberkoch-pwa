@@ -40,6 +40,8 @@ Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch s
 - ⭐ **Favoriten & Verlauf** mit Suche und Filtern
 - 🔗 **Teilen** — unlisted Links mit server-seitig generierten OG-Thumbnails (Pillow, 1200×630); geteilte Rezepte können in die eigene Sammlung übernommen werden
 - 🎨 **Material 3 Expressive, handgebaut** — Design-Tokens als CSS Custom Properties, echte Spring-Physik (Motion), Theme-Wechsel als Circular Reveal (View Transitions API), `prefers-reduced-motion` überall
+- 🎞️ **Shared-Element-Navigation** — beim Öffnen eines Rezepts wandern Grafik und Titel per **Material Container Transform** (native View Transitions API) von der Listenkarte in die Detailansicht; Tabs faden through, Zurück morpht zurück, alles GPU-composited (nur `transform`/`opacity`)
+- 💬 **Erklärende Hover-Tooltips** an den Aktions-Buttons (Desktop, `prefers-reduced-motion`-fest)
 - 🛡️ **Admin-Panel** — Nutzungs-/Kosten-Dashboard (Generierungen, Tokens, Cache-Quote, Feedback pro Prompt-Version) + Allowlist-Verwaltung, per `ZK_ADMIN_EMAILS` freigeschaltet
 - 📲 **PWA** — installierbar, Favoriten offline lesbar
 - 🔐 Google OAuth (PKCE, server-seitig), httpOnly-Sessions, CSRF-Schutz, Tageslimits pro User + global

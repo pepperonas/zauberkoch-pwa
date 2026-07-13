@@ -31,6 +31,8 @@ Pick a cuisine, flavors and constraints — the app streams a cookbook-quality r
 - **Shopping list** with unit normalization and aggregation, drag reorder, undo everywhere
 - **Sharing** — unlisted links with server-rendered OG thumbnails (Pillow, 1200×630); shared recipes can be adopted into your own collection
 - **Handmade Material 3 Expressive** — design tokens as CSS custom properties, real spring physics (Motion), circular-reveal theme switch (View Transitions API), `prefers-reduced-motion` throughout
+- **Shared-element navigation** — opening a recipe morphs the dish graphic and title from the list card into the detail view via **Material Container Transform** (native View Transitions API); tabs fade through, back reverses the morph, all GPU-composited (`transform`/`opacity` only)
+- **Explanatory hover tooltips** on the action buttons (desktop, `prefers-reduced-motion`-safe)
 - **Admin panel** — usage/cost dashboard (generations, tokens, cache rate, feedback per prompt version) + allowlist management, gated via `ZK_ADMIN_EMAILS`
 - **PWA** — installable, favorites readable offline
 
