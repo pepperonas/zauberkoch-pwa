@@ -126,24 +126,31 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Set while go() drives an in-app back/forward, so the Navigation-API listener
+  // (which also fires for that programmatic traverse) doesn't start a 2nd VT.
+  const skipTraverse = useRef(false);
+
   const go = useCallback(
     (to: To | number, opts?: { sharedId?: number }) => {
+      // navigate() is overloaded (To vs delta) — narrow once here.
+      const nav = () => {
+        if (typeof to === 'number') navigate(to);
+        else navigate(to);
+      };
       // Remember where we are before leaving, so back can restore it.
       positions.current.set(window.location.pathname, window.scrollY);
-      // Back/forward: navigate plainly — the capture-phase popstate listener
-      // drives the VT (it also serves the browser's own back/forward button).
-      if (typeof to === 'number') {
-        navigate(to);
-        return;
-      }
       if (!vtEnabled()) {
-        navigate(to);
+        nav();
         return;
       }
-      // Name the source (clicked card) in the CURRENT DOM before the old
-      // snapshot is captured (flushSync commits it synchronously).
+      // Name the source (clicked card, or the detail hero on the in-app back
+      // button) in the CURRENT DOM before the old snapshot is captured.
       if (opts?.sharedId != null) flushSync(() => setActiveId(opts.sharedId!));
-      runVT(() => navigate(to));
+      // Drive the VT here for BOTH push and in-app back/forward — do NOT rely on
+      // the Navigation-API listener for the in-app button (it may be absent or
+      // flaky). Tell the listener to ignore the traverse this navigate() causes.
+      if (typeof to === 'number') skipTraverse.current = true;
+      runVT(nav);
     },
     [navigate, runVT],
   );
@@ -152,10 +159,11 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
   // already re-rendered (the leaving page is gone → can't name its shared
   // element), even in the capture phase. The Navigation API's `navigate` event
   // fires BEFORE the commit, while the old DOM is still present — the correct
-  // before-hook. We only observe (no intercept): name the shared recipe, start
-  // the VT (captures the still-old snapshot), then react-router's own popstate
-  // re-render supplies the new snapshot. Unsupported browsers (Firefox, older
-  // Safari) simply get no transition on browser back/forward.
+  // before-hook for the BROWSER's own back/forward button (mouse/keyboard). We
+  // only observe (no intercept): name the shared recipe, start the VT, then
+  // react-router's re-render supplies the new snapshot. In-app go(-1) is handled
+  // in go() itself and skips here. Unsupported browsers (Firefox, older Safari)
+  // still get the in-app-button morph; only the browser button is un-animated.
   useEffect(() => {
     const nav = (window as unknown as { navigation?: EventTarget & Record<string, unknown> })
       .navigation;
@@ -168,13 +176,17 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
     const onNavigate = (e: Event) => {
       const ev = e as Event & { navigationType?: string; destination?: { url: string } };
       if (ev.navigationType !== 'traverse' || !ev.destination) return; // pushes go via go()
+      if (skipTraverse.current) {
+        skipTraverse.current = false; // go() is already driving this traverse
+        return;
+      }
       if (!vtEnabled()) return;
       const oldPath = currentPathRef.current; // still the leaving page (pre-commit)
       const newPath = new URL(ev.destination.url).pathname;
       if (oldPath === newPath) return;
       const sid = detailId(oldPath) ?? detailId(newPath);
       if (sid != null) flushSync(() => setActiveId(sid));
-      runVT(); // react-router's popstate re-render performs the navigation
+      runVT(); // react-router's re-render performs the navigation
     };
     nav.addEventListener('navigate', onNavigate);
     return () => nav.removeEventListener('navigate', onNavigate);
