@@ -9,6 +9,7 @@ import { strings, t } from '../../i18n';
 import type { Modus, Naehrwerte, RecipeMeta, Schritt, Zutat } from '../../lib/types';
 import { formatZutatMenge } from '../../lib/units';
 import { riseIn, spring, springBouncy, springSoft, stagger } from '../../motion/springs';
+import { SHARED_MOTIF, SHARED_TITLE, useViewTx } from '../../state/viewTransition';
 import { Icon } from '../icons';
 import { NumberTicker } from './NumberTicker';
 import { motifForRecipe, RecipeMotif } from './RecipeMotif';
@@ -32,6 +33,8 @@ interface Props {
   onPortionenChange?: (portionen: number) => void;
   /** When set (detail page), each ingredient row offers "Ersatz finden". */
   onSubstitute?: (name: string) => void;
+  /** Recipe id — enables the shared-element morph of hero motif/title. */
+  sharedId?: number;
 }
 
 function fmtMin(min: number | null | undefined): string {
@@ -39,8 +42,10 @@ function fmtMin(min: number | null | undefined): string {
   return strings.units.duration(min);
 }
 
-export function RecipeView({ data, mode, streaming = false, actions, onPortionenChange, onSubstitute }: Props) {
+export function RecipeView({ data, mode, streaming = false, actions, onPortionenChange, onSubstitute, sharedId }: Props) {
   const reduced = useReducedMotion();
+  const { activeId } = useViewTx();
+  const isShared = sharedId != null && activeId === sharedId;
   const { meta } = data;
   const basePortionen = meta?.portionen ?? 1;
   const [portionen, setPortionenState] = useState<number | null>(null);
@@ -80,7 +85,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
         <motion.section className="hero" {...(reduced ? {} : riseIn)} transition={spring}>
           <div className="hero__content">
           <span className="hero__kueche">{meta.kueche}</span>
-          <h1 className="hero__title">
+          <h1 className="hero__title" style={{ viewTransitionName: isShared ? SHARED_TITLE : undefined }}>
             {streaming && !reduced
               ? meta.titel.split(' ').map((word, i) => (
                   <Fragment key={i}>
@@ -109,6 +114,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
             className="hero__motif"
             seed={meta.titel}
             motif={motifForRecipe({ mode, titel: meta.titel, tags: meta.tags, kueche: meta.kueche, glas: data.glas })}
+            style={{ viewTransitionName: isShared ? SHARED_MOTIF : undefined }}
           />
         </motion.section>
       )}

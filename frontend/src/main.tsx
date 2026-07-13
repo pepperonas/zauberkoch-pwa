@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { SnackbarProvider } from './components/ui/Snackbar';
 import { AppProvider } from './state/app';
+import { ViewTransitionProvider } from './state/viewTransition';
 import './styles/tokens.css';
 import './styles/base.css';
 
@@ -27,11 +28,13 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppProvider>
-          <SnackbarProvider>
-            <App />
-          </SnackbarProvider>
-        </AppProvider>
+        <ViewTransitionProvider>
+          <AppProvider>
+            <SnackbarProvider>
+              <App />
+            </SnackbarProvider>
+          </AppProvider>
+        </ViewTransitionProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

@@ -1,6 +1,6 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Link, NavLink, Route, Routes, useLocation, useNavigationType } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
 import { Icon, type IconName } from './components/icons';
 import { ProfileSheet } from './components/ProfileSheet';
@@ -9,8 +9,8 @@ import { strings, t } from './i18n';
 import { api } from './lib/api';
 import type { Me } from './lib/types';
 import { spring } from './motion/springs';
-import { pageVariants, pageVariantsReduced } from './motion/tokens';
 import { useApp } from './state/app';
+import { useViewTx } from './state/viewTransition';
 import './App.css';
 
 // Route-based code splitting: each page loads on demand.
@@ -56,119 +56,41 @@ const GenerationBar = lazyPage('genbar', () =>
   import('./components/GenerationPill').then((m) => ({ default: m.GenerationBar })),
 );
 
-// Detail routes sit one "level" deeper than the top-level tabs. A level change
-// picks Shared Axis (X) with a direction; same-level picks Fade Through.
-function routeLevel(path: string): number {
-  return path.startsWith('/rezept/') || path.startsWith('/r/') ? 1 : 0;
-}
-function directionBetween(from: string, to: string): number {
-  return Math.sign(routeLevel(to) - routeLevel(from)); // +1 forward, -1 back, 0 tabs
-}
-
-// > enter+exit budget: fallback cleanup for the header un-blur class.
-const PAGE_TX_MS = 520;
-
 /**
- * Route transitions (MD3 Expressive). AnimatePresence mode="wait" runs a clean
- * exit → enter with no DOM-swap flicker; transform+opacity only (compositor).
- * Shared Axis X for forward/back (list ↔ detail), Fade Through between tabs.
- * The header's backdrop blur is dropped for the duration (per-frame blur behind
- * the sliding page is the main mobile-GPU jank source). Scroll is reset/restored
- * in onExitComplete so it never jumps the still-visible outgoing page.
+ * Route outlet. Navigation itself is animated natively via the View Transitions
+ * API (see ViewTransitionProvider): the browser snapshots old→new and morphs
+ * shared elements (recipe motif/title) while the rest crossfades — no framer
+ * page wrapper, and the sticky header's blur is captured in the snapshot, so no
+ * per-frame recompute. Scroll reset/restore lives in the provider.
  */
-function AnimatedRoutes({ me, meLoading }: { me: Me | null; meLoading: boolean }) {
-  const location = useLocation();
-  const navType = useNavigationType();
-  const reduced = useReducedMotion();
-
-  // prevPath.current still holds the previous pathname during this render; the
-  // effect advances it after commit, so `dir` reflects this navigation.
-  const prevPath = useRef(location.pathname);
-  const dir = reduced ? 0 : directionBetween(prevPath.current, location.pathname);
-  useEffect(() => {
-    prevPath.current = location.pathname;
-  }, [location.pathname]);
-
-  // Per-path scroll memory: restore on back (POP), reset to top on forward.
-  const positions = useRef(new Map<string, number>());
-  const navTypeRef = useRef(navType);
-  navTypeRef.current = navType;
-  useEffect(() => {
-    const path = location.pathname;
-    const onScroll = () => positions.current.set(path, window.scrollY);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [location.pathname]);
-
-  useLayoutEffect(() => {
-    if (reduced) return;
-    const root = document.documentElement;
-    root.classList.add('zk-page-vt');
-    const id = window.setTimeout(() => root.classList.remove('zk-page-vt'), PAGE_TX_MS);
-    return () => {
-      window.clearTimeout(id);
-      root.classList.remove('zk-page-vt');
-    };
-  }, [location.pathname, reduced]);
-
-  const handleExitComplete = () => {
-    const saved = positions.current.get(location.pathname);
-    const target = navTypeRef.current === 'POP' && saved != null ? saved : 0;
-    if (target === 0) {
-      window.scrollTo(0, 0);
-      return;
-    }
-    // Back-restore: the incoming page may not have its full height yet, so a
-    // single scrollTo clamps short. Retry across a few frames until it lands.
-    let tries = 0;
-    const restore = () => {
-      window.scrollTo(0, target);
-      if (window.scrollY < target - 1 && tries++ < 20) requestAnimationFrame(restore);
-    };
-    requestAnimationFrame(restore);
-  };
-
-  const routes = me ? (
-    <Routes location={location}>
-      <Route path="/" element={<GeneratePage />} />
-      <Route path="/rezept/:id" element={<RecipeDetailPage />} />
-      <Route path="/favoriten" element={<FavoritesPage />} />
-      <Route path="/verlauf" element={<HistoryPage />} />
-      <Route path="/einkauf" element={<ShoppingPage />} />
-      <Route path="/plan" element={<PlanPage />} />
-      <Route path="/r/:token" element={<SharePage />} />
-      <Route path="/admin" element={<AdminPage />} />
-      <Route path="/impressum" element={<ImpressumPage />} />
-      <Route path="/datenschutz" element={<DatenschutzPage />} />
-      <Route path="/nutzungsbedingungen" element={<TermsPage />} />
-      <Route path="*" element={<GeneratePage />} />
-    </Routes>
-  ) : (
-    <Routes location={location}>
-      <Route path="/r/:token" element={<SharePage />} />
-      <Route path="/impressum" element={<ImpressumPage />} />
-      <Route path="/datenschutz" element={<DatenschutzPage />} />
-      <Route path="/nutzungsbedingungen" element={<TermsPage />} />
-      <Route path="*" element={<LandingPage />} />
-    </Routes>
-  );
-
+function AppRoutes({ me, meLoading }: { me: Me | null; meLoading: boolean }) {
   return (
-    <AnimatePresence mode="wait" custom={dir} initial={false} onExitComplete={handleExitComplete}>
-      <motion.div
-        key={location.pathname}
-        custom={dir}
-        variants={reduced ? pageVariantsReduced : pageVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        className="page-tx"
-      >
-        <Suspense fallback={<div className="page-tx__spacer" aria-hidden />}>
-          {meLoading ? null : routes}
-        </Suspense>
-      </motion.div>
-    </AnimatePresence>
+    <Suspense fallback={<div className="page-tx__spacer" aria-hidden />}>
+      {meLoading ? null : me ? (
+        <Routes>
+          <Route path="/" element={<GeneratePage />} />
+          <Route path="/rezept/:id" element={<RecipeDetailPage />} />
+          <Route path="/favoriten" element={<FavoritesPage />} />
+          <Route path="/verlauf" element={<HistoryPage />} />
+          <Route path="/einkauf" element={<ShoppingPage />} />
+          <Route path="/plan" element={<PlanPage />} />
+          <Route path="/r/:token" element={<SharePage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/impressum" element={<ImpressumPage />} />
+          <Route path="/datenschutz" element={<DatenschutzPage />} />
+          <Route path="/nutzungsbedingungen" element={<TermsPage />} />
+          <Route path="*" element={<GeneratePage />} />
+        </Routes>
+      ) : (
+        <Routes>
+          <Route path="/r/:token" element={<SharePage />} />
+          <Route path="/impressum" element={<ImpressumPage />} />
+          <Route path="/datenschutz" element={<DatenschutzPage />} />
+          <Route path="/nutzungsbedingungen" element={<TermsPage />} />
+          <Route path="*" element={<LandingPage />} />
+        </Routes>
+      )}
+    </Suspense>
   );
 }
 
@@ -183,6 +105,7 @@ const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
 export default function App() {
   const { me, meLoading, theme, toggleTheme, refreshMe } = useApp();
   const location = useLocation();
+  const { go } = useViewTx();
   const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -254,7 +177,7 @@ export default function App() {
       </header>
 
       <main className="shell__main">
-        <AnimatedRoutes me={me} meLoading={meLoading} />
+        <AppRoutes me={me} meLoading={meLoading} />
       </main>
 
       {me && <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />}
@@ -282,7 +205,18 @@ export default function App() {
               const active =
                 item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to);
               return (
-                <NavLink key={item.to} to={item.to} className={`nav__item ${active ? 'nav__item--active' : ''}`}>
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={`nav__item ${active ? 'nav__item--active' : ''}`}
+                  onClick={(e) => {
+                    // Route through the View Transition (fade-through between
+                    // tabs); no shared element for top-level destinations.
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || active) return;
+                    e.preventDefault();
+                    go(item.to);
+                  }}
+                >
                   {active && <motion.span className="nav__pill" layoutId="nav-pill" transition={spring} />}
                   <span className="nav__icon" aria-hidden>
                     <Icon name={item.icon} size={24} />

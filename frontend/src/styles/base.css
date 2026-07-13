@@ -56,24 +56,43 @@ img, svg { display: block; max-width: 100%; }
 }
 
 /* Theme toggle: MD3-expressive circular reveal via the View Transitions API.
-   The default cross-fade is disabled here; the actual clip-path reveal is
-   animated from JS on ::view-transition-new(root) in toggleTheme() (px values,
-   no custom-property inheritance into the pseudo tree — that broke on mobile).
-   The new theme sits ON TOP and is clipped open over the old one. */
-::view-transition-old(root),
-::view-transition-new(root) {
+   Scoped to .zk-theme-vt so ROUTE transitions (below) are unaffected. The
+   default cross-fade is disabled; the clip-path reveal is animated from JS on
+   ::view-transition-new(root) in toggleTheme() (px values, no custom-property
+   inheritance into the pseudo tree — that broke on mobile). The new theme sits
+   ON TOP and is clipped open over the old one. */
+html.zk-theme-vt::view-transition-old(root),
+html.zk-theme-vt::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
-::view-transition-new(root) { z-index: 2; }
-::view-transition-old(root) { z-index: 1; }
+html.zk-theme-vt::view-transition-new(root) { z-index: 2; }
+html.zk-theme-vt::view-transition-old(root) { z-index: 1; }
 
 /* During the reveal, drop the header's backdrop blur: recomputing a blur every
-   frame behind the animated clip is the main jank source on mobile GPUs. The
-   ~0.5 s without it is imperceptible. The same applies while a route transition
-   slides the page under the sticky header. */
-html.zk-theme-vt .shell__header,
-html.zk-page-vt .shell__header {
+   frame behind the animated clip is the main jank source on mobile GPUs. (Route
+   transitions don't need this — the browser snapshots the header once.) */
+html.zk-theme-vt .shell__header {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Route view transitions (Material Container Transform). The non-shared page
+   content crossfades gently (keeps focus on the morphing element); named shared
+   elements (recipe motif/title) are lifted out of the root snapshot and morph
+   their position/size independently. Emphasized easing, GPU-composited. */
+html:not(.zk-theme-vt)::view-transition-old(root) {
+  animation: zk-vt-fade-out 180ms cubic-bezier(0.3, 0, 0.8, 0.15) both;
+}
+html:not(.zk-theme-vt)::view-transition-new(root) {
+  animation: zk-vt-fade-in 320ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+@keyframes zk-vt-fade-out { to { opacity: 0; } }
+@keyframes zk-vt-fade-in { from { opacity: 0; } }
+
+/* Shared element morph — position + size, MD3 emphasized easing (~360 ms). */
+::view-transition-group(zk-shared-motif),
+::view-transition-group(zk-shared-title) {
+  animation-duration: 360ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }

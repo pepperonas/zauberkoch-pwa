@@ -2,13 +2,13 @@
  * Root is a div (not button): the favorite star is its own nested button. */
 
 import { motion, useReducedMotion } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { t } from '../../i18n';
 import { api } from '../../lib/api';
 import type { RecipeListItem } from '../../lib/types';
 import { riseIn, spring, stagger } from '../../motion/springs';
+import { SHARED_MOTIF, SHARED_TITLE, useViewTx } from '../../state/viewTransition';
 import { Icon } from '../icons';
 import { useSnackbar } from '../ui/Snackbar';
 import { motifForRecipe, RecipeMotif } from './RecipeMotif';
@@ -16,10 +16,23 @@ import { fmtMin } from './RecipeView';
 import './recipe.css';
 
 export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: number }) {
-  const navigate = useNavigate();
   const reduced = useReducedMotion();
   const queryClient = useQueryClient();
   const { show } = useSnackbar();
+  const { activeId, go } = useViewTx();
+  // This card is the transition source only while ITS recipe is morphing.
+  const isSource = activeId === item.id;
+
+  const queryOpts = { queryKey: ['recipes', item.id], queryFn: () => api.recipe(item.id) };
+  // Warm the detail query on press so the await below usually resolves instantly.
+  const prefetch = () => void queryClient.prefetchQuery(queryOpts);
+  // Ensure the detail data is cached BEFORE navigating: the view transition
+  // snapshots the destination synchronously, and an unresolved query would render
+  // a loading state (no hero) → the shared-element morph would have no target.
+  const open = async () => {
+    await queryClient.ensureQueryData(queryOpts);
+    go(`/rezept/${item.id}`, { sharedId: item.id });
+  };
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['recipes'] });
 
@@ -44,11 +57,12 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
       className="card card--outlined recipecard"
       role="button"
       tabIndex={0}
-      onClick={() => navigate(`/rezept/${item.id}`)}
+      onPointerDown={prefetch}
+      onClick={open}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          navigate(`/rezept/${item.id}`);
+          open();
         }
       }}
       {...(reduced ? {} : riseIn)}
@@ -73,14 +87,23 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
       </div>
       <div className="recipecard__body">
         <div className="recipecard__text">
-          <h3 style={{ margin: 'var(--space-2) 0' }}>{item.titel}</h3>
+          <h3
+            style={{ margin: 'var(--space-2) 0', viewTransitionName: isSource ? SHARED_TITLE : undefined }}
+          >
+            {item.titel}
+          </h3>
           <p className="muted" style={{ font: 'var(--type-body)' }}>{item.teaser}</p>
           <div className="hero__stats">
             {item.zeit_gesamt != null && <span className="stat"><Icon name="clock" size={15} /> {fmtMin(item.zeit_gesamt)}</span>}
             {item.schwierigkeit && <span className="stat"><Icon name="gauge" size={15} /> {item.schwierigkeit}</span>}
           </div>
         </div>
-        <RecipeMotif motif={motifForRecipe(item)} seed={item.titel} className="recipecard__motif" />
+        <RecipeMotif
+          motif={motifForRecipe(item)}
+          seed={item.titel}
+          className="recipecard__motif"
+          style={{ viewTransitionName: isSource ? SHARED_MOTIF : undefined }}
+        />
       </div>
     </motion.div>
   );

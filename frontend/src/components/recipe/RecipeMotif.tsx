@@ -136,12 +136,14 @@ interface Props {
   seed?: string;
   size?: number;
   className?: string;
+  /** Passthrough — e.g. `viewTransitionName` for shared-element morphs. */
+  style?: React.CSSProperties;
 }
 
-export function RecipeMotif({ motif, seed = '', size = 84, className = '' }: Props) {
+export function RecipeMotif({ motif, seed = '', size = 84, className = '', style }: Props) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   const v = variantForMotif(motif, seed);
-  const common = { width: size, height: size, viewBox: '0 0 120 120', className, 'aria-hidden': true as const };
+  const common = { width: size, height: size, viewBox: '0 0 120 120', className, style, 'aria-hidden': true as const };
   const MAP: Record<Motif, (p: SvgProps) => React.JSX.Element> = {
     highball: Highball, tumbler: Tumbler, coupe: Coupe, tiki: Tiki, martini: Martini,
     wine: Wine, flute: Flute, mule: Mule, shot: Shot, mug: Mug, beer: Beer,
