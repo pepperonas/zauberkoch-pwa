@@ -1,15 +1,18 @@
 /** Stored recipe detail: full RecipeView + actions (favorite, shopping, share, copy, cook mode). */
 
 import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Icon } from '../components/icons';
-import { CookMode } from '../components/recipe/CookMode';
 import { FeedbackBar } from '../components/recipe/FeedbackBar';
 import { RecipeView } from '../components/recipe/RecipeView';
-import { ShareDialog } from '../components/recipe/ShareDialog';
+
+// Heavy, only-when-opened surfaces stay lazy so the eager detail page (needed
+// for the shared-element morph) doesn't drag them into the entry chunk.
+const CookMode = lazy(() => import('../components/recipe/CookMode').then((m) => ({ default: m.CookMode })));
+const ShareDialog = lazy(() => import('../components/recipe/ShareDialog').then((m) => ({ default: m.ShareDialog })));
 import { Dialog } from '../components/ui/Dialog';
 import { Button } from '../components/ui';
 import { Tooltip } from '../components/ui/Tooltip';
@@ -184,9 +187,15 @@ export function RecipeDetailPage() {
 
       <SubstituteDialog recipeId={recipeId} zutat={substTarget} onClose={() => setSubstTarget(null)} />
 
-      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={recipe.titel} publicListed={detail.data?.public_listed ?? false} />
+      <Suspense fallback={null}>
+        <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} recipeId={recipeId} titel={recipe.titel} publicListed={detail.data?.public_listed ?? false} />
+      </Suspense>
       <AnimatePresence>
-        {cookOpen && <CookMode schritte={recipe.schritte} mode={mode} onClose={() => setCookOpen(false)} />}
+        {cookOpen && (
+          <Suspense fallback={null}>
+            <CookMode schritte={recipe.schritte} mode={mode} onClose={() => setCookOpen(false)} />
+          </Suspense>
+        )}
       </AnimatePresence>
     </div>
   );

@@ -123,7 +123,6 @@ export default function App() {
     const w = window as IdleWin;
     const schedule = w.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300));
     const id = schedule(() => {
-      void import('./pages/RecipeDetailPage');
       void import('./pages/FavoritesPage');
       void import('./pages/HistoryPage');
       void import('./pages/ShoppingPage');
@@ -179,6 +178,19 @@ export default function App() {
       <main className="shell__main">
         <AppRoutes me={me} meLoading={meLoading} />
       </main>
+
+      {/* Pre-resolve the lazy detail page (off-route) so the shared-element view
+          transition renders it synchronously — a lazy component suspends for a
+          frame on first render, which cancels the morph. Kept out of the entry
+          chunk (loads on demand) but warmed here; renders nothing without a
+          recipe id. Skipped on the detail route itself to avoid a double mount. */}
+      {me && !location.pathname.startsWith('/rezept/') && (
+        <div aria-hidden style={{ display: 'none' }}>
+          <Suspense fallback={null}>
+            <RecipeDetailPage />
+          </Suspense>
+        </div>
+      )}
 
       {me && <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />}
       {me && (

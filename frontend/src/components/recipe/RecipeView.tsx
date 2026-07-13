@@ -82,7 +82,10 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
   return (
     <div>
       {meta && (
-        <motion.section className="hero" {...(reduced ? {} : riseIn)} transition={spring}>
+        // When arriving via the shared-element morph, DON'T play the framer
+        // entrance: animating the hero container fights the VT snapshot and
+        // aborts the morph. The view transition handles the entrance instead.
+        <motion.section className="hero" {...(reduced || isShared ? {} : riseIn)} transition={spring}>
           <div className="hero__content">
           <span className="hero__kueche">{meta.kueche}</span>
           <h1 className="hero__title" style={{ viewTransitionName: isShared ? SHARED_TITLE : undefined }}>

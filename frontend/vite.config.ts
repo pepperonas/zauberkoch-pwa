@@ -10,6 +10,11 @@ export default defineConfig({
       '/api': { target: process.env.ZK_API_PROXY ?? 'http://localhost:8742', changeOrigin: false },
     },
   },
+  preview: {
+    proxy: {
+      '/api': { target: process.env.ZK_API_PROXY ?? 'http://localhost:8742', changeOrigin: false },
+    },
+  },
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },

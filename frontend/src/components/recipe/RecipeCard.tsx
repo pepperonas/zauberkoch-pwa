@@ -24,11 +24,12 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
   const isSource = activeId === item.id;
 
   const queryOpts = { queryKey: ['recipes', item.id], queryFn: () => api.recipe(item.id) };
-  // Warm the detail query on press so the await below usually resolves instantly.
+  // Warm the detail query on press so the await below is usually instant.
   const prefetch = () => void queryClient.prefetchQuery(queryOpts);
-  // Ensure the detail data is cached BEFORE navigating: the view transition
-  // snapshots the destination synchronously, and an unresolved query would render
-  // a loading state (no hero) → the shared-element morph would have no target.
+  // The view transition snapshots the destination synchronously (flushSync
+  // navigate), so the detail must render with its hero immediately. The page is
+  // eager-imported (see App.tsx); we only need its query data cached first —
+  // otherwise it renders a hero-less loading state and the morph has no target.
   const open = async () => {
     await queryClient.ensureQueryData(queryOpts);
     go(`/rezept/${item.id}`, { sharedId: item.id });

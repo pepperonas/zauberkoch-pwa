@@ -106,21 +106,25 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       // captured (flushSync commits it synchronously).
       if (opts?.sharedId != null) flushSync(() => setActiveId(opts.sharedId!));
 
-      const back = typeof to === 'number';
-      doc.startViewTransition(() =>
-        back
-          ? // Async POP: navigate, then let the route-commit layout effect resolve
-            // us (with a safety timeout). rAF is starved during this phase.
-            new Promise<void>((resolve) => {
-              const timer = window.setTimeout(resolve, 500);
-              pendingResolve.current = () => {
-                window.clearTimeout(timer);
-                resolve();
-              };
-              nav();
-            })
-          : // Sync PUSH: commit the new DOM before the new snapshot is captured.
-            flushSync(() => nav()),
+      // Forward (PUSH) and back (POP) both navigate, then wait for React to
+      // actually commit the new route before letting the browser capture the
+      // "new" snapshot. flushSync(navigate) does NOT commit react-router v7's
+      // navigation synchronously (it's deferred), so the new snapshot would be
+      // the old page → the real swap lands late and cancels the morph. Instead
+      // the scroll layout-effect (on location.key) resolves us at commit time.
+      // Requires the destination to render synchronously (no Suspense) — hence
+      // RecipeDetailPage is eager (App.tsx). rAF is starved here, so we can't
+      // poll; the safety timeout guards against a same-key no-op navigation.
+      doc.startViewTransition(
+        () =>
+          new Promise<void>((resolve) => {
+            const timer = window.setTimeout(resolve, 500);
+            pendingResolve.current = () => {
+              window.clearTimeout(timer);
+              resolve();
+            };
+            nav();
+          }),
       );
     },
     [navigate],
