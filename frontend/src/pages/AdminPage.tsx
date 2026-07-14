@@ -343,32 +343,38 @@ export function AdminPage() {
         <p className="muted" style={{ font: 'var(--type-label-sm)', margin: '0 0 var(--space-3)' }}>
           {limits.data?.open_signup === false ? t('admin.allowlistNoteClosed') : t('admin.allowlistNoteOpen')}
         </p>
-        <input
-          className="input"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && email.includes('@')) { add.mutate(email.trim().toLowerCase()); setEmail(''); }
-          }}
-          placeholder={t('admin.allowlistAdd')}
-        />
-        <div style={{ marginTop: 'var(--space-2)' }}>
-          {(allowlist.data?.items ?? []).map((item) => (
-            <div key={item.email} className="row row--between" style={{ minHeight: 'var(--touch-target)' }}>
-              <span>
-                {item.email}{' '}
-                <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
-                  {item.registered ? <><Icon name="check" size={12} /> {t('admin.registered')}</> : t('admin.invited')}
-                </span>
-              </span>
-              <IconButton label={t('common.delete')} onClick={() => remove.mutate(item.email)}>
-                <Icon name="close" size={18} />
-              </IconButton>
+        {/* The allowlist only gates when signup is closed — hide the editor while
+            it's ignored (open) to declutter; the note above stays for context. */}
+        {limits.data?.open_signup === false && (
+          <>
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && email.includes('@')) { add.mutate(email.trim().toLowerCase()); setEmail(''); }
+              }}
+              placeholder={t('admin.allowlistAdd')}
+            />
+            <div style={{ marginTop: 'var(--space-2)' }}>
+              {(allowlist.data?.items ?? []).map((item) => (
+                <div key={item.email} className="row row--between" style={{ minHeight: 'var(--touch-target)' }}>
+                  <span>
+                    {item.email}{' '}
+                    <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
+                      {item.registered ? <><Icon name="check" size={12} /> {t('admin.registered')}</> : t('admin.invited')}
+                    </span>
+                  </span>
+                  <IconButton label={t('common.delete')} onClick={() => remove.mutate(item.email)}>
+                    <Icon name="close" size={18} />
+                  </IconButton>
+                </div>
+              ))}
+              {allowlist.isLoading && <p className="muted">{t('common.loading')}</p>}
             </div>
-          ))}
-          {allowlist.isLoading && <p className="muted">{t('common.loading')}</p>}
-        </div>
+          </>
+        )}
       </section>
     </div>
   );
