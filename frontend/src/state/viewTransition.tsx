@@ -106,12 +106,22 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
     currentPathRef.current = location.pathname;
   }, [location.pathname]);
 
+  // The browser-back handler re-drives the traverse as a REPLACE (see the
+  // navigate() listener), so navType would read REPLACE, not POP — this carries
+  // the scroll position to restore so the list still returns to where it was.
+  const forcedScroll = useRef<number | null>(null);
+
   // Reset (forward) / restore (back) scroll once the new route has rendered.
   // useLayoutEffect runs pre-paint, before the browser captures the "new" VT
   // snapshot, so the morph starts from the correct viewport offset — then we
   // release the pending POP transition (order matters: scroll, THEN snapshot).
   useLayoutEffect(() => {
-    if (navType === 'POP') {
+    if (forcedScroll.current != null) {
+      // Kept until the browser-back VT finishes: the redrive fires TWO commits
+      // (react-router's own POP + our REPLACE), and both must land on the saved
+      // offset (nulling here would let the 2nd reset it to 0).
+      window.scrollTo(0, forcedScroll.current);
+    } else if (navType === 'POP') {
       const saved = positions.current.get(location.pathname) ?? 0;
       window.scrollTo(0, saved);
     } else {
@@ -247,11 +257,9 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
         return;
       }
       const sid = detailId(oldPath) ?? detailId(newPath);
-      vlog('navigate: driving browser-back VT', { oldPath, newPath, sid, fine });
-      // Name the source (detail hero) only on desktop: there the observed VT
-      // morphs. On touch the VT hard-swaps under intercept, so naming would just
-      // leave a stray view-transition-name on the card.
-      if (fine && sid != null) flushSync(() => setActiveId(sid));
+      const canIntercept = ev.canIntercept && typeof ev.intercept === 'function';
+      vlog('navigate: browser-back', { oldPath, newPath, sid, fine, canIntercept });
+      if (!canIntercept) return; // Firefox/older Safari: no intercept → un-animated
 
       const doc = document as Document & {
         startViewTransition?: (cb: () => void | Promise<void>) => {
@@ -259,45 +267,54 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
           finished?: Promise<void>;
         };
       };
-      let resolveVT: () => void = () => {};
-      const vtDone = new Promise<void>((r) => {
-        resolveVT = r;
+      // INTERCEPT and drive the traverse through the SAME reliable mechanism as
+      // the in-app go(-1): the observe-only variant depended on the traverse's
+      // popstate re-rendering react-router DURING the VT, which is flaky on real
+      // Chrome (→ old===new → hard cut). Here we own the navigation: name the
+      // hero while the old (detail) DOM is still mounted, start the VT, and
+      // navigate react-router to the destination INSIDE the VT callback (resolved
+      // by pendingResolve on the real commit — NOT flushSync, react-router v7 is
+      // deferred). Intercept also suppresses the native predictive-back on touch.
+      ev.intercept!({
+        handler: () => {
+          if (sid != null) flushSync(() => setActiveId(sid));
+          // Restore the destination's saved scroll (the redrive is a REPLACE, so
+          // the scroll effect wouldn't treat it as POP otherwise).
+          forcedScroll.current = positions.current.get(newPath) ?? 0;
+          let resolveVT: () => void = () => {};
+          const vtDone = new Promise<void>((r) => {
+            resolveVT = r;
+          });
+          const timer = window.setTimeout(() => resolveVT(), 700);
+          pendingResolve.current = () => {
+            window.clearTimeout(timer);
+            resolveVT();
+          };
+          beginRouteVt();
+          const vt = doc.startViewTransition!(() => {
+            navigate(newPath, { replace: true }); // drive react-router → destination
+            return vtDone;
+          });
+          endRouteVt(vt);
+          if (VT_DEBUG) {
+            vt.ready?.then(
+              () => vlog('browser-back VT ready'),
+              (err) => vlog('browser-back VT ready REJECTED', String((err as Error)?.message ?? err)),
+            );
+            vt.finished?.then(() => vlog('browser-back VT finished'));
+          }
+          const done = (vt.finished ?? vtDone).catch(() => {});
+          void done.finally(() => {
+            forcedScroll.current = null; // clear the scroll pin once both commits landed
+          });
+          return done;
+        },
       });
-      const timer = window.setTimeout(() => resolveVT(), 700);
-      pendingResolve.current = () => {
-        window.clearTimeout(timer);
-        resolveVT();
-      };
-      // Capture the old snapshot NOW; the traverse's popstate re-renders
-      // react-router, resolving the callback with the new snapshot.
-      beginRouteVt();
-      const vt = doc.startViewTransition!(() => vtDone);
-      endRouteVt(vt);
-      // Touch: intercept so the OS predictive-back / activity-stack animation is
-      // suppressed (app-feel). Desktop: observe only → morph.
-      if (!fine && ev.canIntercept && typeof ev.intercept === 'function') {
-        try {
-          ev.intercept({ handler: () => (vt.finished ?? vtDone).catch(() => {}) });
-          vlog('navigate: intercepted (touch → suppress native back)');
-        } catch (err) {
-          vlog('navigate: intercept failed', String((err as Error)?.message ?? err));
-        }
-      }
-      if (VT_DEBUG) {
-        vt.ready?.then(
-          () => vlog('browser-back VT ready'),
-          (err) => vlog('browser-back VT ready REJECTED', String((err as Error)?.message ?? err)),
-        );
-        vt.finished?.then(
-          () => vlog('browser-back VT finished'),
-          (err) => vlog('browser-back VT finished REJECTED', String((err as Error)?.message ?? err)),
-        );
-      }
     };
     vlog('navigate listener registered');
     nav.addEventListener('navigate', onNavigate);
     return () => nav.removeEventListener('navigate', onNavigate);
-  }, [runVT]);
+  }, [runVT, navigate]);
 
   return <ViewTxContext.Provider value={{ activeId, go }}>{children}</ViewTxContext.Provider>;
 }
