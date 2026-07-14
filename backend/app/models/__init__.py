@@ -1,5 +1,6 @@
 from app.models.models import (
     AllowlistEntry,
+    AppSettings,
     Favorite,
     Generation,
     Invite,
@@ -14,6 +15,7 @@ from app.models.models import (
 
 __all__ = [
     "AllowlistEntry",
+    "AppSettings",
     "Favorite",
     "Generation",
     "Invite",

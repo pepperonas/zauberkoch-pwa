@@ -44,11 +44,16 @@ def client(db_session):
 
 
 @pytest.fixture(autouse=True)
-def _default_new_user_limit_off(monkeypatch):
-    """Most tests generate many recipes -> give fresh test accounts the global
-    default (daily_limit stays NULL). Tests that check the small-new-user cap
-    set default_new_user_limit explicitly."""
+def _generous_limits(monkeypatch):
+    """Headroom for multi-generation tests. With no app_settings row, get_limits()
+    reads these config values, so a test checking a specific cap just monkeypatches
+    the relevant setting itself (last write wins)."""
     from app.core.config import get_settings
 
-    monkeypatch.setattr(get_settings(), "default_new_user_limit", None)
+    s = get_settings()
+    monkeypatch.setattr(s, "daily_limit_per_user", 20)  # historical test default
+    monkeypatch.setattr(s, "daily_limit_global", 1_000_000)
+    monkeypatch.setattr(s, "daily_registration_limit", 10_000)
+    monkeypatch.setattr(s, "anon_ip_limit", 1000)
+    monkeypatch.setattr(s, "daily_limit_anon", 1_000_000)
     yield

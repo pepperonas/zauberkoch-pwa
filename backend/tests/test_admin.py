@@ -112,6 +112,35 @@ def test_admin_users_list_and_per_user_limit(client, admin, db_session, monkeypa
     assert client.patch("/api/v1/admin/users/999999", json={"daily_limit": 5}, headers=admin).status_code == 404
 
 
+def test_admin_system_limits_get_and_patch(client, admin, db_session):
+    from app.core.config import get_settings
+
+    s = get_settings()
+    # GET: effective values = config defaults (no override row yet)
+    data = client.get("/api/v1/admin/limits", headers=admin).json()
+    assert data["default_user_limit"] == s.daily_limit_per_user
+    assert data["global_daily_limit"] == s.daily_limit_global
+    assert data["registration_daily_limit"] == s.daily_registration_limit
+    assert data["anon_ip_limit"] == s.anon_ip_limit
+    assert data["anon_global_limit"] == s.daily_limit_anon
+    assert isinstance(data["registrations_today"], int)  # the admin fixture already registered
+
+    # PATCH: partial override persists; untouched fields stay
+    d = client.patch(
+        "/api/v1/admin/limits",
+        json={"default_user_limit": 5, "registration_daily_limit": 20, "anon_ip_limit": 3},
+        headers=admin,
+    ).json()
+    assert d["default_user_limit"] == 5 and d["registration_daily_limit"] == 20 and d["anon_ip_limit"] == 3
+    assert d["global_daily_limit"] == s.daily_limit_global  # untouched
+    # persisted across requests
+    assert client.get("/api/v1/admin/limits", headers=admin).json()["default_user_limit"] == 5
+
+    # validation
+    assert client.patch("/api/v1/admin/limits", json={"default_user_limit": -1}, headers=admin).status_code == 422
+    assert client.patch("/api/v1/admin/limits", json={"global_daily_limit": 99999999}, headers=admin).status_code == 422
+
+
 def test_admin_user_limit_enforced_in_generation(client, admin, mock_ai):
     from tests.test_generation import PARAMS, generate as gen
 

@@ -18,6 +18,7 @@ from app.models import Favorite, Generation, Recipe, User
 from app.schemas.recipe import GenerateParams
 from app.api.v1.me import load_preferences
 from app.services import ai, aggregation, cache, ratelimit
+from app.services.limits import get_limits
 from app.services.ratelimit_ip import check_ip_limit
 from app.services.json_stream import replay_events
 
@@ -283,7 +284,7 @@ async def try_generate(
     cached = cache.get_cached(db, h, current_version)
 
     if cached is None:
-        check_ip_limit(request, scope="try", limit=2, window_s=86400)
+        check_ip_limit(request, scope="try", limit=get_limits(db).anon_ip_limit, window_s=86400)
         ratelimit.consume_anon(db)
 
     def _finalize_anon(final: dict | None) -> None:

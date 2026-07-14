@@ -6,7 +6,7 @@ Gated by require_admin (email in ZK_ADMIN_EMAILS) — 404 for everyone else.
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session as DbSession
 
@@ -14,6 +14,8 @@ from app.core.config import get_settings
 from app.core.security import require_admin, require_csrf
 from app.db import get_db
 from app.models import AllowlistEntry, Generation, RateLimit, Recipe, User
+from app.services import ratelimit
+from app.services.limits import get_limits, update_limits
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(require_admin)])
 
@@ -114,8 +116,8 @@ def stats(
         ],
         "feedback": feedback,
         "limits": {
-            "per_user": settings.daily_limit_per_user,
-            "global": settings.daily_limit_global,
+            "per_user": get_limits(db).default_user_limit,
+            "global": get_limits(db).global_daily_limit,
         },
     }
 
@@ -163,7 +165,7 @@ def remove_allowlist(email: str, db: DbSession = Depends(get_db)) -> dict:
 def list_users(db: DbSession = Depends(get_db)) -> dict:
     """Registered users with their effective daily cap + today's usage."""
     settings = get_settings()
-    default = settings.daily_limit_per_user
+    default = get_limits(db).default_user_limit
     admins = settings.admin_emails
     day = datetime.now(timezone.utc).date().isoformat()
     users = db.execute(select(User).order_by(User.created_at.desc())).scalars().all()
@@ -204,3 +206,39 @@ def set_user_limit(user_id: int, body: UserLimitBody, db: DbSession = Depends(ge
     user.daily_limit = body.daily_limit
     db.commit()
     return {"id": user.id, "daily_limit": user.daily_limit}
+
+
+# ── System-wide limits (runtime-editable) ─────────────────────────────────
+
+
+def _limits_payload(db: DbSession) -> dict:
+    lim = get_limits(db)
+    return {
+        "default_user_limit": lim.default_user_limit,
+        "global_daily_limit": lim.global_daily_limit,
+        "registration_daily_limit": lim.registration_daily_limit,
+        "anon_ip_limit": lim.anon_ip_limit,
+        "anon_global_limit": lim.anon_global_limit,
+        "registrations_today": ratelimit.registrations_today(db),
+    }
+
+
+@router.get("/limits")
+def get_system_limits(db: DbSession = Depends(get_db)) -> dict:
+    return _limits_payload(db)
+
+
+class LimitsBody(BaseModel):
+    default_user_limit: int | None = Field(default=None, ge=0, le=10000)
+    global_daily_limit: int | None = Field(default=None, ge=0, le=1000000)
+    registration_daily_limit: int | None = Field(default=None, ge=0, le=100000)
+    anon_ip_limit: int | None = Field(default=None, ge=0, le=10000)
+    anon_global_limit: int | None = Field(default=None, ge=0, le=1000000)
+
+
+@router.patch("/limits", dependencies=[Depends(require_csrf)])
+def set_system_limits(body: LimitsBody, db: DbSession = Depends(get_db)) -> dict:
+    changes = {k: v for k, v in body.model_dump().items() if v is not None}
+    if changes:
+        update_limits(db, changes)
+    return _limits_payload(db)

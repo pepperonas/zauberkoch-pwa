@@ -82,3 +82,26 @@
 
 /* System info tiles */
 .admin__sys { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3); }
+
+/* Editable system limits */
+.admin__limits { display: flex; flex-direction: column; gap: var(--space-2); }
+.admin__limit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-surface-container-low);
+  border-radius: var(--shape-md);
+}
+.admin__limit-text { display: flex; flex-direction: column; min-width: 0; }
+.admin__limit-hint { font: var(--type-label-sm); color: var(--c-on-surface-variant); }
+.admin__limit-input {
+  width: 90px;
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+}
+.admin__limit-input:disabled { opacity: 0.5; }

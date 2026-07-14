@@ -67,21 +67,42 @@ def test_callback_rejects_unknown_email_when_signup_closed(client, monkeypatch):
     assert "login_error=not_allowed" in r.headers["location"]
 
 
-def test_open_signup_creates_user_and_starts_at_new_user_limit(client, db_session, monkeypatch):
+def test_open_signup_creates_user_with_null_limit(client, db_session, monkeypatch):
     from app.core.config import get_settings
     from app.models import User
 
     settings = get_settings()
     # the test env pins OPEN_SIGNUP=false; enable it here to exercise open signup
     monkeypatch.setattr(settings, "open_signup", True)
-    monkeypatch.setattr(settings, "default_new_user_limit", 1)  # fresh accounts start small
     r = do_login_callback(client, monkeypatch, claims=fake_claims(email="newbie@example.com", sub="sub-new"))
     assert "login_error" not in r.headers["location"]
 
     user = db_session.query(User).filter_by(email="newbie@example.com").one()
-    assert user.daily_limit == 1
+    assert user.daily_limit is None  # NULL -> uses the system default
     usage = client.get("/api/v1/me").json()
     assert usage["email"] == "newbie@example.com"
+
+
+def test_registration_daily_cap_blocks_new_signups(client, db_session, monkeypatch):
+    """After the daily registration cap, new signups are rejected; the cap does
+    NOT affect existing users logging in."""
+    from app.core.config import get_settings
+    from app.models import User
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "open_signup", True)
+    monkeypatch.setattr(settings, "daily_registration_limit", 1)  # only 1 new account today
+
+    r1 = do_login_callback(client, monkeypatch, claims=fake_claims(email="a@example.com", sub="sub-a"))
+    assert "login_error" not in r1.headers["location"]
+
+    r2 = do_login_callback(client, monkeypatch, claims=fake_claims(email="b@example.com", sub="sub-b"))
+    assert "login_error=registration_full" in r2.headers["location"]
+    assert db_session.query(User).filter_by(email="b@example.com").one_or_none() is None
+
+    # The already-registered user can still log in (no new account created).
+    r3 = do_login_callback(client, monkeypatch, claims=fake_claims(email="a@example.com", sub="sub-a"))
+    assert "login_error" not in r3.headers["location"]
 
 
 def test_callback_creates_user_from_allowlist(client, db_session, monkeypatch):

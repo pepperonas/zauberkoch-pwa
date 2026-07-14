@@ -45,6 +45,7 @@ def test_try_global_anon_budget(client, mock_ai, monkeypatch):
 
 def test_try_per_ip_limit(client, mock_ai, monkeypatch):
     monkeypatch.setattr(get_settings(), "daily_limit_anon", 50)
+    monkeypatch.setattr(get_settings(), "anon_ip_limit", 2)  # cap under test
     assert try_gen(client).status_code == 200
     assert try_gen(client, {**PARAMS, "kueche": "Thai"}).status_code == 200
     assert try_gen(client, {**PARAMS, "kueche": "Indisch"}).status_code == 429  # 2 live/day per IP

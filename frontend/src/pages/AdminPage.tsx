@@ -34,6 +34,38 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
   );
 }
 
+/** Editable system-limit field. Commits on blur/Enter when the value changed. */
+function LimitRow({
+  label, hint, value, saving, onSave,
+}: { label: string; hint?: string; value: number; saving: boolean; onSave: (v: number) => void }) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => setText(String(value)), [value]);
+  const commit = () => {
+    const n = Math.trunc(Number(text));
+    if (Number.isFinite(n) && n >= 0 && n !== value) onSave(n);
+    else setText(String(value));
+  };
+  return (
+    <label className="admin__limit">
+      <span className="admin__limit-text">
+        {label}
+        {hint && <span className="admin__limit-hint">{hint}</span>}
+      </span>
+      <input
+        className="input admin__limit-input"
+        type="number"
+        min={0}
+        inputMode="numeric"
+        value={text}
+        disabled={saving}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+      />
+    </label>
+  );
+}
+
 export function AdminPage() {
   const { me, meLoading } = useApp();
   const { show } = useSnackbar();
@@ -65,6 +97,16 @@ export function AdminPage() {
   const setLimit = useMutation({
     mutationFn: ({ id, limit }: { id: number; limit: number | null }) => api.adminSetUserLimit(id, limit),
     onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }); show(t('admin.userLimitSaved')); },
+  });
+  const limits = useQuery({ queryKey: ['admin', 'limits'], queryFn: () => api.adminLimits(), enabled: Boolean(me?.is_admin) });
+  const saveLimits = useMutation({
+    mutationFn: (patch: Partial<{ default_user_limit: number; global_daily_limit: number; registration_daily_limit: number; anon_ip_limit: number; anon_global_limit: number }>) =>
+      api.adminSetLimits(patch),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['admin', 'limits'], data);
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      show(t('admin.limitsSaved'));
+    },
   });
 
   // Keep the sticky sub-nav docked right under the app header.
@@ -249,12 +291,37 @@ export function AdminPage() {
       <section id="system" className="admin__section" style={smt}>
         <h2><Icon name="settings" size={20} /> {t('admin.systemTitle')}</h2>
 
-        <h3 style={{ margin: '0 0 var(--space-3)' }}>{t('admin.systemLimits')}</h3>
-        <div className="admin__sys">
-          <Kpi label={t('admin.systemDefaultUser')} value={strings.admin.systemPerDay(defaultLimit)} />
-          <Kpi label={t('admin.systemGlobal')} value={strings.admin.systemPerDay(s?.limits.global ?? 200)} />
-          <Kpi label={t('admin.systemNewUser')} value={strings.admin.systemPerDay(1)} />
-        </div>
+        <h3 style={{ margin: '0 0 var(--space-2)' }}>{t('admin.systemLimits')}</h3>
+        <p className="muted" style={{ font: 'var(--type-label-sm)', margin: '0 0 var(--space-3)' }}>{t('admin.systemLimitsNote')}</p>
+        {limits.data && (
+          <div className="admin__limits">
+            <LimitRow
+              label={t('admin.limitDefaultUser')} hint={t('admin.limitDefaultUserHint')}
+              value={limits.data.default_user_limit} saving={saveLimits.isPending}
+              onSave={(v) => saveLimits.mutate({ default_user_limit: v })}
+            />
+            <LimitRow
+              label={t('admin.limitRegistration')} hint={strings.admin.registrationsToday(limits.data.registrations_today)}
+              value={limits.data.registration_daily_limit} saving={saveLimits.isPending}
+              onSave={(v) => saveLimits.mutate({ registration_daily_limit: v })}
+            />
+            <LimitRow
+              label={t('admin.limitGlobal')} hint={t('admin.limitGlobalHint')}
+              value={limits.data.global_daily_limit} saving={saveLimits.isPending}
+              onSave={(v) => saveLimits.mutate({ global_daily_limit: v })}
+            />
+            <LimitRow
+              label={t('admin.limitAnonIp')} hint={t('admin.limitAnonIpHint')}
+              value={limits.data.anon_ip_limit} saving={saveLimits.isPending}
+              onSave={(v) => saveLimits.mutate({ anon_ip_limit: v })}
+            />
+            <LimitRow
+              label={t('admin.limitAnonGlobal')} hint={t('admin.limitAnonGlobalHint')}
+              value={limits.data.anon_global_limit} saving={saveLimits.isPending}
+              onSave={(v) => saveLimits.mutate({ anon_global_limit: v })}
+            />
+          </div>
+        )}
 
         <h3 style={{ margin: 'var(--space-6) 0 var(--space-2)' }}>{t('admin.allowlistTitle')}</h3>
         <p className="muted" style={{ font: 'var(--type-label-sm)', margin: '0 0 var(--space-3)' }}>{t('admin.allowlistNote')}</p>

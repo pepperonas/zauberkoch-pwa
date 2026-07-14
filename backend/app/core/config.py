@@ -41,10 +41,13 @@ class Settings(BaseSettings):
     open_signup: bool = True  # self-service registration (no invite/allowlist gate)
     zk_dev_login: bool = False  # dev-only fake login (hard-refused in prod)
     zk_admin_emails: str = ""  # comma-separated admin emails
-    daily_limit_per_user: int = 20  # fallback for users with no explicit daily_limit
-    default_new_user_limit: int | None = 1  # fresh account's daily cap (None = global default)
-    daily_limit_global: int = 200
-    daily_limit_anon: int = 15  # global cap for logged-out taster generations
+    # System limits — DEFAULTS. Editable at runtime in the admin panel (persisted
+    # in the app_settings singleton, which overrides these); see services/limits.py.
+    daily_limit_per_user: int = 5  # per-user daily default (users with daily_limit=NULL)
+    daily_limit_global: int = 200  # total generations/day
+    daily_registration_limit: int = 20  # new accounts/day
+    anon_ip_limit: int = 3  # taster generations per IP/day
+    daily_limit_anon: int = 15  # taster generations total/day (global anon cap)
 
     # Outgoing mail (verification / password-reset). Empty host = mail disabled
     # (send is a no-op + logs a warning; useful in dev/tests).

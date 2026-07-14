@@ -175,6 +175,15 @@ export interface AdminUser {
   created_at: string;
 }
 
+export interface SystemLimits {
+  default_user_limit: number;
+  global_daily_limit: number;
+  registration_daily_limit: number;
+  anon_ip_limit: number;
+  anon_global_limit: number;
+  registrations_today: number;
+}
+
 export interface GalleryItem {
   token: string;
   titel: string;

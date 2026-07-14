@@ -1,6 +1,6 @@
 /** Typed API client. Session lives in an httpOnly cookie; CSRF via header. */
 
-import type { AdminStats, AdminUser, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, GalleryItem, PlanWeek, SubstituteResult } from './types';
+import type { AdminStats, AdminUser, AllowlistItem, ApiError, Me, Modus, Preferences, Recipe, RecipeDetail, RecipeListItem, ShoppingItem, GalleryItem, PlanWeek, SubstituteResult, SystemLimits } from './types';
 
 let csrfToken = '';
 
@@ -126,6 +126,9 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ daily_limit }),
     }),
+  adminLimits: () => request<SystemLimits>('/admin/limits'),
+  adminSetLimits: (patch: Partial<Omit<SystemLimits, 'registrations_today'>>) =>
+    request<SystemLimits>('/admin/limits', { method: 'PATCH', body: JSON.stringify(patch) }),
   shoppingReplace: (items: Pick<ShoppingItem, 'name' | 'menge' | 'einheit' | 'checked'>[]) =>
     request<{ items: ShoppingItem[] }>('/shopping/replace', {
       method: 'POST',

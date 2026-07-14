@@ -169,6 +169,22 @@ class RateLimit(Base):
     __table_args__ = (UniqueConstraint("scope", "day", name="uq_ratelimit_scope_day"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    scope: Mapped[str] = mapped_column(String(64), index=True)  # "user:<id>" | "global"
+    scope: Mapped[str] = mapped_column(String(64), index=True)  # "user:<id>" | "global" | "registrations"
     day: Mapped[str] = mapped_column(String(10), index=True)  # YYYY-MM-DD (UTC)
     count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class AppSettings(Base):
+    """Runtime-editable system limits (singleton row, id=1). When absent the code
+    falls back to config defaults — so this row only exists once an admin edits a
+    value in the panel. See app/services/limits.py."""
+
+    __tablename__ = "app_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)  # always 1
+    default_user_limit: Mapped[int] = mapped_column(Integer)  # per-user daily default (NULL users)
+    global_daily_limit: Mapped[int] = mapped_column(Integer)  # total generations/day
+    registration_daily_limit: Mapped[int] = mapped_column(Integer)  # new accounts/day
+    anon_ip_limit: Mapped[int] = mapped_column(Integer)  # taster generations per IP/day
+    anon_global_limit: Mapped[int] = mapped_column(Integer)  # taster generations total/day
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

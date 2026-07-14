@@ -3,7 +3,7 @@
 import logging
 import secrets
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
@@ -22,7 +22,7 @@ from app.core.security import (
 )
 from app.db import get_db
 from app.models import AllowlistEntry, Session as SessionModel, User
-from app.services import google_oauth
+from app.services import google_oauth, ratelimit
 from app.services.ratelimit_ip import check_ip_limit
 
 logger = logging.getLogger("zauberkoch.auth")
@@ -94,7 +94,13 @@ def callback(
             allowed = db.execute(select(AllowlistEntry).where(AllowlistEntry.email == email)).scalar_one_or_none()
             if allowed is None:
                 return fail("not_allowed")
-        user = User(google_sub=claims["sub"], email=email, daily_limit=settings.default_new_user_limit)
+        # Daily registration cap (existing users keep logging in).
+        try:
+            ratelimit.consume_registration(db)
+        except HTTPException:
+            return fail("registration_full")
+        # daily_limit stays NULL → the account uses the system default limit.
+        user = User(google_sub=claims["sub"], email=email, daily_limit=None)
         db.add(user)
         db.flush()
 
