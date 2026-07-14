@@ -185,15 +185,20 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
     [navigate, runVT],
   );
 
-  // Browser (and in-app) back/forward. popstate fires AFTER react-router has
-  // already re-rendered (the leaving page is gone → can't name its shared
-  // element), even in the capture phase. The Navigation API's `navigate` event
-  // fires BEFORE the commit, while the old DOM is still present — the correct
-  // before-hook for the BROWSER's own back/forward button (mouse/keyboard). We
-  // only observe (no intercept): name the shared recipe, start the VT, then
-  // react-router's re-render supplies the new snapshot. In-app go(-1) is handled
-  // in go() itself and skips here. Unsupported browsers (Firefox, older Safari)
-  // still get the in-app-button morph; only the browser button is un-animated.
+  // Browser back/forward. The Navigation API's `navigate` event fires BEFORE the
+  // commit, while the old DOM is still present — the correct before-hook to name
+  // the leaving detail's shared element (popstate fires only AFTER react-router
+  // has re-rendered, when that DOM is already gone). We OBSERVE the VT and NEVER
+  // intercept(): intercepting a traverse suppresses the popstate that the
+  // declarative <BrowserRouter> listens to, so react-router wouldn't re-render
+  // during the VT and we'd snapshot old===new → a hard swap (the exact bug the
+  // browser-back button showed). Observed, react-router's popstate re-render
+  // supplies the new (list) snapshot and the morph plays. On TOUCH we bow out
+  // entirely: a predictive-back gesture would interrupt the observed VT, so we
+  // let the browser's native back animation run (the in-app button still morphs
+  // on touch). In-app go(-1) drives its own VT in go() and skips here via
+  // skipTraverse. Firefox/older Safari (no Navigation API) → un-animated browser
+  // button, in-app-button morph still works.
   useEffect(() => {
     const nav = (window as unknown as { navigation?: EventTarget & Record<string, unknown> })
       .navigation;
@@ -210,10 +215,8 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       const ev = e as Event & {
         navigationType?: string;
         destination?: { url: string };
-        canIntercept?: boolean;
-        intercept?: (opts: { handler: () => Promise<void> }) => void;
       };
-      vlog('navigate event', { type: ev.navigationType, dest: ev.destination?.url, skip: skipTraverse.current, canIntercept: ev.canIntercept });
+      vlog('navigate event', { type: ev.navigationType, dest: ev.destination?.url, skip: skipTraverse.current });
       if (ev.navigationType !== 'traverse' || !ev.destination) return; // pushes go via go()
       if (skipTraverse.current) {
         skipTraverse.current = false; // go() is already driving this traverse
@@ -222,6 +225,14 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       }
       if (!vtEnabled()) {
         vlog('navigate: vtEnabled=false → no VT');
+        return;
+      }
+      // Touch (coarse pointer): a predictive-back gesture would interrupt an
+      // observed VT, and intercepting to stop it would suppress react-router's
+      // popstate (→ old===new → hard swap). Hand the traverse to the browser's
+      // native back animation; the in-app button still morphs on touch.
+      if (!window.matchMedia('(pointer: fine)').matches) {
+        vlog('navigate: coarse pointer → native back (no VT)');
         return;
       }
       const oldPath = currentPathRef.current; // still the leaving page (pre-commit)
@@ -250,10 +261,10 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
         window.clearTimeout(timer);
         resolveVT();
       };
-      // Capture the old (detail) snapshot NOW; react-router re-renders on the
-      // popstate this traverse fires, resolving the callback with the new (list).
+      // Capture the old (detail) snapshot NOW and OBSERVE only (no intercept):
+      // this traverse's popstate re-renders react-router to the list, resolving
+      // the callback with the new snapshot so the shared element morphs.
       const vt = doc.startViewTransition!(() => vtDone);
-      const done: Promise<void> = vt.finished ? vt.finished.catch(() => {}) : vtDone;
       if (VT_DEBUG) {
         vt.ready?.then(
           () => vlog('browser-back VT ready'),
@@ -263,18 +274,6 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
           () => vlog('browser-back VT finished'),
           (err) => vlog('browser-back VT finished REJECTED', String((err as Error)?.message ?? err)),
         );
-      }
-      // KEY for Android/mobile: intercept so the browser hands us the navigation
-      // and does NOT run its own back animation (predictive back) that preempts
-      // and interrupts our transition. Completing when the VT ends lets the OS
-      // gesture wait for our morph instead of overriding it.
-      if (ev.canIntercept && typeof ev.intercept === 'function') {
-        try {
-          ev.intercept({ handler: () => done });
-          vlog('navigate: intercepted (suppressing native back animation)');
-        } catch (err) {
-          vlog('navigate: intercept failed', String((err as Error)?.message ?? err));
-        }
       }
     };
     vlog('navigate listener registered');
