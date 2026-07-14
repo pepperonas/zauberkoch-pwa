@@ -38,17 +38,9 @@ import { useLocation, useNavigate, useNavigationType, type To } from 'react-rout
 export const SHARED_MOTIF = 'zk-shared-motif';
 export const SHARED_TITLE = 'zk-shared-title';
 
-/** Opt-in diagnostics (?vtdebug=1 or localStorage zk-vt-debug=1) — safe in prod. */
-const VT_DEBUG =
-  typeof window !== 'undefined' &&
-  (new URLSearchParams(window.location.search).has('vtdebug') ||
-    (() => {
-      try {
-        return window.localStorage.getItem('zk-vt-debug') === '1';
-      } catch {
-        return false;
-      }
-    })());
+/** Diagnostics. TEMPORARILY always-on to debug an Android-Chrome gesture-back
+ * issue that can't be reproduced on desktop — revert to the opt-in gate after. */
+const VT_DEBUG = typeof window !== 'undefined';
 function vlog(...args: unknown[]): void {
   if (VT_DEBUG) console.log('[zk-vt]', ...args);
 }
@@ -212,8 +204,13 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       return m ? Number(m[1]) : null;
     };
     const onNavigate = (e: Event) => {
-      const ev = e as Event & { navigationType?: string; destination?: { url: string } };
-      vlog('navigate event', { type: ev.navigationType, dest: ev.destination?.url, skip: skipTraverse.current });
+      const ev = e as Event & {
+        navigationType?: string;
+        destination?: { url: string };
+        canIntercept?: boolean;
+        intercept?: (opts: { handler: () => Promise<void> }) => void;
+      };
+      vlog('navigate event', { type: ev.navigationType, dest: ev.destination?.url, skip: skipTraverse.current, canIntercept: ev.canIntercept });
       if (ev.navigationType !== 'traverse' || !ev.destination) return; // pushes go via go()
       if (skipTraverse.current) {
         skipTraverse.current = false; // go() is already driving this traverse
@@ -232,8 +229,50 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       }
       const sid = detailId(oldPath) ?? detailId(newPath);
       vlog('navigate: driving browser-back VT', { oldPath, newPath, sid });
+      // Name the source (detail hero) in the still-present old DOM.
       if (sid != null) flushSync(() => setActiveId(sid));
-      runVT(); // react-router's re-render performs the navigation
+
+      const doc = document as Document & {
+        startViewTransition?: (cb: () => void | Promise<void>) => {
+          ready?: Promise<void>;
+          finished?: Promise<void>;
+        };
+      };
+      let resolveVT: () => void = () => {};
+      const vtDone = new Promise<void>((r) => {
+        resolveVT = r;
+      });
+      const timer = window.setTimeout(() => resolveVT(), 700);
+      pendingResolve.current = () => {
+        window.clearTimeout(timer);
+        resolveVT();
+      };
+      // Capture the old (detail) snapshot NOW; react-router re-renders on the
+      // popstate this traverse fires, resolving the callback with the new (list).
+      const vt = doc.startViewTransition!(() => vtDone);
+      const done: Promise<void> = vt.finished ? vt.finished.catch(() => {}) : vtDone;
+      if (VT_DEBUG) {
+        vt.ready?.then(
+          () => vlog('browser-back VT ready'),
+          (err) => vlog('browser-back VT ready REJECTED', String((err as Error)?.message ?? err)),
+        );
+        vt.finished?.then(
+          () => vlog('browser-back VT finished'),
+          (err) => vlog('browser-back VT finished REJECTED', String((err as Error)?.message ?? err)),
+        );
+      }
+      // KEY for Android/mobile: intercept so the browser hands us the navigation
+      // and does NOT run its own back animation (predictive back) that preempts
+      // and interrupts our transition. Completing when the VT ends lets the OS
+      // gesture wait for our morph instead of overriding it.
+      if (ev.canIntercept && typeof ev.intercept === 'function') {
+        try {
+          ev.intercept({ handler: () => done });
+          vlog('navigate: intercepted (suppressing native back animation)');
+        } catch (err) {
+          vlog('navigate: intercept failed', String((err as Error)?.message ?? err));
+        }
+      }
     };
     vlog('navigate listener registered');
     nav.addEventListener('navigate', onNavigate);
