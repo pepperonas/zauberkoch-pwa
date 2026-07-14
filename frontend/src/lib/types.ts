@@ -181,6 +181,7 @@ export interface SystemLimits {
   registration_daily_limit: number;
   anon_ip_limit: number;
   anon_global_limit: number;
+  open_signup: boolean;
   registrations_today: number;
 }
 

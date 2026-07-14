@@ -11,6 +11,7 @@ from app.models.models import (
     Session,
     ShoppingListItem,
     User,
+    utcnow,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "Session",
     "ShoppingListItem",
     "User",
+    "utcnow",
 ]

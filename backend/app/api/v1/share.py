@@ -33,7 +33,7 @@ def _share_url(token: str) -> str:
 
 def _owned_recipe(recipe_id: int, user: User, db: DbSession) -> Recipe:
     row = db.get(Recipe, recipe_id)
-    if row is None or row.user_id != user.id:
+    if row is None or row.user_id != user.id or row.deleted_at is not None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     return row
 
@@ -41,7 +41,10 @@ def _owned_recipe(recipe_id: int, user: User, db: DbSession) -> Recipe:
 def _by_token(token: str, db: DbSession) -> Recipe:
     if not token or len(token) > 32:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Link ungültig."})
-    row = db.execute(select(Recipe).where(Recipe.share_token == token)).scalar_one_or_none()
+    # A deleted recipe's share link stops resolving (revoked along with the recipe).
+    row = db.execute(
+        select(Recipe).where(Recipe.share_token == token, Recipe.deleted_at.is_(None))
+    ).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Link ungültig oder widerrufen."})
     return row
@@ -165,7 +168,11 @@ def _public_recipes(db: DbSession, limit: int = 24) -> list[Recipe]:
     return list(
         db.execute(
             select(Recipe)
-            .where(Recipe.share_token.is_not(None), Recipe.public_listed.is_(True))
+            .where(
+                Recipe.share_token.is_not(None),
+                Recipe.public_listed.is_(True),
+                Recipe.deleted_at.is_(None),
+            )
             .order_by(Recipe.created_at.desc())
             .limit(limit)
         ).scalars()

@@ -102,6 +102,15 @@
 
 .actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-6); }
 
+/* Destructive delete affordance, separated from the primary actions. */
+.detail__danger {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-8);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--c-outline-variant);
+}
+
 /* Streaming shimmer indicator */
 .writing { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--c-on-surface-variant); font: var(--type-label-lg); }
 .writing__dot { width: 8px; height: 8px; border-radius: 99px; background: var(--c-primary); }

@@ -71,6 +71,10 @@ class Recipe(Base):
     feedback_grund: Mapped[str] = mapped_column(String(255), default="")
     notiz: Mapped[str] = mapped_column(Text, default="", server_default="")  # personal cooking note
     gekocht_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # Soft delete: set when the user removes the recipe from their view. The row
+    # (and its generation_cache entry) stays so the AI output can still be served
+    # from cache for free; every user-facing query filters `deleted_at IS NULL`.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
 
 
@@ -187,4 +191,5 @@ class AppSettings(Base):
     registration_daily_limit: Mapped[int] = mapped_column(Integer)  # new accounts/day
     anon_ip_limit: Mapped[int] = mapped_column(Integer)  # taster generations per IP/day
     anon_global_limit: Mapped[int] = mapped_column(Integer)  # taster generations total/day
+    open_signup: Mapped[bool] = mapped_column(Boolean, server_default="1")  # self-service registration
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

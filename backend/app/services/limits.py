@@ -16,13 +16,15 @@ from app.models import AppSettings
 
 SETTINGS_ID = 1
 
-# app_settings column <-> config attribute the column defaults from.
+# app_settings column <-> config attribute the column defaults from. Mostly int
+# daily caps; `open_signup` is the one bool (getattr/setattr are type-agnostic).
 _FIELDS: dict[str, str] = {
     "default_user_limit": "daily_limit_per_user",
     "global_daily_limit": "daily_limit_global",
     "registration_daily_limit": "daily_registration_limit",
     "anon_ip_limit": "anon_ip_limit",
     "anon_global_limit": "daily_limit_anon",
+    "open_signup": "open_signup",
 }
 
 
@@ -33,6 +35,7 @@ class Limits:
     registration_daily_limit: int
     anon_ip_limit: int
     anon_global_limit: int
+    open_signup: bool
 
 
 def _from_config() -> Limits:
@@ -48,7 +51,7 @@ def get_limits(db: DbSession) -> Limits:
     return Limits(**{col: getattr(row, col) for col in _FIELDS})
 
 
-def update_limits(db: DbSession, changes: dict[str, int]) -> Limits:
+def update_limits(db: DbSession, changes: dict[str, int | bool]) -> Limits:
     """Persist limit overrides (creating the singleton, seeded from config)."""
     row = db.get(AppSettings, SETTINGS_ID)
     if row is None:

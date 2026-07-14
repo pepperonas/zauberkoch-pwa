@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.core.security import get_current_user, require_csrf
 from app.db import get_db
-from app.models import Favorite, Generation, Recipe, User
+from app.models import Favorite, Generation, Recipe, User, utcnow
 from app.schemas.recipe import GenerateParams
 from app.api.v1.me import load_preferences
 from app.services import ai, aggregation, cache, ratelimit
@@ -30,6 +30,17 @@ def _sse(event: str, data) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
+def owned_recipe(db: DbSession, recipe_id: int, user_id: int, *, include_deleted: bool = False) -> Recipe | None:
+    """A recipe owned by user_id. Soft-deleted rows count as absent (unless
+    include_deleted) — the single gate all user-facing lookups go through."""
+    row = db.get(Recipe, recipe_id)
+    if row is None or row.user_id != user_id:
+        return None
+    if not include_deleted and row.deleted_at is not None:
+        return None
+    return row
+
+
 def _persist_recipe(db: DbSession, user_id: int, params: GenerateParams, recipe: dict, prompt_version: str, model: str) -> Recipe:
     """Store the recipe in the user's history — reusing an existing row for
     identical params + prompt version (cache hits must not pile up duplicates)."""
@@ -43,6 +54,11 @@ def _persist_recipe(db: DbSession, user_id: int, params: GenerateParams, recipe:
         )
     ).scalars().first()
     if existing is not None:
+        # Re-generating an identical recipe the user had soft-deleted brings it
+        # back (and reuses the row — no duplicate) instead of staying hidden.
+        if existing.deleted_at is not None:
+            existing.deleted_at = None
+            db.commit()
         return existing
     row = Recipe(
         user_id=user_id,
@@ -123,7 +139,11 @@ async def generate(
         return list(
             db.execute(
                 select(Recipe.titel)
-                .where(Recipe.user_id == user.id, Recipe.params_json == params_json)
+                .where(
+                    Recipe.user_id == user.id,
+                    Recipe.params_json == params_json,
+                    Recipe.deleted_at.is_(None),
+                )
                 .order_by(Recipe.id.desc())
                 .limit(5)
             ).scalars()
@@ -143,6 +163,7 @@ async def generate(
                 Recipe.params_json == params_json,
                 Recipe.prompt_version == cached.prompt_version,
                 Recipe.titel == titel,
+                Recipe.deleted_at.is_(None),  # a deleted recipe re-serves from cache (free)
             )
         ).scalars().first()
         if seen is not None and json.loads(seen.recipe_json).get("portionen") == params.personen:
@@ -356,7 +377,7 @@ def list_recipes(
     user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ) -> dict:
-    stmt = select(Recipe).where(Recipe.user_id == user.id)
+    stmt = select(Recipe).where(Recipe.user_id == user.id, Recipe.deleted_at.is_(None))
     if q:
         pattern = f"%{q}%"
         stmt = stmt.where(Recipe.titel.ilike(pattern) | Recipe.recipe_json.ilike(pattern))
@@ -398,8 +419,8 @@ def list_recipes(
 
 @router.get("/{recipe_id}")
 def get_recipe(recipe_id: int, user: User = Depends(get_current_user), db: DbSession = Depends(get_db)) -> dict:
-    row = db.get(Recipe, recipe_id)
-    if row is None or row.user_id != user.id:
+    row = owned_recipe(db, recipe_id, user.id)
+    if row is None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     is_fav = (
         db.execute(
@@ -421,6 +442,23 @@ def get_recipe(recipe_id: int, user: User = Depends(get_current_user), db: DbSes
     }
 
 
+@router.delete("/{recipe_id}", dependencies=[Depends(require_csrf)])
+def delete_recipe(
+    recipe_id: int,
+    user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    """Soft-delete: hide the recipe from the user everywhere. The row and its
+    generation_cache entry stay, so the AI output can still be served from
+    cache for free (re-generating identical params resurrects the row)."""
+    row = owned_recipe(db, recipe_id, user.id)
+    if row is None:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
+    row.deleted_at = utcnow()
+    db.commit()
+    return {"deleted": recipe_id}
+
+
 class FeedbackBody(BaseModel):
     wert: Literal[1, -1]
     grund: str = Field(default="", max_length=255)
@@ -433,8 +471,8 @@ def give_feedback(
     user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ) -> dict:
-    row = db.get(Recipe, recipe_id)
-    if row is None or row.user_id != user.id:
+    row = owned_recipe(db, recipe_id, user.id)
+    if row is None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     row.feedback = body.wert
     row.feedback_grund = body.grund if body.wert == -1 else ""
@@ -455,8 +493,8 @@ async def adapt(
 ) -> StreamingResponse:
     """Adapt an existing recipe ("schärfer", "vegetarisch", …) — costs one
     generation, streams like /generate, survives client disconnects."""
-    source = db.get(Recipe, recipe_id)
-    if source is None or source.user_id != user.id:
+    source = owned_recipe(db, recipe_id, user.id)
+    if source is None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
 
     ratelimit.consume_generation(db, user.id)
@@ -559,8 +597,8 @@ def set_notiz(
     user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ) -> dict:
-    row = db.get(Recipe, recipe_id)
-    if row is None or row.user_id != user.id:
+    row = owned_recipe(db, recipe_id, user.id)
+    if row is None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     row.notiz = body.notiz.strip()
     db.commit()
@@ -573,8 +611,8 @@ def mark_cooked(
     user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ) -> dict:
-    row = db.get(Recipe, recipe_id)
-    if row is None or row.user_id != user.id:
+    row = owned_recipe(db, recipe_id, user.id)
+    if row is None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     row.gekocht_count += 1
     db.commit()
@@ -594,8 +632,8 @@ async def substitute(
     db: DbSession = Depends(get_db),
 ) -> dict:
     """2-3 pantry-realistic substitutes for a missing ingredient (tiny call)."""
-    row = db.get(Recipe, recipe_id)
-    if row is None or row.user_id != user.id:
+    row = owned_recipe(db, recipe_id, user.id)
+    if row is None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     check_ip_limit(request, scope="substitute", limit=10, window_s=60)
     try:

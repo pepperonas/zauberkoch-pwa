@@ -38,19 +38,22 @@ import { useLocation, useNavigate, useNavigationType, type To } from 'react-rout
 export const SHARED_MOTIF = 'zk-shared-motif';
 export const SHARED_TITLE = 'zk-shared-title';
 
-/** Diagnostics. TEMPORARILY always-on to debug an Android-Chrome gesture-back
- * issue that can't be reproduced on desktop — revert to the opt-in gate after. */
-const VT_DEBUG = typeof window !== 'undefined';
+/** Diagnostics. Opt-in only (off in prod): `?vtdebug=1` once, or set
+ * localStorage 'zk-vt-debug'='1'. Kept for the fragile browser-back path. */
+const VT_DEBUG =
+  typeof window !== 'undefined' &&
+  (new URLSearchParams(location.search).get('vtdebug') === '1' ||
+    (() => {
+      try {
+        if (new URLSearchParams(location.search).get('vtdebug') === '1')
+          localStorage.setItem('zk-vt-debug', '1');
+        return localStorage.getItem('zk-vt-debug') === '1';
+      } catch {
+        return false;
+      }
+    })());
 function vlog(...args: unknown[]): void {
   if (VT_DEBUG) console.log('[zk-vt]', ...args);
-}
-if (VT_DEBUG && typeof window !== 'undefined') {
-  vlog('boot', {
-    hasNavigation: !!(window as unknown as { navigation?: unknown }).navigation,
-    hasStartViewTransition: typeof (document as Document & { startViewTransition?: unknown }).startViewTransition === 'function',
-    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    ua: navigator.userAgent,
-  });
 }
 
 interface Ctx {

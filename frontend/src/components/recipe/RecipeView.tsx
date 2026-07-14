@@ -3,7 +3,7 @@
  */
 
 import { motion, useReducedMotion } from 'motion/react';
-import { Fragment, memo, useCallback, useMemo, useState } from 'react';
+import { type CSSProperties, Fragment, memo, useCallback, useMemo, useState } from 'react';
 
 import { strings, t } from '../../i18n';
 import type { Modus, Naehrwerte, RecipeMeta, Schritt, Zutat } from '../../lib/types';
@@ -46,6 +46,11 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
   const reduced = useReducedMotion();
   const { activeId } = useViewTx();
   const isShared = sharedId != null && activeId === sharedId;
+  // During the shared-element morph, name the main detail sections so they get a
+  // coordinated, staggered enter (via ::view-transition-new in base.css) instead
+  // of a flat root crossfade — no post-VT framer pop, transform/opacity only.
+  const vtn = (name: string): CSSProperties | undefined =>
+    isShared ? { viewTransitionName: name } : undefined;
   const { meta } = data;
   const basePortionen = meta?.portionen ?? 1;
   const [portionen, setPortionenState] = useState<number | null>(null);
@@ -123,7 +128,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
       )}
 
       {data.zutaten.length > 0 && (
-        <section className="section">
+        <section className="section" style={vtn('zk-d-ing')}>
           <div className="section__head">
             <h2>{t('recipe.ingredients')}</h2>
             <div className="stepper" aria-label={mode === 'cocktail' ? t('wizard.drinks') : t('recipe.servings')}>
@@ -170,7 +175,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
       )}
 
       {data.schritte.length > 0 && (
-        <section className="section">
+        <section className="section" style={vtn('zk-d-steps')}>
           <h2>{t('recipe.steps')}</h2>
           {data.schritte.map((schritt, i) => (
             <SchrittRow key={schritt.nr ?? i} schritt={schritt} streaming={streaming} />
@@ -241,7 +246,7 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
         </div>
       )}
 
-      {actions && <div className="actions">{actions}</div>}
+      {actions && <div className="actions" style={vtn('zk-d-act')}>{actions}</div>}
     </div>
   );
 }

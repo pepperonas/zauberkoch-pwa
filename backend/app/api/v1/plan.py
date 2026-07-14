@@ -60,7 +60,11 @@ def get_week(
     rows = db.execute(
         select(MealPlanEntry, Recipe)
         .join(Recipe, Recipe.id == MealPlanEntry.recipe_id)
-        .where(MealPlanEntry.user_id == user.id, MealPlanEntry.datum.in_(days))
+        .where(
+            MealPlanEntry.user_id == user.id,
+            MealPlanEntry.datum.in_(days),
+            Recipe.deleted_at.is_(None),  # deleted recipe drops out of the plan view
+        )
         .order_by(MealPlanEntry.id)
     ).all()
     by_day: dict[str, list[dict]] = {d: [] for d in days}
@@ -77,7 +81,7 @@ class PlanBody(BaseModel):
 @router.post("", dependencies=[Depends(require_csrf)])
 def add_entry(body: PlanBody, user: User = Depends(get_current_user), db: DbSession = Depends(get_db)) -> dict:
     row = db.get(Recipe, body.recipe_id)
-    if row is None or row.user_id != user.id:
+    if row is None or row.user_id != user.id or row.deleted_at is not None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     existing = db.execute(
         select(MealPlanEntry).where(
@@ -120,7 +124,11 @@ def week_to_shopping(body: WeekBody, user: User = Depends(get_current_user), db:
     rows = db.execute(
         select(Recipe)
         .join(MealPlanEntry, MealPlanEntry.recipe_id == Recipe.id)
-        .where(MealPlanEntry.user_id == user.id, MealPlanEntry.datum.in_(days))
+        .where(
+            MealPlanEntry.user_id == user.id,
+            MealPlanEntry.datum.in_(days),
+            Recipe.deleted_at.is_(None),
+        )
         .order_by(MealPlanEntry.id)
     ).scalars().all()
     for row in rows:

@@ -80,12 +80,16 @@ html.zk-theme-vt .shell__header {
 /* Route view transitions (Material Container Transform). The non-shared page
    content crossfades gently (keeps focus on the morphing element); named shared
    elements (recipe motif/title) are lifted out of the root snapshot and morph
-   their position/size independently. Emphasized easing, GPU-composited. */
+   their position/size independently. Emphasized easing, GPU-composited.
+   New is on top and fades in FASTER than old fades out, so the incoming content
+   solidifies before the outgoing one is gone — no bare-background "dip" that
+   reads as a hard pop-in. */
+html:not(.zk-theme-vt)::view-transition-new(root) { z-index: 2; }
 html:not(.zk-theme-vt)::view-transition-old(root) {
-  animation: zk-vt-fade-out 180ms cubic-bezier(0.3, 0, 0.8, 0.15) both;
+  animation: zk-vt-fade-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 html:not(.zk-theme-vt)::view-transition-new(root) {
-  animation: zk-vt-fade-in 320ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+  animation: zk-vt-fade-in 220ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
 }
 @keyframes zk-vt-fade-out { to { opacity: 0; } }
 @keyframes zk-vt-fade-in { from { opacity: 0; } }
@@ -96,3 +100,51 @@ html:not(.zk-theme-vt)::view-transition-new(root) {
   animation-duration: 360ms;
   animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
+
+/* Non-shared detail sections (ingredients/steps/actions) are lifted out of the
+   root snapshot during the morph and cascade in — opacity + a small rise,
+   staggered — so the incoming content ASSEMBLES behind the settling hero
+   instead of crossfading as one flat block (the old "einplopp" feel). Only
+   transform+opacity (GPU); last one lands at ~390 ms (under the 400 ms budget).
+   The name is only applied while morphing (RecipeView `vtn()`), so normal
+   detail loads are unaffected. */
+::view-transition-new(zk-d-ing),
+::view-transition-new(zk-d-steps),
+::view-transition-new(zk-d-act) {
+  animation: zk-vt-rise 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+::view-transition-new(zk-d-ing) { animation-delay: 40ms; }
+::view-transition-new(zk-d-steps) { animation-delay: 90ms; }
+::view-transition-new(zk-d-act) { animation-delay: 130ms; }
+@keyframes zk-vt-rise { from { opacity: 0; transform: translateY(18px); } }
+
+/* Back navigation: the same sections are old-only → they leave with a quick
+   fade + slight sink (reverse of the enter, snappier). */
+::view-transition-old(zk-d-ing),
+::view-transition-old(zk-d-steps),
+::view-transition-old(zk-d-act) {
+  animation: zk-vt-sink 150ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes zk-vt-sink { to { opacity: 0; transform: translateY(8px); } }
+
+/* Fixed chrome (bottom nav + sticky header) must NOT ride the root crossfade:
+   as part of the root snapshot it dipped in opacity mid-transition, so the nav
+   "disappeared and reappeared" on mobile. Naming them lifts each out into its
+   own layer; holding it (animation:none, no crossfade) keeps it rock-solid
+   across the route change. As a bonus the header's backdrop-blur is snapshotted
+   once instead of recomputed per frame. */
+.nav { view-transition-name: zk-nav; }
+.shell__header { view-transition-name: zk-header; }
+::view-transition-group(zk-nav),
+::view-transition-group(zk-header) { animation-duration: 0.001ms; }
+::view-transition-old(zk-nav),
+::view-transition-new(zk-nav),
+::view-transition-old(zk-header),
+::view-transition-new(zk-header) { animation: none; mix-blend-mode: normal; }
+/* During the theme toggle the chrome should ride the clipped root reveal like
+   everything else, so drop the name (the class is set before the snapshot). */
+html.zk-theme-vt .nav,
+html.zk-theme-vt .shell__header { view-transition-name: none; }
+
+/* No route VT (reduced-motion / no API) → these names never mount, and the
+   provider skips startViewTransition entirely, so nothing here applies. */

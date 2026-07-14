@@ -55,6 +55,8 @@ export const api = {
     request<{ notiz: string }>(`/recipes/${recipeId}/notiz`, { method: 'PATCH', body: JSON.stringify({ notiz }) }),
   markCooked: (recipeId: number) =>
     request<{ gekocht_count: number }>(`/recipes/${recipeId}/gekocht`, { method: 'POST' }),
+  deleteRecipe: (recipeId: number) =>
+    request<{ deleted: number }>(`/recipes/${recipeId}`, { method: 'DELETE' }),
   feedback: (recipeId: number, wert: 1 | -1, grund = '') =>
     request<{ feedback: number; grund: string }>(`/recipes/${recipeId}/feedback`, {
       method: 'POST',

@@ -219,6 +219,7 @@ def _limits_payload(db: DbSession) -> dict:
         "registration_daily_limit": lim.registration_daily_limit,
         "anon_ip_limit": lim.anon_ip_limit,
         "anon_global_limit": lim.anon_global_limit,
+        "open_signup": lim.open_signup,
         "registrations_today": ratelimit.registrations_today(db),
     }
 
@@ -234,6 +235,7 @@ class LimitsBody(BaseModel):
     registration_daily_limit: int | None = Field(default=None, ge=0, le=100000)
     anon_ip_limit: int | None = Field(default=None, ge=0, le=10000)
     anon_global_limit: int | None = Field(default=None, ge=0, le=1000000)
+    open_signup: bool | None = None
 
 
 @router.patch("/limits", dependencies=[Depends(require_csrf)])

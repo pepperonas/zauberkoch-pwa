@@ -103,7 +103,7 @@ def add_from_recipe(
     db: DbSession = Depends(get_db),
 ) -> dict:
     row = db.get(Recipe, body.recipe_id)
-    if row is None or row.user_id != user.id:
+    if row is None or row.user_id != user.id or row.deleted_at is not None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     merge_recipe_into_list(db, user, row, body.portionen)
     return {"items": [_serialize(i) for i in _items(db, user)]}

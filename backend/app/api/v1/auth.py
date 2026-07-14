@@ -23,6 +23,7 @@ from app.core.security import (
 from app.db import get_db
 from app.models import AllowlistEntry, Session as SessionModel, User
 from app.services import google_oauth, ratelimit
+from app.services.limits import get_limits
 from app.services.ratelimit_ip import check_ip_limit
 
 logger = logging.getLogger("zauberkoch.auth")
@@ -89,8 +90,9 @@ def callback(
     user = db.execute(select(User).where(User.google_sub == claims["sub"])).scalar_one_or_none()
 
     if user is None:
-        # New signup. Open by default; if OPEN_SIGNUP is off, the allowlist gates.
-        if not settings.open_signup:
+        # New signup. Open by default; when the admin closes it, the allowlist
+        # gates. Read from the DB (runtime-editable), falling back to config.
+        if not get_limits(db).open_signup:
             allowed = db.execute(select(AllowlistEntry).where(AllowlistEntry.email == email)).scalar_one_or_none()
             if allowed is None:
                 return fail("not_allowed")

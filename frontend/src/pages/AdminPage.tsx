@@ -7,10 +7,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Icon } from '../components/icons';
 import { Sparkline } from '../components/admin/Sparkline';
-import { IconButton } from '../components/ui';
+import { IconButton, Switch } from '../components/ui';
 import { useSnackbar } from '../components/ui/Snackbar';
 import { strings, t } from '../i18n';
 import { api } from '../lib/api';
+import type { SystemLimits } from '../lib/types';
 import { useApp } from '../state/app';
 import './admin.css';
 
@@ -100,7 +101,7 @@ export function AdminPage() {
   });
   const limits = useQuery({ queryKey: ['admin', 'limits'], queryFn: () => api.adminLimits(), enabled: Boolean(me?.is_admin) });
   const saveLimits = useMutation({
-    mutationFn: (patch: Partial<{ default_user_limit: number; global_daily_limit: number; registration_daily_limit: number; anon_ip_limit: number; anon_global_limit: number }>) =>
+    mutationFn: (patch: Partial<Omit<SystemLimits, 'registrations_today'>>) =>
       api.adminSetLimits(patch),
     onSuccess: (data) => {
       queryClient.setQueryData(['admin', 'limits'], data);
@@ -323,8 +324,25 @@ export function AdminPage() {
           </div>
         )}
 
+        <h3 style={{ margin: 'var(--space-6) 0 var(--space-2)' }}>{t('admin.signupTitle')}</h3>
+        {limits.data && (
+          <div className="row row--between" style={{ minHeight: 'var(--touch-target)', marginBottom: 'var(--space-2)' }}>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: 'block' }}>{t('admin.openSignup')}</span>
+              <span className="muted" style={{ font: 'var(--type-label-sm)' }}>{t('admin.openSignupHint')}</span>
+            </span>
+            <Switch
+              checked={limits.data.open_signup}
+              onChange={(v) => saveLimits.mutate({ open_signup: v })}
+              label={t('admin.openSignup')}
+            />
+          </div>
+        )}
+
         <h3 style={{ margin: 'var(--space-6) 0 var(--space-2)' }}>{t('admin.allowlistTitle')}</h3>
-        <p className="muted" style={{ font: 'var(--type-label-sm)', margin: '0 0 var(--space-3)' }}>{t('admin.allowlistNote')}</p>
+        <p className="muted" style={{ font: 'var(--type-label-sm)', margin: '0 0 var(--space-3)' }}>
+          {limits.data?.open_signup === false ? t('admin.allowlistNoteClosed') : t('admin.allowlistNoteOpen')}
+        </p>
         <input
           className="input"
           type="email"

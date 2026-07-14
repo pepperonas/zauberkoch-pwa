@@ -16,3 +16,4 @@ description: Backend-Regeln (FastAPI, SQLAlchemy, Sicherheit, KI-Pipeline)
 - Rezept-Prompts nur in `app/prompts/` (versioniert); Prompt-Version am Rezept persistieren. Prompt-Änderung = neue Version, alte bleibt.
 - Structured Logging (JSON) über `app/core/logging.py` — kein `print`.
 - Neue Endpoints bekommen pytest-Tests (Temp-DB-Fixture, Anthropic gemockt — nie echte API-Calls in Tests).
+- **Rezepte sind soft-deleted** (`recipes.deleted_at`): jede neue nutzer-sichtbare Recipe-Query MUSS `deleted_at IS NULL` filtern — für Owner-Lookups `owned_recipe(db, id, user_id)` (aus `recipes.py`) nutzen, für Joins/Listen die Bedingung explizit ergänzen. Hard-Delete ist bewusst nicht vorgesehen (Cache-Erhalt).

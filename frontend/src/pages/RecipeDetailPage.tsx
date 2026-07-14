@@ -38,6 +38,7 @@ export function RecipeDetailPage() {
   const [gekocht, setGekocht] = useState<number | null>(null);
   const [portionen, setPortionen] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const detail = useQuery({
     queryKey: ['recipes', recipeId],
@@ -49,6 +50,18 @@ export function RecipeDetailPage() {
     mutationFn: (on: boolean) => api.favorite(recipeId, on),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+    },
+  });
+
+  const del = useMutation({
+    mutationFn: () => api.deleteRecipe(recipeId),
+    onSuccess: () => {
+      setDeleteOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      queryClient.removeQueries({ queryKey: ['recipes', recipeId] });
+      show(t('recipe.deleted'));
+      // Replace so the browser back button doesn't return to the gone recipe.
+      navigate('/verlauf', { replace: true });
     },
   });
 
@@ -184,6 +197,29 @@ export function RecipeDetailPage() {
 
       <FeedbackBar recipeId={recipeId} initial={detail.data.feedback ?? null} />
 
+      {/* Destructive action, kept away from the primary action row. */}
+      <section className="section detail__danger">
+        <Tooltip text={t('tips.delete')}>
+          <Button variant="text" className="btn--danger-text" onClick={() => setDeleteOpen(true)}>
+            <Icon name="trash" size={18} /> {t('recipe.delete')}
+          </Button>
+        </Tooltip>
+      </section>
+
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} label={t('recipe.deleteTitle')}>
+        <div className="stack">
+          <h3>{t('recipe.deleteTitle')}</h3>
+          <p className="muted">{t('recipe.deleteText')}</p>
+          <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <Button variant="text" onClick={() => setDeleteOpen(false)} disabled={del.isPending}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="danger" onClick={() => del.mutate()} disabled={del.isPending}>
+              <Icon name="trash" size={18} /> {del.isPending ? t('common.loading') : t('recipe.deleteConfirm')}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       <SubstituteDialog recipeId={recipeId} zutat={substTarget} onClose={() => setSubstTarget(null)} />
 

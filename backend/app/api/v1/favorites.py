@@ -13,7 +13,7 @@ router = APIRouter(prefix="/recipes/{recipe_id}/favorite", dependencies=[Depends
 
 def _owned_recipe(recipe_id: int, user: User, db: DbSession) -> Recipe:
     row = db.get(Recipe, recipe_id)
-    if row is None or row.user_id != user.id:
+    if row is None or row.user_id != user.id or row.deleted_at is not None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Rezept nicht gefunden."})
     return row
 

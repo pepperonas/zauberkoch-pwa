@@ -123,6 +123,7 @@ def test_admin_system_limits_get_and_patch(client, admin, db_session):
     assert data["registration_daily_limit"] == s.daily_registration_limit
     assert data["anon_ip_limit"] == s.anon_ip_limit
     assert data["anon_global_limit"] == s.daily_limit_anon
+    assert data["open_signup"] == s.open_signup
     assert isinstance(data["registrations_today"], int)  # the admin fixture already registered
 
     # PATCH: partial override persists; untouched fields stay
@@ -139,6 +140,31 @@ def test_admin_system_limits_get_and_patch(client, admin, db_session):
     # validation
     assert client.patch("/api/v1/admin/limits", json={"default_user_limit": -1}, headers=admin).status_code == 422
     assert client.patch("/api/v1/admin/limits", json={"global_daily_limit": 99999999}, headers=admin).status_code == 422
+
+
+def test_admin_open_signup_toggle_gates_registration(client, admin, db_session, monkeypatch):
+    """The DB toggle overrides config and actually gates Google signup — both ways."""
+    from app.models import User
+
+    # config default in the test env is closed; the panel reflects it
+    assert client.get("/api/v1/admin/limits", headers=admin).json()["open_signup"] is False
+
+    # closed -> a non-allowlisted newcomer is rejected, no account created
+    r = do_login_callback(client, monkeypatch, claims=fake_claims(email="newbie@example.com", sub="sub-n1"))
+    assert "login_error=not_allowed" in r.headers["location"]
+    assert db_session.query(User).filter_by(email="newbie@example.com").one_or_none() is None
+
+    # toggle persists in both directions
+    assert client.patch("/api/v1/admin/limits", json={"open_signup": True}, headers=admin).json()["open_signup"] is True
+    assert client.get("/api/v1/admin/limits", headers=admin).json()["open_signup"] is True
+    assert client.patch("/api/v1/admin/limits", json={"open_signup": False}, headers=admin).json()["open_signup"] is False
+    assert client.patch("/api/v1/admin/limits", json={"open_signup": True}, headers=admin).json()["open_signup"] is True
+
+    # now open -> the same newcomer signs up without the allowlist (this sets the
+    # client session cookie to the newcomer, so keep it last)
+    r2 = do_login_callback(client, monkeypatch, claims=fake_claims(email="newbie@example.com", sub="sub-n1"))
+    assert "login_error" not in r2.headers["location"]
+    assert db_session.query(User).filter_by(email="newbie@example.com").one() is not None
 
 
 def test_admin_user_limit_enforced_in_generation(client, admin, mock_ai):
