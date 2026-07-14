@@ -21,6 +21,19 @@
   background: color-mix(in srgb, var(--c-surface) 88%, transparent);
   backdrop-filter: blur(12px);
 }
+/* On touch devices the frosted header's backdrop-filter is the known VT/GPU
+   troublemaker (already dropped during theme + route transitions). On the real
+   mobile compositor the translucency made the title bar fade out/in during the
+   shared-element morph — an effect no engine reproduces in emulation. Make the
+   mobile header a SOLID opaque bar outright so it can never dip; desktop keeps
+   the frosted glass. */
+@media (pointer: coarse) {
+  .shell__header {
+    background: var(--c-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
 
 .shell__logo {
   font: var(--type-title-lg);
