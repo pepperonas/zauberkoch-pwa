@@ -1,8 +1,24 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+// Single source of truth for the app version: the service-worker cache name
+// (`zauberkoch-vN`), bumped on every release. Injected at build time so the
+// footer always matches the deployed shell without a second place to maintain.
+function appVersion(): string {
+  try {
+    const sw = readFileSync(fileURLToPath(new URL('./public/sw.js', import.meta.url)), 'utf8');
+    return sw.match(/zauberkoch-(v\d+)/)?.[1] ?? 'dev';
+  } catch {
+    return 'dev';
+  }
+}
+
 export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(appVersion()) },
   plugins: [react()],
   server: {
     proxy: {

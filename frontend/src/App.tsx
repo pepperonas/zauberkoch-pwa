@@ -207,7 +207,7 @@ export default function App() {
           <span aria-hidden>·</span>
           <Link to="/nutzungsbedingungen">{t('legal.terms')}</Link>
         </nav>
-        {t('app.footer')}
+        {t('app.footer')} <span className="shell__version">| {__APP_VERSION__}</span>
       </footer>
 
       {me && (
