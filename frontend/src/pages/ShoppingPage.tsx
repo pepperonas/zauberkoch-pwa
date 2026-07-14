@@ -2,7 +2,7 @@
  * Two views: the aggregated check-off list, and a per-recipe planning view
  * (expand a dish -> read its ingredients -> add them to the list). */
 
-import { AnimatePresence, motion, useReducedMotion, Reorder } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion, Reorder, useDragControls } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -20,6 +20,90 @@ import { useShoppingUndo } from '../state/useShoppingUndo';
 function itemLabel(item: ShoppingItem): string {
   const menge = item.menge != null ? `${new Intl.NumberFormat('de-DE').format(item.menge)} ${item.einheit}`.trim() : '';
   return menge ? `${menge} ${item.name}` : item.name;
+}
+
+/** One shopping row. Drag is bound to the ⋮⋮ HANDLE only (dragListener=false +
+ * dragControls) so the row body scrolls normally on touch — otherwise the whole
+ * draggable item swallowed vertical scroll on mobile. */
+function ShoppingRow({
+  item, reduced, onCheck, onDelete, onReorderEnd,
+}: {
+  item: ShoppingItem;
+  reduced: boolean;
+  onCheck: (checked: boolean) => void;
+  onDelete: () => void;
+  onReorderEnd: () => void;
+}) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      value={item}
+      as="div"
+      dragListener={false}
+      dragControls={controls}
+      onDragEnd={onReorderEnd}
+      transition={spring}
+      exit={reduced ? undefined : { opacity: 0, x: -40 }}
+      whileDrag={{ scale: 1.03, boxShadow: 'var(--elev-2)' }}
+      // pan-y keeps vertical scrolling on the row; only the handle grabs the drag.
+      style={{ borderRadius: 'var(--shape-md)', background: 'var(--c-surface)', touchAction: 'pan-y' }}
+    >
+      <div className={`zutat ${item.checked ? 'zutat--checked' : ''}`}>
+        <motion.button
+          className="zutat__check"
+          aria-pressed={item.checked}
+          aria-label={itemLabel(item)}
+          onClick={() => onCheck(!item.checked)}
+          whileTap={reduced ? undefined : { scale: 0.8 }}
+          transition={springBouncy}
+          style={item.checked ? { background: 'var(--c-primary)', borderColor: 'var(--c-primary)' } : undefined}
+        >
+          {item.checked && (
+            <motion.svg width="16" height="16" viewBox="0 0 16 16">
+              <motion.path
+                d="M3 8.5 L6.5 12 L13 4.5"
+                stroke="var(--c-on-primary)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                fill="none"
+                initial={reduced ? undefined : { pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.28, ease: 'easeOut' }}
+              />
+            </motion.svg>
+          )}
+        </motion.button>
+        <span className="zutat__label">
+          {item.menge != null && (
+            <span className="zutat__menge">
+              {new Intl.NumberFormat('de-DE').format(item.menge)} {item.einheit}
+            </span>
+          )}
+          {item.name}
+          {item.checked && !reduced && (
+            <motion.span
+              className="zutat__strike"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={spring}
+            />
+          )}
+        </span>
+        <IconButton label={t('common.delete')} onClick={onDelete}>
+          <Icon name="close" size={18} />
+        </IconButton>
+        <span
+          className="zutat__drag"
+          aria-label={t('shopping.dragHandle')}
+          role="button"
+          tabIndex={-1}
+          onPointerDown={(e) => controls.start(e)}
+        >
+          ⋮⋮
+        </span>
+      </div>
+    </Reorder.Item>
+  );
 }
 
 type View = 'liste' | 'gerichte';
@@ -123,63 +207,14 @@ export function ShoppingPage() {
           <Reorder.Group axis="y" values={order} onReorder={setOrder} as="div" style={{ listStyle: 'none' }}>
             <AnimatePresence>
               {order.map((item) => (
-                <Reorder.Item
+                <ShoppingRow
                   key={item.id}
-                  value={item}
-                  as="div"
-                  onDragEnd={onReorderEnd}
-                  transition={spring}
-                  exit={reduced ? undefined : { opacity: 0, x: -40 }}
-                  whileDrag={{ scale: 1.03, boxShadow: 'var(--elev-2)' }}
-                  style={{ borderRadius: 'var(--shape-md)', background: 'var(--c-surface)' }}
-                >
-                  <div className={`zutat ${item.checked ? 'zutat--checked' : ''}`}>
-                    <motion.button
-                      className="zutat__check"
-                      aria-pressed={item.checked}
-                      aria-label={itemLabel(item)}
-                      onClick={() => check.mutate({ id: item.id, checked: !item.checked })}
-                      whileTap={reduced ? undefined : { scale: 0.8 }}
-                      transition={springBouncy}
-                      style={item.checked ? { background: 'var(--c-primary)', borderColor: 'var(--c-primary)' } : undefined}
-                    >
-                      {item.checked && (
-                        <motion.svg width="16" height="16" viewBox="0 0 16 16">
-                          <motion.path
-                            d="M3 8.5 L6.5 12 L13 4.5"
-                            stroke="var(--c-on-primary)"
-                            strokeWidth="2.4"
-                            strokeLinecap="round"
-                            fill="none"
-                            initial={reduced ? undefined : { pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
-                            transition={{ duration: 0.28, ease: 'easeOut' }}
-                          />
-                        </motion.svg>
-                      )}
-                    </motion.button>
-                    <span className="zutat__label">
-                      {item.menge != null && (
-                        <span className="zutat__menge">
-                          {new Intl.NumberFormat('de-DE').format(item.menge)} {item.einheit}
-                        </span>
-                      )}
-                      {item.name}
-                      {item.checked && !reduced && (
-                        <motion.span
-                          className="zutat__strike"
-                          initial={{ scaleX: 0 }}
-                          animate={{ scaleX: 1 }}
-                          transition={spring}
-                        />
-                      )}
-                    </span>
-                    <IconButton label={t('common.delete')} onClick={() => deleteItem(item)}>
-                      <Icon name="close" size={18} />
-                    </IconButton>
-                    <span className="muted" aria-hidden style={{ cursor: 'grab' }}>⋮⋮</span>
-                  </div>
-                </Reorder.Item>
+                  item={item}
+                  reduced={Boolean(reduced)}
+                  onCheck={(checked) => check.mutate({ id: item.id, checked })}
+                  onDelete={() => deleteItem(item)}
+                  onReorderEnd={onReorderEnd}
+                />
               ))}
             </AnimatePresence>
           </Reorder.Group>

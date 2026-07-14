@@ -14,6 +14,7 @@ description: Frontend-Regeln (React 19, M3 Expressive handgebaut, TS strict)
 - **Interne Navigation:** animierte Routen (Karte→Detail, Tabs, Zurück) IMMER über `useViewTx().go(to, {sharedId?})` (`src/state/viewTransition.tsx`), nicht über rohes `navigate()`/`<a href>` (rohe Links machen Full-Reload + killen laufende Generierungen; rohes `navigate` überspringt die View-Transition). Details + die vier Morph-Fallstricke: `motion.md`. `RecipeDetailPage` ist `lazy`, wird aber off-route vorgewärmt und MUSS ohne Route-Params renderbar bleiben.
 - **Tooltips:** ergänzende Erklärungen an Buttons via `<Tooltip text={t('tips.…')}>` (`components/ui/Tooltip.tsx`) — reines CSS, nur Desktop (`hover:hover and pointer:fine`), `role="tooltip"`, Texte in `de.ts` unter `tips`.
 - **Kein horizontaler Scroll:** `html, body { overflow-x: clip }` (base.css); Header schrumpffähig halten.
+- **Drag-Reorder auf Touch NUR über Griff:** framer-`Reorder.Item` mit `dragListener={false}` + `useDragControls` (pro Item = eigene Kindkomponente); der Griff hat `touch-action:none` + `controls.start(e)`, die Zeile `touch-action:pan-y` — sonst schluckt das ziehbare Item das vertikale Scrollen (siehe `ShoppingRow` in `ShoppingPage.tsx`).
 - SSE-Konsum über den zentralen Hook (`useRecipeStream`) — Events sind semantisch (`meta`/`zutat`/`schritt`/`tipp`/`done`/`error`).
 - Nutzer-/KI-Content nie via `dangerouslySetInnerHTML` rendern.
 - Touch-Targets ≥ 48 px; interaktive Elemente mit sichtbarem `:focus-visible`.

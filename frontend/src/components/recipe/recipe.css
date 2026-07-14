@@ -178,6 +178,24 @@
 }
 .zutat__subst:hover { background: var(--c-surface-container-high); }
 
+/* Shopping drag handle — grabs the reorder; the row itself keeps scrolling.
+   touch-action:none is what lets the handle start a drag on touch. */
+.zutat__drag {
+  flex: none;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  color: var(--c-on-surface-variant);
+  font-size: 1.15rem;
+  letter-spacing: -3px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.zutat__drag:active { cursor: grabbing; }
+
 /* Favorite button micro-interaction (see FavoriteButton.tsx) */
 .favbtn__icon { position: relative; display: inline-flex; }
 .favbtn__star { display: inline-flex; transform-origin: center; will-change: transform; }

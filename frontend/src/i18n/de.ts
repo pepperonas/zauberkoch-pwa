@@ -236,6 +236,7 @@ export const de = {
     export: 'Liste teilen',
     exportTitle: 'Einkaufsliste',
     itemDeleted: 'Eintrag gelöscht',
+    dragHandle: 'Zum Umsortieren ziehen',
     checkedCleared: 'Erledigte entfernt',
     listCleared: 'Liste geleert',
     recipeAdded: 'Zutaten hinzugefügt',
