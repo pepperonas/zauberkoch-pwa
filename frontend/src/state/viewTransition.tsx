@@ -182,7 +182,16 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       vlog('go()', { to, sharedId: opts?.sharedId, vtEnabled: vtEnabled() });
       // Remember where we are before leaving, so back can restore it.
       positions.current.set(window.location.pathname, window.scrollY);
-      if (!vtEnabled()) {
+      // View transitions are DESKTOP-only. document.startViewTransition snapshots
+      // the WHOLE document including the sticky title bar, which flickers during
+      // the transition on real mobile browsers (not reproducible in any test
+      // engine — Chromium, Pixel-5, WebKit/iPhone all render it stable). On touch
+      // we navigate plainly instead: instant, app-like, and the header is never
+      // snapshotted so it can't flicker. Desktop keeps the shared-element morph.
+      if (!vtEnabled() || !matchMedia('(pointer: fine)').matches) {
+        // Back is a traverse → tell the Navigation-API listener to leave it alone
+        // too (it must not start its own VT for this programmatic navigation).
+        if (typeof to === 'number') skipTraverse.current = true;
         nav();
         return;
       }
@@ -199,21 +208,18 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
   );
 
   // Browser back/forward. The Navigation API's `navigate` event fires BEFORE the
-  // commit, while the old DOM is still present — the correct before-hook to name
-  // the leaving detail's shared element. Pointer type decides the handling:
-  //  - FINE (desktop/mouse): OBSERVE the VT, do NOT intercept(). Intercepting a
-  //    traverse suppresses the popstate the declarative <BrowserRouter> listens
-  //    to, so react-router wouldn't re-render during the VT → old===new → hard
-  //    swap. Observed, popstate re-renders and the shared element morphs. Desktop
-  //    has no native back animation to fight it.
-  //  - COARSE (touch): INTERCEPT. On Android the default back is a predictive-
-  //    back / activity-stack OS animation that shreds the app-feel; intercept()
-  //    suppresses it and keeps the navigation in-app. No shared-element morph on
-  //    touch browser-back (react-router swaps without it — the in-app "← Zurück"
-  //    button provides the morph), but the app-feel is preserved. Bowing out to
-  //    native (earlier attempt) was what introduced the activity-stack feel.
-  // In-app go(-1) drives its own VT in go() and skips here via skipTraverse.
-  // Firefox/older Safari (no Navigation API) → un-animated browser button.
+  // commit, while the old DOM is still present. Pointer type decides handling:
+  //  - FINE (desktop/mouse): OBSERVE a VT (no intercept — that suppresses the
+  //    popstate <BrowserRouter> needs → old===new → hard swap). popstate
+  //    re-renders during the VT and the shared element morphs.
+  //  - COARSE (touch): NO view transition (a document snapshot includes the
+  //    sticky title bar, which flickers on real mobile browsers). Just
+  //    intercept() with an immediate handler to suppress the native predictive-
+  //    back / activity-stack OS animation (app-feel); react-router swaps plainly
+  //    via popstate. VTs are desktop-only — see go().
+  // In-app go(-1) drives its own VT (desktop) or plain nav (touch) in go() and
+  // skips here via skipTraverse. Firefox/older Safari (no Navigation API) →
+  // un-animated browser button.
   useEffect(() => {
     const nav = (window as unknown as { navigation?: EventTarget & Record<string, unknown> })
       .navigation;
@@ -251,12 +257,26 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
         vlog('navigate: same path → skip', oldPath);
         return;
       }
+      // TOUCH: no view transition at all (a document snapshot would include the
+      // sticky title bar, which flickers on real mobile browsers). Intercept only
+      // to suppress the native predictive-back / activity-stack OS animation
+      // (app-feel); react-router then swaps plainly via popstate.
+      if (!fine) {
+        if (ev.canIntercept && typeof ev.intercept === 'function') {
+          try {
+            ev.intercept({ handler: () => Promise.resolve() });
+            vlog('navigate: touch → intercept (suppress native, no VT)');
+          } catch (err) {
+            vlog('navigate: intercept failed', String((err as Error)?.message ?? err));
+          }
+        }
+        return;
+      }
+
+      // DESKTOP: observe-only VT so the shared element morphs on browser back.
       const sid = detailId(oldPath) ?? detailId(newPath);
-      vlog('navigate: driving browser-back', { oldPath, newPath, sid, fine });
-      // Name the source (detail hero) in the still-present old DOM (fine pointer
-      // only — on touch we hard-swap, so there's nothing to morph and naming
-      // would just leave a stray view-transition-name on the card).
-      if (fine && sid != null) flushSync(() => setActiveId(sid));
+      vlog('navigate: driving browser-back VT (desktop)', { oldPath, newPath, sid });
+      if (sid != null) flushSync(() => setActiveId(sid));
 
       const doc = document as Document & {
         startViewTransition?: (cb: () => void | Promise<void>) => {
@@ -278,17 +298,6 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       beginRouteVt();
       const vt = doc.startViewTransition!(() => vtDone);
       endRouteVt(vt);
-      // Touch: intercept so the OS predictive-back / activity-stack animation is
-      // suppressed (app-feel). react-router still swaps via popstate; no morph on
-      // touch browser-back. Desktop: observe only → morph.
-      if (!fine && ev.canIntercept && typeof ev.intercept === 'function') {
-        try {
-          ev.intercept({ handler: () => (vt.finished ?? vtDone).catch(() => {}) });
-          vlog('navigate: intercepted (touch → suppress native back)');
-        } catch (err) {
-          vlog('navigate: intercept failed', String((err as Error)?.message ?? err));
-        }
-      }
       if (VT_DEBUG) {
         vt.ready?.then(
           () => vlog('browser-back VT ready'),
