@@ -22,6 +22,11 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
   const { activeId, go } = useViewTx();
   // This card is the transition source only while ITS recipe is morphing.
   const isSource = activeId === item.id;
+  // While ANY morph is running, skip the staggered entrance: on back-navigation
+  // the list re-mounts, and a card mid-`riseIn` (opacity 0 / y-offset) would be
+  // captured by the view transition's "new" snapshot at the wrong place — the
+  // morph target (and the whole list crossfade) would look empty / hard-cut.
+  const morphing = activeId != null;
 
   const queryOpts = { queryKey: ['recipes', item.id], queryFn: () => api.recipe(item.id) };
   // Warm the detail query on press so the await below is usually instant.
@@ -66,7 +71,7 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
           open();
         }
       }}
-      {...(reduced ? {} : riseIn)}
+      {...(reduced || morphing ? {} : riseIn)}
       transition={stagger(Math.min(index, 8))}
       whileTap={reduced ? undefined : { scale: 0.98 }}
     >
