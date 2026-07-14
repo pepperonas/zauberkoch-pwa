@@ -71,6 +71,17 @@ function vtEnabled(): boolean {
   );
 }
 
+// Route-VT window: add BEFORE startViewTransition so both snapshots capture the
+// frosted header as a solid, blur-free bar (base.css `.zk-route-vt`); the see-
+// through translucency otherwise makes the title bar fade during the crossfade.
+function beginRouteVt(): void {
+  document.documentElement.classList.add('zk-route-vt');
+}
+function endRouteVt(vt?: { finished?: Promise<void> }): void {
+  const clear = () => document.documentElement.classList.remove('zk-route-vt');
+  (vt?.finished ?? Promise.resolve()).then(clear, clear);
+}
+
 export function ViewTransitionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -142,10 +153,12 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       resolveFn();
     };
     vlog('runVT: startViewTransition', { hasNav: !!doNav });
+    beginRouteVt();
     const vt = doc.startViewTransition!(() => {
       doNav?.();
       return p;
     });
+    endRouteVt(vt);
     if (VT_DEBUG && vt) {
       vt.ready?.then(
         () => vlog('runVT: ready (animations started)'),
@@ -264,7 +277,9 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       // Capture the old (detail) snapshot NOW and OBSERVE only (no intercept):
       // this traverse's popstate re-renders react-router to the list, resolving
       // the callback with the new snapshot so the shared element morphs.
+      beginRouteVt();
       const vt = doc.startViewTransition!(() => vtDone);
+      endRouteVt(vt);
       if (VT_DEBUG) {
         vt.ready?.then(
           () => vlog('browser-back VT ready'),
