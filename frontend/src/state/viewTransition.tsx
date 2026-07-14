@@ -38,6 +38,29 @@ import { useLocation, useNavigate, useNavigationType, type To } from 'react-rout
 export const SHARED_MOTIF = 'zk-shared-motif';
 export const SHARED_TITLE = 'zk-shared-title';
 
+/** Opt-in diagnostics (?vtdebug=1 or localStorage zk-vt-debug=1) — safe in prod. */
+const VT_DEBUG =
+  typeof window !== 'undefined' &&
+  (new URLSearchParams(window.location.search).has('vtdebug') ||
+    (() => {
+      try {
+        return window.localStorage.getItem('zk-vt-debug') === '1';
+      } catch {
+        return false;
+      }
+    })());
+function vlog(...args: unknown[]): void {
+  if (VT_DEBUG) console.log('[zk-vt]', ...args);
+}
+if (VT_DEBUG && typeof window !== 'undefined') {
+  vlog('boot', {
+    hasNavigation: !!(window as unknown as { navigation?: unknown }).navigation,
+    hasStartViewTransition: typeof (document as Document & { startViewTransition?: unknown }).startViewTransition === 'function',
+    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    ua: navigator.userAgent,
+  });
+}
+
 interface Ctx {
   activeId: number | null;
   /** Navigate with a view transition; pass `sharedId` to morph that recipe. */
@@ -109,7 +132,10 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
   // omitted (react-router's own popstate handler does the navigation).
   const runVT = useCallback((doNav?: () => void) => {
     const doc = document as Document & {
-      startViewTransition?: (cb: () => void | Promise<void>) => unknown;
+      startViewTransition?: (cb: () => void | Promise<void>) => {
+        ready?: Promise<void>;
+        finished?: Promise<void>;
+      };
     };
     let resolveFn: () => void;
     const p = new Promise<void>((r) => {
@@ -120,10 +146,18 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer);
       resolveFn();
     };
-    doc.startViewTransition!(() => {
+    vlog('runVT: startViewTransition', { hasNav: !!doNav });
+    const vt = doc.startViewTransition!(() => {
       doNav?.();
       return p;
     });
+    if (VT_DEBUG && vt) {
+      vt.ready?.then(
+        () => vlog('runVT: ready (animations started)'),
+        (e) => vlog('runVT: ready REJECTED', String(e?.message ?? e)),
+      );
+      vt.finished?.then(() => vlog('runVT: finished'));
+    }
   }, []);
 
   // Set while go() drives an in-app back/forward, so the Navigation-API listener
@@ -137,6 +171,7 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
         if (typeof to === 'number') navigate(to);
         else navigate(to);
       };
+      vlog('go()', { to, sharedId: opts?.sharedId, vtEnabled: vtEnabled() });
       // Remember where we are before leaving, so back can restore it.
       positions.current.set(window.location.pathname, window.scrollY);
       if (!vtEnabled()) {
@@ -168,26 +203,39 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
     const nav = (window as unknown as { navigation?: EventTarget & Record<string, unknown> })
       .navigation;
     const doc = document as Document & { startViewTransition?: unknown };
-    if (!nav || typeof doc.startViewTransition !== 'function') return;
+    if (!nav || typeof doc.startViewTransition !== 'function') {
+      vlog('navigate listener NOT registered', { hasNav: !!nav, hasVT: typeof doc.startViewTransition === 'function' });
+      return;
+    }
     const detailId = (path: string): number | null => {
       const m = /^\/rezept\/(\d+)$/.exec(path);
       return m ? Number(m[1]) : null;
     };
     const onNavigate = (e: Event) => {
       const ev = e as Event & { navigationType?: string; destination?: { url: string } };
+      vlog('navigate event', { type: ev.navigationType, dest: ev.destination?.url, skip: skipTraverse.current });
       if (ev.navigationType !== 'traverse' || !ev.destination) return; // pushes go via go()
       if (skipTraverse.current) {
         skipTraverse.current = false; // go() is already driving this traverse
+        vlog('navigate: skipped (in-app go drives it)');
         return;
       }
-      if (!vtEnabled()) return;
+      if (!vtEnabled()) {
+        vlog('navigate: vtEnabled=false → no VT');
+        return;
+      }
       const oldPath = currentPathRef.current; // still the leaving page (pre-commit)
       const newPath = new URL(ev.destination.url).pathname;
-      if (oldPath === newPath) return;
+      if (oldPath === newPath) {
+        vlog('navigate: same path → skip', oldPath);
+        return;
+      }
       const sid = detailId(oldPath) ?? detailId(newPath);
+      vlog('navigate: driving browser-back VT', { oldPath, newPath, sid });
       if (sid != null) flushSync(() => setActiveId(sid));
       runVT(); // react-router's re-render performs the navigation
     };
+    vlog('navigate listener registered');
     nav.addEventListener('navigate', onNavigate);
     return () => nav.removeEventListener('navigate', onNavigate);
   }, [runVT]);
