@@ -10,7 +10,7 @@ const EXPECTED = [
   // brand
   'logo', 'wand',
   // magic & status
-  'sparkles', 'warning', 'check', 'checkCircle', 'close', 'plus', 'ban', 'snooze', 'party',
+  'sparkles', 'warning', 'check', 'checkCircle', 'close', 'plus', 'ban', 'snooze', 'party', 'wifiOff',
   // navigation & shell
   'calendar', 'star', 'starOff', 'history', 'cart', 'sun', 'moon', 'shield', 'user', 'power',
   // actions

@@ -196,6 +196,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Offline status line — sits just under the sticky header, in normal flow
+   (unobtrusive: the SW still serves the cached shell + favorites offline). */
+.offline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--shape-md);
+  background: var(--c-secondary-container);
+  color: var(--c-on-secondary-container);
+  font: var(--type-label);
+  text-align: center;
+}
+
 /* Generic page bits */
 .page__title { margin: var(--space-4) 0 var(--space-5); }
 .row { display: flex; align-items: center; gap: var(--space-3); }

@@ -16,6 +16,7 @@ import { strings, t } from './i18n';
 import { api } from './lib/api';
 import { spring } from './motion/springs';
 import { useApp } from './state/app';
+import { useOnline } from './state/useOnline';
 import './App.css';
 
 // Route-based code splitting: each page loads on demand.
@@ -80,6 +81,7 @@ const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
 function Shell() {
   const { me, theme, toggleTheme, refreshMe } = useApp();
   const location = useLocation();
+  const online = useOnline();
   const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -131,7 +133,7 @@ function Shell() {
             <>
               <IconButton label={t('profile.open')} onClick={() => setProfileOpen(true)}>
                 {me.picture_url ? (
-                  <img className="avatar" src={me.picture_url} alt={me.name || me.email} referrerPolicy="no-referrer" />
+                  <img className="avatar" src={me.picture_url} alt={me.name || me.email} width={34} height={34} referrerPolicy="no-referrer" />
                 ) : (
                   <Icon name="user" size={24} />
                 )}
@@ -148,6 +150,24 @@ function Shell() {
           </Suspense>
         )}
       </header>
+
+      {/* Network status — the SW still serves the cached shell + favorites/recipes
+          offline, so this is an unobtrusive status line, not a blocking error. */}
+      <AnimatePresence>
+        {!online && (
+          <motion.div
+            className="offline-bar"
+            role="status"
+            aria-live="polite"
+            initial={{ y: -44, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -44, opacity: 0 }}
+            transition={spring}
+          >
+            <Icon name="wifiOff" size={16} /> {t('common.offline')}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="shell__main">
         <Suspense fallback={<div className="page-tx__spacer" aria-hidden />}>

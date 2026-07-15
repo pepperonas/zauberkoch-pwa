@@ -95,6 +95,18 @@ export const GLYPHS = {
       <circle cx="11.6" cy="3.6" r="1.1" opacity="0.55" />
     </>
   ),
+  /** Offline — wifi fan (fading arcs) struck through. */
+  wifiOff: (): ReactElement => (
+    <>
+      <g {...STROKE}>
+        <path d="M3.8 10.6A11 11 0 0 1 20.2 10.6" opacity="0.45" />
+        <path d="M6.9 13.5A7 7 0 0 1 17.1 13.5" opacity="0.7" />
+        <path d="M9.7 16.1A3.2 3.2 0 0 1 14.3 16.1" />
+        <path d="M3.6 3.6 20.4 20.4" />
+      </g>
+      <circle cx="12" cy="18.3" r="1.4" />
+    </>
+  ),
 
   /* ---------- navigation & shell ---------- */
 
