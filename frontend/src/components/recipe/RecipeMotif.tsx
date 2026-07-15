@@ -85,6 +85,23 @@ export const MOTIF_VARIANTS: Record<Motif, number> = {
   sushi: 2, kuchen: 2, eis: 1, spiess: 2, dumpling: 1, wrap: 1, brot: 1,
 };
 
+/** Per-motif fill normalization (opt-in via `fit`). Each motif's art fills the
+ * shared 120×120 viewBox very unevenly — a flat `spiess` skewer covers ~21
+ * units, `fisch`/`tiki` overflow past 114 — so at a small fixed size the icons
+ * read as wildly different sizes. These factors (scale about the box centre)
+ * bring every motif's largest dimension to roughly the same fraction of the
+ * frame. Derived from `npm run measure:motifs` (subject bbox, ground excluded)
+ * as clamp(96 / max(w,h), 0.8, 1.38). Only used for compact leading tiles
+ * (planner picker, plan-day rows); the big card/hero motifs render unscaled. */
+export const MOTIF_FIT: Record<Motif, number> = {
+  highball: 0.89, tumbler: 0.96, coupe: 1.01, tiki: 0.83, martini: 1.1, wine: 1.01,
+  flute: 1.1, mule: 0.86, shot: 0.96, mug: 0.96, beer: 1.25, margarita: 0.86, punch: 1.32,
+  pasta: 1.07, bowl: 1.07, suppe: 1.12, pfanne: 0.98, pizza: 1.17, salat: 0.96,
+  burger: 1.35, fisch: 0.84, steak: 0.84, dessert: 1.07, taco: 1.38, auflauf: 1.03,
+  pancakes: 1.2, sandwich: 1.38, sushi: 0.87, kuchen: 1.38, eis: 1.17, spiess: 1.12,
+  dumpling: 0.85, wrap: 0.87, brot: 1.2,
+};
+
 /** Stable, language-portable hash (sum of UTF-16 code units) — the Python
  * OG renderer computes the identical value via ord(). */
 export function variantFor(seed: string, count: number): number {
@@ -136,14 +153,22 @@ interface Props {
   seed?: string;
   size?: number;
   className?: string;
+  /** Normalize the art to a uniform fill (see MOTIF_FIT). For compact leading
+   * tiles where inconsistent per-motif fill would read as "different sizes". */
+  fit?: boolean;
   /** Passthrough — e.g. `viewTransitionName` for shared-element morphs. */
   style?: React.CSSProperties;
 }
 
-export function RecipeMotif({ motif, seed = '', size = 84, className = '', style }: Props) {
+export function RecipeMotif({ motif, seed = '', size = 84, className = '', fit = false, style }: Props) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   const v = variantForMotif(motif, seed);
-  const common = { width: size, height: size, viewBox: '0 0 120 120', className, style, 'aria-hidden': true as const };
+  const scale = fit ? MOTIF_FIT[motif] ?? 1 : 1;
+  const fitStyle: React.CSSProperties | undefined =
+    scale !== 1
+      ? { ...style, transform: `${style?.transform ? `${style.transform} ` : ''}scale(${scale})` }
+      : style;
+  const common = { width: size, height: size, viewBox: '0 0 120 120', className, style: fitStyle, 'aria-hidden': true as const };
   const MAP: Record<Motif, (p: SvgProps) => React.JSX.Element> = {
     highball: Highball, tumbler: Tumbler, coupe: Coupe, tiki: Tiki, martini: Martini,
     wine: Wine, flute: Flute, mule: Mule, shot: Shot, mug: Mug, beer: Beer,

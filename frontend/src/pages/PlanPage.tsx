@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Icon } from '../components/icons';
 import { motifForRecipe, RecipeMotif } from '../components/recipe/RecipeMotif';
+import '../components/recipe/recipe.css';
 import { Button, IconButton } from '../components/ui';
 import { Sheet } from '../components/ui/Sheet';
 import { useSnackbar } from '../components/ui/Snackbar';
@@ -87,9 +88,11 @@ export function PlanPage() {
               <IconButton label={t('plan.addRecipe')} onClick={() => setPickerDay(day.datum)}>＋</IconButton>
             </div>
             {day.entries.map((entry) => (
-              <div key={entry.id} className="row row--between" style={{ minHeight: 48 }}>
+              <div key={entry.id} className="row row--between" style={{ minHeight: 56 }}>
                 <span className="row" style={{ minWidth: 0 }}>
-                  <RecipeMotif motif={motifForRecipe(entry)} seed={entry.titel} size={36} />
+                  <span className="motif-tile">
+                    <RecipeMotif motif={motifForRecipe(entry)} seed={entry.titel} size={48} fit />
+                  </span>
                   <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {entry.titel}
                   </span>
@@ -145,19 +148,21 @@ function RecipePicker({ day, onClose, onPicked }: { day: string | null; onClose:
         {items.map((item) => (
           <motion.button
             key={item.id}
-            className="row"
-            style={{ minHeight: 48, width: '100%', textAlign: 'left' }}
+            className="picker-row"
             whileTap={{ scale: 0.98 }}
             transition={spring}
             onClick={() => {
               if (day) void api.planAdd(day, item.id).then(onPicked);
             }}
           >
-            <RecipeMotif motif={motifForRecipe(item)} seed={item.titel} size={40} />
-            <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block' }}>{item.titel}</span>
-              <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
-                {item.mode === 'cocktail' ? <><Icon name="cocktail" size={12} />{' '}</> : null}{item.kueche}
+            <span className="motif-tile">
+              <RecipeMotif motif={motifForRecipe(item)} seed={item.titel} size={48} fit />
+            </span>
+            <span className="picker-row__text">
+              <span className="picker-row__title">{item.titel}</span>
+              <span className="picker-row__sub">
+                {item.mode === 'cocktail' ? <Icon name="cocktail" size={13} /> : null}
+                {item.kueche}
               </span>
             </span>
           </motion.button>

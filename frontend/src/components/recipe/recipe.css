@@ -195,6 +195,55 @@
   height: 88px;
 }
 
+/* Uniform leading media tile — one identical framed slot per list row so the
+   normalized motif (RecipeMotif fit) always reads as the same size, whatever
+   the dish. Used by the planner recipe picker + plan-day rows. */
+.motif-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--shape-md);
+  background: var(--c-surface-container-high);
+  overflow: hidden;
+}
+
+/* Planner recipe-picker row — leading tile, truncating title, cuisine subline. */
+.picker-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  min-height: 64px;
+  padding: var(--space-2);
+  border-radius: var(--shape-md);
+  transition: background-color var(--dur-fast, 120ms) ease;
+}
+.picker-row:hover { background: var(--c-surface-container); }
+.picker-row__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.picker-row__title {
+  font: var(--type-body);
+  color: var(--c-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.picker-row__sub {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font: var(--type-label-sm);
+  color: var(--c-on-surface-variant);
+}
+
 .zutat__subst {
   flex: none;
   display: grid;
