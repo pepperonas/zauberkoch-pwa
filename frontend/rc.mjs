@@ -1,0 +1,12 @@
+import { chromium, devices } from 'playwright';
+import fs from 'fs';
+const OUT='/tmp/zk-ripple'; fs.rmSync(OUT,{recursive:true,force:true}); fs.mkdirSync(OUT,{recursive:true});
+const ctx = await (await chromium.launch()).newContext({ ...devices['Pixel 5'], recordVideo:{dir:OUT,size:devices['Pixel 5'].viewport} });
+const p = await ctx.newPage();
+await ctx.request.get('http://localhost:5199/api/v1/auth/dev-login',{maxRedirects:0}).catch(()=>{});
+await p.goto('http://localhost:5199/verlauf',{waitUntil:'networkidle'});
+await p.waitForTimeout(400);
+await p.locator('.shell__header [aria-label]').first().click().catch(async()=>{ await p.locator('.shell__header button').first().click(); });
+await p.waitForTimeout(1000);
+await ctx.close();
+console.log(fs.readdirSync(OUT).find(f=>f.endsWith('.webm')));
