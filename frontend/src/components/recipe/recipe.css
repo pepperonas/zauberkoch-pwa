@@ -84,6 +84,26 @@
 }
 .zutat__gruppe { font: var(--type-label); color: var(--c-secondary); margin: var(--space-4) 0 var(--space-1); text-transform: uppercase; letter-spacing: 0.06em; }
 
+/* Ingredient list in the shopping "by dish" view: ONE grid so the amount column
+   is shared across all rows → amounts and names line up exactly, and the amount
+   never gets shrunk/wrapped by a long name (each row used to be its own flex
+   container). */
+.ingr-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--space-4);
+  row-gap: var(--space-2);
+  align-items: baseline;
+}
+.ingr-grid__menge {
+  font: var(--type-label-lg);
+  color: var(--c-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+.ingr-grid__name { color: var(--c-on-surface); min-width: 0; overflow-wrap: anywhere; }
+
 /* Steps */
 .schritt { display: flex; gap: var(--space-4); padding: var(--space-3) 0; }
 .schritt__nr {

@@ -3,7 +3,7 @@
  * (expand a dish -> read its ingredients -> add them to the list). */
 
 import { AnimatePresence, motion, useReducedMotion, Reorder, useDragControls } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Icon } from '../components/icons';
@@ -341,12 +341,14 @@ function RecipeRow({
               <p className="muted">{t('common.loading')}</p>
             ) : detail.data ? (
               <>
-                {detail.data.recipe.zutaten.map((z, zi) => (
-                  <div key={zi} className="row" style={{ minHeight: 32 }}>
-                    <span className="zutat__menge">{formatZutatMenge(z, 1)}</span>
-                    <span>{z.name}</span>
-                  </div>
-                ))}
+                <div className="ingr-grid">
+                  {detail.data.recipe.zutaten.map((z, zi) => (
+                    <Fragment key={zi}>
+                      <span className="ingr-grid__menge">{formatZutatMenge(z, 1)}</span>
+                      <span className="ingr-grid__name">{z.name}</span>
+                    </Fragment>
+                  ))}
+                </div>
                 <div className="actions" style={{ marginTop: 'var(--space-3)' }}>
                   <Button
                     variant="tonal"
