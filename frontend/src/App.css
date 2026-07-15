@@ -7,6 +7,11 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 0 var(--space-4);
+  /* Reserve space for the viewport-fixed header (out of flow). */
+  padding-top: var(--header-h);
+}
+@media (display-mode: standalone) {
+  .shell { padding-top: calc(var(--header-h) + env(safe-area-inset-top)); }
 }
 
 .shell__header {
@@ -14,22 +19,31 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  /* Fixed padding — NO env(safe-area-inset-top) here: with viewport-fit=cover a
-     mobile browser TAB toggles safe-area-inset-top between 0 and the status-bar
-     height as its address bar auto-hides (Android edge-to-edge), which jumped
-     the sticky header's height mid-navigation ("the title bar flickers"). The
-     inset is re-added only for the installed PWA below (no auto-hiding bar
-     there, so it's stable and needed for the notch). */
-  padding: var(--space-3) 0;
-  position: sticky;
+  /* Fixed to the VIEWPORT, not sticky in scroll flow. The view-transition
+     "snapshot containing block" is positioned like position:fixed (scroll-
+     independent), so a fixed header keeps a STABLE snapshot position even when
+     mobile Chrome briefly toggles the URL bar to form that snapshot during a
+     transition. A sticky header lives in scroll space: the URL-bar toggle
+     shifted the viewport origin, re-anchored the header, and the held zk-header
+     snapshot (captured at the old spot) appeared to jump/flicker on back-
+     navigation. Android-only — desktop/DevTools has no dynamic URL bar, which is
+     why it looked perfect in emulation. Content clears it via .shell padding-top. */
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  width: min(100%, 720px);
+  margin-inline: auto;
+  height: var(--header-h);
+  padding: 0 var(--space-4);
   z-index: 10;
   background: color-mix(in srgb, var(--c-surface) 88%, transparent);
   backdrop-filter: blur(12px);
 }
 @media (display-mode: standalone) {
   .shell__header {
-    padding-top: calc(var(--space-3) + env(safe-area-inset-top));
+    height: calc(var(--header-h) + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
   }
 }
 /* On touch devices the frosted header's backdrop-filter is the known VT/GPU

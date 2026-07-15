@@ -53,6 +53,9 @@
   --elev-3: 0 6px 16px rgba(0,0,0,.16), 0 12px 32px rgba(0,0,0,.12);
 
   --touch-target: 48px;
+  /* Height of the viewport-fixed app header (see App.css .shell__header). The
+     .shell reserves this much top padding so content clears the fixed header. */
+  --header-h: 72px;
 
   /* Brand-icon accent (wand tip, logo spark) — same warm gold in every scheme */
   --icon-gold: #f0b429;
