@@ -248,9 +248,13 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
       }
       const sid = detailId(oldPath) ?? detailId(newPath);
       vlog('navigate: browser-back', { oldPath, newPath, sid, fine });
-      // Name the source (detail hero) only on desktop, where we observe the VT
-      // and the shared element morphs. Touch hard-swaps under intercept.
-      if (fine && sid != null) flushSync(() => setActiveId(sid));
+      // Name the source (detail hero) so it morphs — ALWAYS, regardless of
+      // pointer. (A previous `fine &&` gate meant coarse-pointer devices — where
+      // real users landed, `fine:false` in their logs — never named it, so the
+      // browser back button hard-cut while the in-app button, which always
+      // names it, morphed.) OBSERVE only, never intercept(): intercepting
+      // suppresses the popstate <BrowserRouter> needs → old===new → hard cut.
+      if (sid != null) flushSync(() => setActiveId(sid));
 
       const doc = document as Document & {
         startViewTransition?: (cb: () => void | Promise<void>) => {
@@ -268,19 +272,11 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
         resolveVT();
       };
       // Capture the old snapshot NOW; the traverse's popstate re-renders
-      // react-router, resolving the callback with the new snapshot.
+      // react-router, resolving the callback with the new (list) snapshot so the
+      // shared element morphs. Same reliable mechanism as the in-app go(-1).
       beginRouteVt();
       const vt = doc.startViewTransition!(() => vtDone);
       endRouteVt(vt);
-      // Touch: intercept so the native predictive-back / activity-stack OS
-      // animation is suppressed (app-feel). Desktop: observe only → morph.
-      if (!fine && ev.canIntercept && typeof ev.intercept === 'function') {
-        try {
-          ev.intercept({ handler: () => (vt.finished ?? vtDone).catch(() => {}) });
-        } catch (err) {
-          vlog('navigate: intercept failed', String((err as Error)?.message ?? err));
-        }
-      }
       if (VT_DEBUG) {
         vt.ready?.then(
           () => vlog('browser-back VT ready'),

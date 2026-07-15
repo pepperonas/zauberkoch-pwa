@@ -1,7 +1,7 @@
 /* Zauberkoch Service Worker.
  * Cache version — BUMP on every app-shell change (+ update CLAUDE.md).
  */
-const CACHE = 'zauberkoch-v70';
+const CACHE = 'zauberkoch-v71';
 const API_CACHE = 'zauberkoch-api-v1';
 const SHELL = ['/', '/icon.svg', '/manifest.webmanifest', '/theme-init.js', '/fonts/inter.woff2', '/fonts/bricolage.woff2'];
 
@@ -65,11 +65,16 @@ self.addEventListener('fetch', (event) => {
     caches.match(request).then(
       (hit) =>
         hit ??
-        fetch(request).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
-          return res;
-        }),
+        fetch(request)
+          .then((res) => {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, copy));
+            return res;
+          })
+          // Transient network failure on a cache miss → don't leave the
+          // respondWith promise rejected (uncaught "Failed to fetch"); retry the
+          // cache, else surface a plain network error.
+          .catch(() => caches.match(request).then((c) => c ?? Response.error())),
     ),
   );
 });
