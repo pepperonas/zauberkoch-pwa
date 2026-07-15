@@ -67,13 +67,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const doc = document as Document & { startViewTransition?: (cb: () => void) => ViewTransition };
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      // Circular reveal (celox.io signature): the new theme wipes out of the
-      // toggle button. The clip-path animation is driven from JS on the
-      // ::view-transition-new(root) pseudo-element (NOT CSS @keyframes) — the
-      // --vt-* custom properties don't reliably inherit into the view-
-      // transition pseudo tree on mobile browsers, which broke the reveal
-      // there. Fallback: the existing token color-morph.
-      if (doc.startViewTransition && origin && !reduced) {
+      // Circular reveal (celox.io signature) via the View Transitions API — the
+      // new theme wipes out of the toggle button. DESKTOP ONLY: animating
+      // clip-path: circle() on the full-viewport VT snapshot is NOT GPU-
+      // composited and stutters on mobile GPUs. On mobile we use the smooth
+      // token color-morph instead — the same buttery transition as the
+      // Kochen↔Cocktail mode switch (see withColorMorph below). The clip-path is
+      // driven from JS on ::view-transition-new(root) (NOT CSS @keyframes — the
+      // --vt-* custom properties don't reliably inherit into the VT pseudo tree).
+      const coarse = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+      if (doc.startViewTransition && origin && !reduced && !coarse) {
         const root = document.documentElement;
         const x = origin.x;
         const y = origin.y;
@@ -82,11 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           Math.max(x, window.innerWidth - x),
           Math.max(y, window.innerHeight - y),
         );
-        // Mobile/touch: shorter reveal; the .zk-theme-vt class drops the
-        // header's backdrop-filter for the duration (per-frame blur behind an
-        // animated clip is the main mobile-GPU jank source).
-        const coarse = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
-        const duration = coarse ? 520 : 900;
+        const duration = 900;
         root.classList.add('zk-theme-vt');
 
         const vt = doc.startViewTransition(() => {
