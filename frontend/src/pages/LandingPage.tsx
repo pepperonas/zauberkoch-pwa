@@ -260,6 +260,17 @@ function TryWizard({ onLogin }: { onLogin: () => void }) {
     <section className="section">
       <h2><Icon name="sparkles" size={20} /> {t('landing.tryTitle')}</h2>
       <p className="muted" style={{ marginTop: 'var(--space-2)' }}>{t('landing.tryHint')}</p>
+      <p className="muted" style={{ marginTop: 'var(--space-2)', font: 'var(--type-label-sm)' }}>
+        {t('landing.freeNote')}{' '}
+        <a
+          href="https://github.com/pepperonas/zauberkoch-pwa"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'underline' }}
+        >
+          <Icon name="link" size={13} /> {t('landing.sourceLink')}
+        </a>
+      </p>
 
       {phase === 'idle' && (
         <div className="stack" style={{ marginTop: 'var(--space-4)' }}>
