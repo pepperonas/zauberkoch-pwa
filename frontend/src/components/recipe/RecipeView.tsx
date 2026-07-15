@@ -9,7 +9,9 @@ import { strings, t } from '../../i18n';
 import type { Modus, Naehrwerte, RecipeMeta, Schritt, Zutat } from '../../lib/types';
 import { formatZutatMenge } from '../../lib/units';
 import { riseIn, spring, springBouncy, springSoft, stagger } from '../../motion/springs';
-import { SHARED_MOTIF, SHARED_TITLE, useViewTx } from '../../state/viewTransition';
+import { useViewTransitionState } from 'react-router-dom';
+
+import { SHARED_MOTIF, SHARED_TITLE } from '../../state/viewTransition';
 import { Icon } from '../icons';
 import { NumberTicker } from './NumberTicker';
 import { motifForRecipe, RecipeMotif } from './RecipeMotif';
@@ -44,8 +46,11 @@ function fmtMin(min: number | null | undefined): string {
 
 export function RecipeView({ data, mode, streaming = false, actions, onPortionenChange, onSubstitute, sharedId }: Props) {
   const reduced = useReducedMotion();
-  const { activeId } = useViewTx();
-  const isShared = sharedId != null && activeId === sharedId;
+  // True while a route view transition to/from this recipe is in flight → the
+  // hero motif/title (+ detail sections) carry their shared names so they morph
+  // with the list card. Driven by react-router's built-in view transitions.
+  const sharedTx = useViewTransitionState(sharedId != null ? `/rezept/${sharedId}` : '__none__');
+  const isShared = sharedId != null && sharedTx;
   // During the shared-element morph, name the main detail sections so they get a
   // coordinated, staggered enter (via ::view-transition-new in base.css) instead
   // of a flat root crossfade — no post-VT framer pop, transform/opacity only.

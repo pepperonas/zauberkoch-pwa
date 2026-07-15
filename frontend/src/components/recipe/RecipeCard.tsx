@@ -3,12 +3,13 @@
 
 import { motion, useReducedMotion } from 'motion/react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useLocation, useNavigate, useViewTransitionState } from 'react-router-dom';
 
 import { t } from '../../i18n';
 import { api } from '../../lib/api';
 import type { RecipeListItem } from '../../lib/types';
 import { riseIn, spring, stagger } from '../../motion/springs';
-import { SHARED_MOTIF, SHARED_TITLE, useViewTx } from '../../state/viewTransition';
+import { SHARED_MOTIF, SHARED_TITLE } from '../../state/viewTransition';
 import { Icon } from '../icons';
 import { useSnackbar } from '../ui/Snackbar';
 import { motifForRecipe, RecipeMotif } from './RecipeMotif';
@@ -19,25 +20,31 @@ export function RecipeCard({ item, index = 0 }: { item: RecipeListItem; index?: 
   const reduced = useReducedMotion();
   const queryClient = useQueryClient();
   const { show } = useSnackbar();
-  const { activeId, go } = useViewTx();
-  // This card is the transition source only while ITS recipe is morphing.
-  const isSource = activeId === item.id;
-  // While ANY morph is running, skip the staggered entrance: on back-navigation
-  // the list re-mounts, and a card mid-`riseIn` (opacity 0 / y-offset) would be
-  // captured by the view transition's "new" snapshot at the wrong place — the
-  // morph target (and the whole list crossfade) would look empty / hard-cut.
-  const morphing = activeId != null;
+  const navigate = useNavigate();
+  const location = useLocation();
+  // This card is the transition source only while ITS recipe is morphing (true
+  // during the transition TO or FROM /rezept/<id> — so it pairs with the detail
+  // hero for both forward navigation AND browser/in-app back).
+  const isSource = useViewTransitionState(`/rezept/${item.id}`);
+  // While ANY route morph involving this list is running, skip the staggered
+  // entrance: on back-navigation the list re-mounts, and a card mid-`riseIn`
+  // (opacity 0 / y-offset) would be captured by the view transition's "new"
+  // snapshot at the wrong place — the morph target (and the whole list
+  // crossfade) would look empty / hard-cut. useViewTransitionState matches
+  // either side, so the list path is "transitioning" during forward + back.
+  const listTransitioning = useViewTransitionState(location.pathname);
+  const morphing = isSource || listTransitioning;
 
   const queryOpts = { queryKey: ['recipes', item.id], queryFn: () => api.recipe(item.id) };
-  // Warm the detail query on press so the await below is usually instant.
+  // Warm the detail query on press so the navigate below is usually instant.
   const prefetch = () => void queryClient.prefetchQuery(queryOpts);
-  // The view transition snapshots the destination synchronously (flushSync
-  // navigate), so the detail must render with its hero immediately. The page is
-  // eager-imported (see App.tsx); we only need its query data cached first —
-  // otherwise it renders a hero-less loading state and the morph has no target.
+  // react-router snapshots the destination synchronously inside its view
+  // transition, so the detail must render with its hero immediately. The page is
+  // warmed (see App.tsx); we only need its query data cached first — otherwise it
+  // renders a hero-less loading state and the morph has no target.
   const open = async () => {
     await queryClient.ensureQueryData(queryOpts);
-    go(`/rezept/${item.id}`, { sharedId: item.id });
+    navigate(`/rezept/${item.id}`, { viewTransition: true });
   };
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['recipes'] });

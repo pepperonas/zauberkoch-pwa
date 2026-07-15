@@ -21,13 +21,10 @@ import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 import { recipeToText } from '../lib/units';
 import { useShoppingUndo } from '../state/useShoppingUndo';
-import { useViewTx } from '../state/viewTransition';
-
 export function RecipeDetailPage() {
   const { id } = useParams();
   const recipeId = Number(id);
   const navigate = useNavigate();
-  const { go } = useViewTx();
   const queryClient = useQueryClient();
   const { show } = useSnackbar();
   const { withUndo } = useShoppingUndo();
@@ -101,7 +98,9 @@ export function RecipeDetailPage() {
   return (
     <div>
       <div className="stream__toolbar">
-        <Button variant="text" onClick={() => go(-1, { sharedId: recipeId })}>← {t('wizard.back')}</Button>
+        {/* POP → react-router re-applies the recorded view transition (the
+            recipe motif/title morph back to the list card). */}
+        <Button variant="text" onClick={() => navigate(-1)}>← {t('wizard.back')}</Button>
         <AnimatePresence>
           {feedback && (
             <motion.span

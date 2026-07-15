@@ -1,16 +1,21 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  Link,
+  NavLink,
+  Outlet,
+  ScrollRestoration,
+  useLocation,
+} from 'react-router-dom';
 
 import { Icon, type IconName } from './components/icons';
 import { ProfileSheet } from './components/ProfileSheet';
 import { IconButton } from './components/ui';
 import { strings, t } from './i18n';
 import { api } from './lib/api';
-import type { Me } from './lib/types';
 import { spring } from './motion/springs';
 import { useApp } from './state/app';
-import { useViewTx } from './state/viewTransition';
 import './App.css';
 
 // Route-based code splitting: each page loads on demand.
@@ -56,44 +61,6 @@ const GenerationBar = lazyPage('genbar', () =>
   import('./components/GenerationPill').then((m) => ({ default: m.GenerationBar })),
 );
 
-/**
- * Route outlet. Navigation itself is animated natively via the View Transitions
- * API (see ViewTransitionProvider): the browser snapshots old→new and morphs
- * shared elements (recipe motif/title) while the rest crossfades — no framer
- * page wrapper, and the sticky header's blur is captured in the snapshot, so no
- * per-frame recompute. Scroll reset/restore lives in the provider.
- */
-function AppRoutes({ me, meLoading }: { me: Me | null; meLoading: boolean }) {
-  return (
-    <Suspense fallback={<div className="page-tx__spacer" aria-hidden />}>
-      {meLoading ? null : me ? (
-        <Routes>
-          <Route path="/" element={<GeneratePage />} />
-          <Route path="/rezept/:id" element={<RecipeDetailPage />} />
-          <Route path="/favoriten" element={<FavoritesPage />} />
-          <Route path="/verlauf" element={<HistoryPage />} />
-          <Route path="/einkauf" element={<ShoppingPage />} />
-          <Route path="/plan" element={<PlanPage />} />
-          <Route path="/r/:token" element={<SharePage />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/impressum" element={<ImpressumPage />} />
-          <Route path="/datenschutz" element={<DatenschutzPage />} />
-          <Route path="/nutzungsbedingungen" element={<TermsPage />} />
-          <Route path="*" element={<GeneratePage />} />
-        </Routes>
-      ) : (
-        <Routes>
-          <Route path="/r/:token" element={<SharePage />} />
-          <Route path="/impressum" element={<ImpressumPage />} />
-          <Route path="/datenschutz" element={<DatenschutzPage />} />
-          <Route path="/nutzungsbedingungen" element={<TermsPage />} />
-          <Route path="*" element={<LandingPage />} />
-        </Routes>
-      )}
-    </Suspense>
-  );
-}
-
 const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
   { to: '/', icon: 'sparkles', label: strings.nav.generate },
   { to: '/favoriten', icon: 'star', label: strings.nav.favorites },
@@ -102,10 +69,17 @@ const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
   { to: '/plan', icon: 'calendar', label: strings.nav.plan },
 ];
 
-export default function App() {
-  const { me, meLoading, theme, toggleTheme, refreshMe } = useApp();
+/**
+ * App shell (layout route). Route changes are animated by react-router's BUILT-IN
+ * view transitions — every navigation carries `viewTransition`, so the browser
+ * snapshots old→new and morphs shared elements (recipe motif/title, named via
+ * useViewTransitionState) while the rest crossfades, for PUSH and POP alike
+ * (including the browser/system back button). Scroll is restored by
+ * <ScrollRestoration/>. The sticky header's blur is captured in the snapshot.
+ */
+function Shell() {
+  const { me, theme, toggleTheme, refreshMe } = useApp();
   const location = useLocation();
-  const { go } = useViewTx();
   const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -135,7 +109,7 @@ export default function App() {
     <div className="shell">
       <header className="shell__header">
         {/* SPA link — a real <a href> would hard-reload and kill a running generation */}
-        <Link to="/" className="shell__logo">
+        <Link to="/" viewTransition className="shell__logo">
           <Icon name="logo" size={28} /> <span className="shell__logo-text">{t('app.name')}</span>
         </Link>
         <div className="row shell__actions">
@@ -149,7 +123,7 @@ export default function App() {
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={24} />
           </IconButton>
           {me?.is_admin && (
-            <NavLink to="/admin" className={`iconbtn ${location.pathname.startsWith('/admin') ? 'iconbtn--active' : ''}`} aria-label={t('admin.open')} title={t('admin.open')}>
+            <NavLink to="/admin" viewTransition className={`iconbtn ${location.pathname.startsWith('/admin') ? 'iconbtn--active' : ''}`} aria-label={t('admin.open')} title={t('admin.open')}>
               <Icon name="shield" size={24} />
             </NavLink>
           )}
@@ -176,7 +150,9 @@ export default function App() {
       </header>
 
       <main className="shell__main">
-        <AppRoutes me={me} meLoading={meLoading} />
+        <Suspense fallback={<div className="page-tx__spacer" aria-hidden />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Pre-resolve the lazy detail page (off-route) so the shared-element view
@@ -201,11 +177,11 @@ export default function App() {
 
       <footer className="shell__footer">
         <nav className="shell__legal" aria-label="Rechtliches">
-          <Link to="/impressum">{t('legal.impressum')}</Link>
+          <Link to="/impressum" viewTransition>{t('legal.impressum')}</Link>
           <span aria-hidden>·</span>
-          <Link to="/datenschutz">{t('legal.privacy')}</Link>
+          <Link to="/datenschutz" viewTransition>{t('legal.privacy')}</Link>
           <span aria-hidden>·</span>
-          <Link to="/nutzungsbedingungen">{t('legal.terms')}</Link>
+          <Link to="/nutzungsbedingungen" viewTransition>{t('legal.terms')}</Link>
         </nav>
         {t('app.footer')} <span className="shell__version">| {__APP_VERSION__}</span>
       </footer>
@@ -213,33 +189,66 @@ export default function App() {
       {me && (
         <nav className="nav" aria-label="Hauptnavigation">
           <AnimatePresence>
-            {NAV_ITEMS.map((item) => {
-              const active =
-                item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to);
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={`nav__item ${active ? 'nav__item--active' : ''}`}
-                  onClick={(e) => {
-                    // Route through the View Transition (fade-through between
-                    // tabs); no shared element for top-level destinations.
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || active) return;
-                    e.preventDefault();
-                    go(item.to);
-                  }}
-                >
-                  {active && <motion.span className="nav__pill" layoutId="nav-pill" transition={spring} />}
-                  <span className="nav__icon" aria-hidden>
-                    <Icon name={item.icon} size={24} />
-                  </span>
-                  <span>{item.label}</span>
-                </NavLink>
-              );
-            })}
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                viewTransition
+                className={({ isActive }) => `nav__item ${isActive ? 'nav__item--active' : ''}`}
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && <motion.span className="nav__pill" layoutId="nav-pill" transition={spring} />}
+                    <span className="nav__icon" aria-hidden>
+                      <Icon name={item.icon} size={24} />
+                    </span>
+                    <span>{item.label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
           </AnimatePresence>
         </nav>
       )}
+
+      {/* react-router restores scroll on POP, resets on PUSH (history.state keyed). */}
+      <ScrollRestoration />
     </div>
   );
 }
+
+/** Auth gate for the app routes: logged in → the matched route, else the landing
+ * page (public routes /r/:token + legal live OUTSIDE this and render regardless). */
+function RequireAuth() {
+  const { me, meLoading } = useApp();
+  if (meLoading) return null;
+  return me ? <Outlet /> : <LandingPage />;
+}
+
+export const router = createBrowserRouter([
+  {
+    element: <Shell />,
+    children: [
+      // Public — available whether or not you're signed in.
+      { path: '/r/:token', element: <SharePage /> },
+      { path: '/impressum', element: <ImpressumPage /> },
+      { path: '/datenschutz', element: <DatenschutzPage /> },
+      { path: '/nutzungsbedingungen', element: <TermsPage /> },
+      // Gated — RequireAuth swaps in the landing page when signed out.
+      {
+        element: <RequireAuth />,
+        children: [
+          { path: '/', element: <GeneratePage /> },
+          { path: '/rezept/:id', element: <RecipeDetailPage /> },
+          { path: '/favoriten', element: <FavoritesPage /> },
+          { path: '/verlauf', element: <HistoryPage /> },
+          { path: '/einkauf', element: <ShoppingPage /> },
+          { path: '/plan', element: <PlanPage /> },
+          { path: '/admin', element: <AdminPage /> },
+          { path: '*', element: <GeneratePage /> },
+        ],
+      },
+    ],
+  },
+]);
