@@ -14,12 +14,23 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: calc(var(--space-3) + env(safe-area-inset-top)) 0 var(--space-3);
+  /* Fixed padding — NO env(safe-area-inset-top) here: with viewport-fit=cover a
+     mobile browser TAB toggles safe-area-inset-top between 0 and the status-bar
+     height as its address bar auto-hides (Android edge-to-edge), which jumped
+     the sticky header's height mid-navigation ("the title bar flickers"). The
+     inset is re-added only for the installed PWA below (no auto-hiding bar
+     there, so it's stable and needed for the notch). */
+  padding: var(--space-3) 0;
   position: sticky;
   top: 0;
   z-index: 10;
   background: color-mix(in srgb, var(--c-surface) 88%, transparent);
   backdrop-filter: blur(12px);
+}
+@media (display-mode: standalone) {
+  .shell__header {
+    padding-top: calc(var(--space-3) + env(safe-area-inset-top));
+  }
 }
 /* On touch devices the frosted header's backdrop-filter is the known VT/GPU
    troublemaker (already dropped during theme + route transitions). On the real
