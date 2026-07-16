@@ -1,6 +1,16 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import { motifForRecipe, MOTIF_VARIANTS, variantFor, variantForMotif } from './RecipeMotif';
+import {
+  motifForRecipe,
+  MOTIF_FIT,
+  MOTIF_VARIANTS,
+  RecipeMotif,
+  variantFor,
+  variantForMotif,
+  type Motif,
+} from './RecipeMotif';
 
 describe('motifForRecipe', () => {
   it('picks cocktail motifs by glass type first', () => {
@@ -106,5 +116,99 @@ describe('variantFor (must match backend variant_for)', () => {
   it('declares at least 55 distinct visuals', () => {
     const total = Object.values(MOTIF_VARIANTS).reduce((a, b) => a + b, 0);
     expect(total).toBeGreaterThanOrEqual(55);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* MOTIF_FIT: per-motif fill normalization for compact leading tiles.         */
+/* The map + the `fit` prop are the 2026-07-15 addition; the suites above      */
+/* predate them. Pure logic + SSR string render (no DOM — see testing.md).     */
+/* -------------------------------------------------------------------------- */
+
+/** Reference largest subject dimension per motif (subject bbox, ground shadow
+ * excluded), from `npm run measure:motifs`. MOTIF_FIT was derived as
+ * clamp(96 / max(w,h), 0.8, 1.38) against these — so this is the design target
+ * the map is validated against, not a live measurement. */
+const REF_MAXDIM: Record<Motif, number> = {
+  highball: 108, tumbler: 100, coupe: 95, tiki: 115, martini: 87, wine: 95,
+  flute: 87, mule: 111, shot: 100, mug: 100, beer: 77, margarita: 112, punch: 73,
+  pasta: 90, bowl: 90, suppe: 86, pfanne: 98, pizza: 82, salat: 100, burger: 71,
+  fisch: 114, steak: 114, dessert: 90, taco: 56, auflauf: 93, pancakes: 80,
+  sandwich: 62, sushi: 110, kuchen: 68, eis: 82, spiess: 86, dumpling: 113,
+  wrap: 110, brot: 80,
+};
+
+const svgStyle = (markup: string): string =>
+  markup.match(/<svg[^>]*\sstyle="([^"]*)"/)?.[1] ?? '';
+
+describe('MOTIF_FIT map', () => {
+  it('has exactly one entry per motif (stays in sync with the registry)', () => {
+    // A missing entry silently defaults to scale 1 (safe) but under-normalizes —
+    // this is the guard that a newly added motif also gets a fit factor.
+    expect(Object.keys(MOTIF_FIT).sort()).toEqual(Object.keys(MOTIF_VARIANTS).sort());
+  });
+
+  it('keeps every factor inside the documented clamp [0.8, 1.38]', () => {
+    for (const [motif, f] of Object.entries(MOTIF_FIT)) {
+      expect(f, motif).toBeGreaterThanOrEqual(0.8);
+      expect(f, motif).toBeLessThanOrEqual(1.38);
+    }
+  });
+
+  it('upscales tiny/flat motifs and downscales overflowing ones', () => {
+    expect(MOTIF_FIT.spiess).toBeGreaterThan(1); // flat skewer (~21u tall) → grow
+    expect(MOTIF_FIT.taco).toBeGreaterThan(1); // small
+    expect(MOTIF_FIT.tiki).toBeLessThan(1); // overflows the viewBox → shrink
+    expect(MOTIF_FIT.fisch).toBeLessThan(1);
+    expect(MOTIF_FIT.tumbler).toBeCloseTo(1, 1); // already ~fills → near identity
+  });
+
+  it('collapses the raw size spread into a tight normalized band', () => {
+    const fitted = (Object.keys(REF_MAXDIM) as Motif[]).map((m) => REF_MAXDIM[m] * MOTIF_FIT[m]);
+    const raws = Object.values(REF_MAXDIM);
+    const spread = (xs: number[]) => Math.max(...xs) - Math.min(...xs);
+
+    for (const f of fitted) {
+      expect(f).toBeGreaterThanOrEqual(75); // clamped small motifs (taco) sit here
+      expect(f).toBeLessThanOrEqual(98);
+    }
+    expect(spread(raws)).toBeGreaterThan(55); // raw: 56 → 115
+    expect(spread(fitted)).toBeLessThan(25); // normalized: ~19
+    expect(spread(fitted)).toBeLessThan(spread(raws) / 2);
+  });
+});
+
+describe('RecipeMotif `fit` prop (SSR markup)', () => {
+  it('emits a scale() transform matching the motif factor when fit is on', () => {
+    const html = renderToStaticMarkup(createElement(RecipeMotif, { motif: 'pasta', fit: true }));
+    expect(svgStyle(html)).toContain(`transform:scale(${MOTIF_FIT.pasta})`);
+  });
+
+  it('emits no transform by default (large card/hero motifs stay unscaled)', () => {
+    const html = renderToStaticMarkup(createElement(RecipeMotif, { motif: 'pasta' }));
+    expect(html).not.toContain('scale(');
+    expect(svgStyle(html)).not.toContain('transform');
+  });
+
+  it('appends the scale to an incoming transform instead of clobbering it', () => {
+    const html = renderToStaticMarkup(
+      createElement(RecipeMotif, { motif: 'pasta', fit: true, style: { transform: 'rotate(3deg)' } }),
+    );
+    expect(svgStyle(html)).toContain(`rotate(3deg) scale(${MOTIF_FIT.pasta})`);
+  });
+
+  it('preserves other passthrough style (e.g. viewTransitionName) alongside the scale', () => {
+    const html = renderToStaticMarkup(
+      createElement(RecipeMotif, { motif: 'pasta', fit: true, style: { viewTransitionName: 'zk-shared-motif' } }),
+    );
+    const style = svgStyle(html);
+    expect(style).toContain('view-transition-name:zk-shared-motif');
+    expect(style).toContain('scale(');
+  });
+
+  it('falls back to no transform for an unknown motif (?? 1 guard, no throw)', () => {
+    const html = renderToStaticMarkup(createElement(RecipeMotif, { motif: 'nope' as Motif, fit: true }));
+    expect(html).toContain('<svg'); // renders the Tumbler fallback rather than crashing
+    expect(html).not.toContain('scale(');
   });
 });
