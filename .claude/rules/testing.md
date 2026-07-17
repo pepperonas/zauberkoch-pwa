@@ -11,7 +11,7 @@ description: Test-Regeln
 
 - **Backend: pytest.** Jeder Test läuft gegen eine Temp-/In-Memory-SQLite (Fixture aus `conftest.py`), nie gegen `backend/data/`. Anthropic-Client wird IMMER gemockt — kein Test verbraucht echte Tokens.
 - Pflicht-Suiten: Auth-Flow (inkl. Allowlist/OPEN_SIGNUP, CSRF), Rate-Limiting (User + global, Tageswechsel), Cache-Logik (Hit/Miss/Regenerieren), Einkaufslisten-Aggregation (Einheiten-Normalisierung), SSE-Parser (Token-Häppchen → semantische Events).
-- **Frontend: Vitest** für Mengen-Skalierung und Einheiten-Normalisierung (pure Funktionen, keine DOM-Tests nötig).
+- **Frontend: Vitest.** Standard = **pure Funktionen** ohne DOM (node-env: units/Skalierung, `motifForRecipe`/`variantFor`, `MOTIF_FIT`, mealCompat, i18n, generation-Store). **DOM-abhängige Units** (Hooks, Theme-Toggle, alles was `window`/`navigator`/View-Transitions braucht) nutzen **happy-dom pro Datei** via `// @vitest-environment happy-dom`-Docblock — NICHT global umstellen, sonst verlieren die pure Tests ihre schnelle node-Umgebung. React-Units ohne `@testing-library` testen: ~15-Zeilen-`renderHook` über `react-dom/client` + React-19-`act` (`IS_REACT_ACT_ENVIRONMENT=true` setzen). Beispiele: `useOnline.test.tsx`, `app.test.tsx` (toggleTheme: VT-Reveal einheitlich, kein Overlay, Token-Morph-Fallbacks). `matchMedia`/`startViewTransition`/`api` mocken.
 - **E2E: ein Playwright-Smoke** (Login gemockt → Rezept generieren mit gemocktem SSE → favorisieren). Läuft lokal, nicht in CI.
 - Tests deterministisch: keine echten Netzwerk-Requests, Zeit über Fake-/Freeze-Mechanismen.
 - Bugfix = erst reproduzierender Test, dann Fix. Vor jedem Deploy: `pytest` + `npm test` grün (deploy.sh erzwingt es).
