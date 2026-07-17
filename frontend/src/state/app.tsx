@@ -30,37 +30,6 @@ function withColorMorph(apply: () => void): void {
   window.setTimeout(() => root.removeAttribute('data-morph'), 700);
 }
 
-/** Circular theme reveal for mobile (celox.io themeRipple pattern). Animating
- * clip-path on the full-page view-transition snapshot stutters on mobile GPUs;
- * instead a single SOLID overlay in the target theme's surface colour grows via
- * clip-path from the toggle button (only a trivial layer is re-clipped per
- * frame → smooth), the theme flips underneath it (hidden), then it fades out. */
-function themeRipple(next: Theme, x: number, y: number, apply: () => void): void {
-  const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
-  // Target theme's solid body surface — keep in sync with tokens.css --c-surface.
-  const bg = next === 'dark' ? '#11150f' : '#f7fbf1';
-  const el = document.createElement('div');
-  el.style.cssText =
-    'position:fixed;inset:0;z-index:9999;pointer-events:none;' +
-    `background-color:${bg};clip-path:circle(0px at ${x}px ${y}px);will-change:clip-path,opacity;`;
-  document.body.appendChild(el);
-  const cleanup = () => el.remove();
-  el.animate(
-    { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
-    { duration: 420, easing: 'cubic-bezier(0.22, 0.08, 0, 1)', fill: 'forwards' },
-  )
-    .finished.then(() => {
-      apply(); // flip the theme underneath the covering overlay (invisible)
-      return el.animate({ opacity: [1, 0] }, { duration: 260, delay: 60, easing: 'ease-out', fill: 'forwards' })
-        .finished;
-    })
-    .then(cleanup)
-    .catch(() => {
-      apply();
-      cleanup();
-    });
-}
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useLocalStorageState<Theme>('zk-theme', () =>
     matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
@@ -98,26 +67,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const doc = document as Document & { startViewTransition?: (cb: () => void) => ViewTransition };
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      // Circular reveal (celox.io signature). MOBILE: a themeRipple overlay
-      // (solid target-theme layer grown via clip-path — compositor-cheap, smooth
-      // on mobile GPUs). DESKTOP: the full View-Transitions reveal where the new
-      // theme snapshot itself wipes in (clip-path on the page snapshot stutters
-      // on mobile, hence the split). Reduced motion / no origin → token morph.
-      const coarse = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+      // Circular reveal (celox.io signature): the new theme SNAPSHOT itself wipes
+      // in via a clip-path circle grown from the toggle button, so the reveal
+      // "encompasses" the real re-themed content — identical on mobile + desktop.
+      // (The old mobile-only solid-overlay `themeRipple` painted over the content
+      // instead of revealing it; removed 2026-07-17.) Reduced motion / no origin /
+      // no VT support → token morph. Drives the clip-path from JS on the VT pseudo
+      // (NOT CSS @keyframes — the --vt-* custom properties don't reliably inherit
+      // into the view-transition pseudo tree).
       const root = document.documentElement;
-
-      if (origin && !reduced && coarse) {
-        const next: Theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        themeRipple(next, origin.x, origin.y, () => {
-          root.setAttribute('data-theme', next);
-          setTheme(next);
-        });
-        return;
-      }
-
-      // The desktop reveal drives the clip-path from JS on the VT pseudo (NOT CSS
-      // @keyframes — the --vt-* custom properties don't reliably inherit into the
-      // view-transition pseudo tree).
       if (doc.startViewTransition && origin && !reduced) {
         const x = origin.x;
         const y = origin.y;
