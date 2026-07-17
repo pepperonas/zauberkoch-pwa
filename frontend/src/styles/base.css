@@ -102,12 +102,18 @@ html:not(.zk-theme-vt)::view-transition-new(root) {
 }
 
 /* Non-shared detail sections (ingredients/steps/actions) are lifted out of the
-   root snapshot during the morph and cascade in — opacity + a small rise,
-   staggered — so the incoming content ASSEMBLES behind the settling hero
-   instead of crossfading as one flat block (the old "einplopp" feel). Only
-   transform+opacity (GPU); last one lands at ~390 ms (under the 400 ms budget).
-   The name is only applied while morphing (RecipeView `vtn()`), so normal
-   detail loads are unaffected. */
+   root snapshot during the morph and cascade in — a small staggered rise — so
+   the incoming content ASSEMBLES behind the settling hero instead of crossfading
+   as one flat block (the old "einplopp" feel). Last one lands at ~390 ms (under
+   the 400 ms budget). The name is only applied while morphing (RecipeView
+   `vtn()`), so normal detail loads are unaffected.
+   TRANSFORM-ONLY, no opacity: on mobile Chrome toggles the URL bar mid-VT (the
+   same reflow behind the fixed-header fix), which can disrupt these running
+   ::view-transition animations and freeze a *new-only* element on its `from`
+   frame. With `opacity: 0` in `from` that froze the ingredients INVISIBLE while
+   the hero settled ("Zutaten render blank", 2026-07-17, S24 Ultra). Sliding
+   from a translate keeps the content fully visible even if the animation stalls
+   — worst case is a harmless ~18px offset, never a blank section. */
 ::view-transition-new(zk-d-ing),
 ::view-transition-new(zk-d-steps),
 ::view-transition-new(zk-d-act) {
@@ -116,7 +122,7 @@ html:not(.zk-theme-vt)::view-transition-new(root) {
 ::view-transition-new(zk-d-ing) { animation-delay: 40ms; }
 ::view-transition-new(zk-d-steps) { animation-delay: 90ms; }
 ::view-transition-new(zk-d-act) { animation-delay: 130ms; }
-@keyframes zk-vt-rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes zk-vt-rise { from { transform: translateY(18px); } }
 
 /* Back navigation: the same sections are old-only → they leave with a quick
    fade + slight sink (reverse of the enter, snappier). */

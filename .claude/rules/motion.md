@@ -26,6 +26,8 @@ description: Motion-Regeln (M3 Expressive Motion, Spring-Physik)
 - **Scroll:** react-routers `<ScrollRestoration/>` (POP restauriert, PUSH resettet) — verifiziert.
 - **Kosten:** Entry-Chunk +~15 kB gz (Data-Router-Runtime). Bewusst akzeptiert für den zuverlässigen Browser-Back-Morph.
 
+**Detail-Sektionen-Entrance NIE mit `opacity:0` (2026-07-17, „Zutaten render blank"):** Die `::view-transition-new(zk-d-ing/steps/act)`-Entrance (`@keyframes zk-vt-rise` in `base.css`) ist **transform-only** (`from { transform: translateY(18px) }`) — **kein `opacity:0`**. Grund: auf Mobile toggelt Chrome die URL-Leiste **mitten in der VT** (derselbe Reflow wie beim Fixed-Header-Fix); das kann die laufenden `::view-transition`-Animationen stören und ein *new-only*-Element auf seinem `from`-Frame einfrieren. Mit `opacity:0` im `from` fror das die Zutatenliste **unsichtbar** ein, während der Hero schon saß (verifiziert S24 Ultra; auf Desktop/DevTools nicht reproduzierbar — keine dynamische URL-Leiste). Transform-only bleibt bei einem Stall sichtbar (max ~18px Versatz, nie blank). Gilt sinngemäß für jede künftige VT-Entrance benannter Sektionen: **spatial (transform) ja, opacity-Fade von 0 nein.**
+
 **Diese Morph-Killer gelten weiter (jeweils hart erarbeitet):**
 1. **Ziel-Seite muss synchron mit Hero rendern:** `RecipeDetailPage` ist `lazy`, wird per verstecktem Off-Route-Mount in `Shell` vorgewärmt (`{me && !'/rezept/' && <div hidden><Suspense><RecipeDetailPage/></Suspense></div>}`) → `React.lazy` vor der Navigation resolved. NICHT eager importieren (Lighthouse). Muss ohne Route-Params renderbar bleiben.
 2. **Detail-Query VOR der Navigation cachen:** `RecipeCard` `ensureQueryData` in `open()` + `onPointerDown`-Prefetch.
