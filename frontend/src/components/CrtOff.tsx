@@ -12,7 +12,8 @@
  * would break the illusion. Transform/opacity only (GPU-composited).
  *
  * The caller keeps the overlay mounted until logout has ACTUALLY completed
- * (it holds full black after the dot dies) and unmounts it via
+ * (after the dot dies it holds the theme background — light mode dims to the
+ * light surface, dark mode to near-black) and unmounts it via
  * AnimatePresence for a short reveal fade. prefers-reduced-motion is handled
  * by the caller: it skips rendering this entirely and logs out directly.
  */

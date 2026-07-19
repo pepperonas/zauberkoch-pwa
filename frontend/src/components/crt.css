@@ -1,11 +1,11 @@
 /* CRT power-off overlay (logout).
-   Deliberately theme-independent: a cathode tube goes dark the same way in
-   light and dark mode — pure phosphor white on black, defined locally instead
-   of theme tokens (this is "hardware", not UI surface). */
+   Theme-aware: the tube "goes dark" into the CURRENT theme background
+   (light mode dims to the light surface, dark mode to near-black), and the
+   scanline/dot use the on-surface color so they always contrast. */
 
 .crt {
-  --crt-black: #000;
-  --crt-phosphor: #fff;
+  --crt-screen: var(--c-surface);
+  --crt-phosphor: var(--c-on-surface);
   position: fixed;
   inset: 0;
   z-index: 100; /* above dialogs (51), nav and the generation pill */
@@ -24,7 +24,7 @@
 .crt__dim {
   position: absolute;
   inset: 0;
-  background: var(--crt-black);
+  background: var(--crt-screen);
 }
 
 .crt__beam {
@@ -34,10 +34,10 @@
   /* brighter core so the collapsed line reads as the hot scanline center */
   background: linear-gradient(
     to bottom,
-    rgb(255 255 255 / 0.9),
+    color-mix(in srgb, var(--crt-phosphor) 90%, transparent),
     var(--crt-phosphor) 45%,
     var(--crt-phosphor) 55%,
-    rgb(255 255 255 / 0.9)
+    color-mix(in srgb, var(--crt-phosphor) 90%, transparent)
   );
 }
 
@@ -63,7 +63,7 @@
   border-radius: 50%;
   background: var(--crt-phosphor);
   box-shadow:
-    0 0 18px 6px rgb(255 255 255 / 0.95),
-    0 0 64px 26px rgb(255 255 255 / 0.5);
+    0 0 18px 6px color-mix(in srgb, var(--crt-phosphor) 95%, transparent),
+    0 0 64px 26px color-mix(in srgb, var(--crt-phosphor) 50%, transparent);
   will-change: transform, opacity;
 }
