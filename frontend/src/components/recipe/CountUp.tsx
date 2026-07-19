@@ -29,6 +29,9 @@ export function CountUp({ value, decimals = 0 }: Props) {
     }
     if (!inView) return;
     const controls = animate(0, value, { ...countUp, onUpdate: setShown });
+    // land EXACTLY on the value — the spring's settle tail otherwise leaves
+    // the display one rounding step short (519 for 520)
+    void controls.then(() => setShown(value));
     return () => controls.stop();
   }, [inView, value, reduced]);
 
