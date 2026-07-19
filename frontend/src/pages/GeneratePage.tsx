@@ -28,7 +28,7 @@ import { cuisineAllowsMeal } from '../lib/mealCompat';
 import { api } from '../lib/api';
 import type { GenerateParams, Me, Modus, Preferences, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
-import { slowSpatial, staggerIn } from '../motion/tokens';
+import { errorIn, fastSpatial, reducedFade, slowSpatial, staggerIn } from '../motion/tokens';
 import { useApp } from '../state/app';
 import { useLocalStorageState } from '../state/useLocalStorageState';
 import {
@@ -281,12 +281,18 @@ export function GeneratePage() {
         </div>
 
         {error && gen.phase === 'done' && (
-          <div className="card card--outlined" style={{ marginBottom: 'var(--space-4)' }}>
+          <motion.div
+            className="card card--outlined"
+            style={{ marginBottom: 'var(--space-4)' }}
+            initial={reduced ? { opacity: 0 } : errorIn.initial}
+            animate={reduced ? { opacity: 1 } : errorIn.animate}
+            transition={reduced ? reducedFade : fastSpatial}
+          >
             <p>{t('stream.failed')}</p>
             <div className="actions">
               <Button onClick={retryGeneration}>{t('common.retry')}</Button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         <AnimatePresence>

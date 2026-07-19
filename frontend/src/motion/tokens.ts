@@ -65,3 +65,19 @@ export const dismissDip = { scale: [1, 0.82, 1] } as const;
 
 /** Press feedback for the favorite icon. */
 export const pressStar = { scale: 0.8 } as const;
+
+/**
+ * Error entrance: a soft, decaying horizontal shake — acknowledges the failure
+ * without being harsh (M3 error state: "sanftes Schütteln", never a jolt).
+ * Spatial keyframes only; pair with `fastSpatial` (reduced: flat fade).
+ */
+export const errorIn = {
+  initial: { opacity: 0, scale: 0.98 },
+  animate: { opacity: 1, scale: 1, x: [0, -8, 7, -4, 0] },
+} as const;
+
+/**
+ * Playful shuffle wiggle for the "surprise me" gift icon — one focal effect,
+ * fired on press alongside the action (never delaying it).
+ */
+export const shuffleWiggle = { rotate: [0, -14, 12, -7, 0], scale: [1, 1.15, 1] } as const;
