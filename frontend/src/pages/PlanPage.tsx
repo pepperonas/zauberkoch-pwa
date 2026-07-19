@@ -3,6 +3,7 @@
 
 import { motion, useReducedMotion } from 'motion/react';
 import { useState } from 'react';
+import { useLocation, useNavigate, useViewTransitionState } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Icon } from '../components/icons';
@@ -16,6 +17,7 @@ import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 import type { PlanEntry } from '../lib/types';
 import { riseIn, spring, stagger } from '../motion/springs';
+import { SHARED_MOTIF, SHARED_TITLE } from '../state/viewTransition';
 
 function addDays(iso: string, days: number): string {
   const d = new Date(`${iso}T12:00:00Z`);
@@ -29,6 +31,11 @@ function fmtDay(iso: string): string {
 
 export function PlanPage() {
   const reduced = useReducedMotion();
+  const location = useLocation();
+  // Suppress the staggered day-card entrance while a route morph involving
+  // this page runs — otherwise back-navigation captures cards mid-riseIn
+  // (opacity 0) in the VT's new snapshot (same guard as RecipeCard).
+  const listTransitioning = useViewTransitionState(location.pathname);
   const queryClient = useQueryClient();
   const { show } = useSnackbar();
   const { withUndo } = useShoppingUndo();
@@ -41,6 +48,14 @@ export function PlanPage() {
   const today = new Date().toISOString().slice(0, 10);
   const monday = week.data?.start;
   const hasEntries = (week.data?.days ?? []).some((d) => d.entries.length > 0);
+
+  // A view-transition-name must be unique per snapshot — if the same recipe is
+  // planned twice this week, only its FIRST row carries the shared names
+  // (deterministic across remounts, so the back-morph pairs with that row).
+  const firstEntryForRecipe = new Map<number, number>();
+  for (const d of week.data?.days ?? [])
+    for (const e of d.entries)
+      if (!firstEntryForRecipe.has(e.recipe_id)) firstEntryForRecipe.set(e.recipe_id, e.id);
 
   const remove = async (entry: PlanEntry) => {
     await api.planRemove(entry.id);
@@ -77,7 +92,7 @@ export function PlanPage() {
           <motion.div
             key={day.datum}
             className={`card card--outlined ${day.datum === today ? 'plan__today' : ''}`}
-            {...(reduced ? {} : riseIn)}
+            {...(reduced || listTransitioning ? {} : riseIn)}
             transition={stagger(i, 0.04)}
           >
             <div className="row row--between">
@@ -88,17 +103,12 @@ export function PlanPage() {
               <IconButton label={t('plan.addRecipe')} onClick={() => setPickerDay(day.datum)}>＋</IconButton>
             </div>
             {day.entries.map((entry) => (
-              <div key={entry.id} className="row row--between" style={{ minHeight: 56 }}>
-                <span className="row" style={{ minWidth: 0 }}>
-                  <span className="motif-tile">
-                    <RecipeMotif motif={motifForRecipe(entry)} seed={entry.titel} size={48} fit />
-                  </span>
-                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {entry.titel}
-                  </span>
-                </span>
-                <IconButton label={t('common.delete')} onClick={() => void remove(entry)}><Icon name="close" size={18} /></IconButton>
-              </div>
+              <PlanEntryRow
+                key={entry.id}
+                entry={entry}
+                canShare={firstEntryForRecipe.get(entry.recipe_id) === entry.id}
+                onRemove={() => void remove(entry)}
+              />
             ))}
           </motion.div>
         ))}
@@ -121,6 +131,59 @@ export function PlanPage() {
           show(t('plan.entryAdded'));
         }}
       />
+    </div>
+  );
+}
+
+/** One planned recipe: tapping motif/title opens the recipe with the
+ * shared-element morph (tile → detail hero); delete stays a separate button. */
+function PlanEntryRow({ entry, canShare, onRemove }: { entry: PlanEntry; canShare: boolean; onRemove: () => void }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  // Source of the morph while a transition to/from this recipe runs (forward
+  // AND back) — gated on canShare so duplicate plan entries never produce
+  // duplicate view-transition-names (which would abort the whole transition).
+  const isSource = useViewTransitionState(`/rezept/${entry.recipe_id}`) && canShare;
+
+  const queryOpts = { queryKey: ['recipes', entry.recipe_id], queryFn: () => api.recipe(entry.recipe_id) };
+  const open = async () => {
+    // Detail data must be cached BEFORE navigating: react-router snapshots the
+    // destination synchronously, and a hero-less loading state kills the morph.
+    await queryClient.ensureQueryData(queryOpts);
+    navigate(`/rezept/${entry.recipe_id}`, { viewTransition: true });
+  };
+
+  return (
+    <div className="row row--between" style={{ minHeight: 56 }}>
+      <button
+        className="row"
+        style={{ minWidth: 0, flex: 1, textAlign: 'left', minHeight: 'var(--touch-target)' }}
+        onPointerDown={() => void queryClient.prefetchQuery(queryOpts)}
+        onClick={() => void open()}
+        aria-label={`${entry.titel} — ${t('common.openRecipe')}`}
+      >
+        <span className="motif-tile">
+          <RecipeMotif
+            motif={motifForRecipe(entry)}
+            seed={entry.titel}
+            size={48}
+            fit
+            style={isSource ? { viewTransitionName: SHARED_MOTIF } : undefined}
+          />
+        </span>
+        <span
+          style={{
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            viewTransitionName: isSource ? SHARED_TITLE : undefined,
+          }}
+        >
+          {entry.titel}
+        </span>
+      </button>
+      <IconButton label={t('common.delete')} onClick={onRemove}><Icon name="close" size={18} /></IconButton>
     </div>
   );
 }

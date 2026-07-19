@@ -424,6 +424,7 @@ export const de = {
     delete: 'Löschen',
     retry: 'Nochmal versuchen',
     loading: 'Lädt …',
+    openRecipe: 'Rezept ansehen',
     offline: 'Du bist offline — Favoriten bleiben lesbar.',
     themeToggle: 'Design umschalten',
   },
