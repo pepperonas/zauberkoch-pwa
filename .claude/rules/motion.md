@@ -14,6 +14,7 @@ description: Motion-Regeln (M3 Expressive Motion, Spring-Physik)
 - Ambient-Loops (Orbits, Blubbern, Shaker-Wackeln) dürfen `easeInOut`/lineare Tweens mit `repeat: Infinity` sein — Springs sind für One-Shot-Bewegung.
 - Gesten: Velocity entscheidet über Snap/Zurückfedern; Drag immer mit Pointer-Events, nicht mit Scroll konkurrieren lassen.
 - Skeleton/Shimmer nur, wo Streaming nicht greift.
+- **Motion-Ausbau 2026-07-19** (Audit `docs/MOTION-PLAN.md`, Kurzreferenz `docs/MOTION.md`): neue benannte Presets in `tokens.ts` — `errorIn` (Fehler-Entrance, sanfter abklingender Shake), `shuffleWiggle` (Überrasch-mich-Geschenk, Hover/Press), `countUp` (Zahlen, effects/kein Overshoot); neue Bausteine `ui/StateNote.tsx` (Loading/Empty-States, entrance-only — Exit-Choreo bräuchte AnimatePresence um VT-sensible Kartenlisten → verboten) und `recipe/CountUp.tsx` (in-view-getriggert, landet exakt auf dem Zielwert). ⚠️ Keyframe-Presets OHNE `as const` (motion verlangt mutable Arrays — `tsc --noEmit` schluckt es, der Build nicht). Bewusst NICHT gebaut (Begründungen im Plan): Parallax-Hero, Pull-to-Refresh, Liquid-Fill im Detail, Chips-Layout-Reflow — alles VT-/Back-Button-riskant oder Effekthascherei.
 
 ## Route-/View-Transitions (react-router Data-Router, built-in VT — 2026-07-15)
 
