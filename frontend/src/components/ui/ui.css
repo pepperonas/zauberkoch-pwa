@@ -143,14 +143,22 @@
   padding: var(--space-3) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
   box-shadow: var(--elev-3);
   overflow-y: auto;
+  /* pan-y: native touch scrolling of overflowing content; dismiss-drag lives
+     on the handle only (which sets touch-action: none for itself). */
+  touch-action: pan-y;
+}
+.sheet__griparea {
+  display: grid;
+  place-items: center;
+  padding: var(--space-2) 0 var(--space-3);
   touch-action: none;
+  cursor: grab;
 }
 .sheet__handle {
   width: 36px;
   height: 4px;
   border-radius: var(--shape-full);
   background: var(--c-outline-variant);
-  margin: var(--space-2) auto var(--space-4);
 }
 
 /* ---------- Text input ---------- */

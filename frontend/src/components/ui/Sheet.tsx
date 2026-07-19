@@ -1,6 +1,11 @@
-/** Bottom sheet with real drag: velocity decides snap-back vs dismiss. */
+/** Bottom sheet with real drag: velocity decides snap-back vs dismiss.
+ *
+ * Drag is bound to the grab HANDLE only (dragListener=false + dragControls) —
+ * a sheet-wide drag listener + touch-action:none swallowed every vertical
+ * swipe, so content taller than the sheet (e.g. the profile) could never be
+ * scrolled on touch (desktop wheel ignores touch-action, which hid the bug). */
 
-import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react';
+import { AnimatePresence, motion, useDragControls, useReducedMotion, type PanInfo } from 'motion/react';
 import { useEffect, type ReactNode } from 'react';
 
 import { spring } from '../../motion/springs';
@@ -17,6 +22,7 @@ interface SheetProps {
 export function Sheet({ open, onClose, children, label }: SheetProps) {
   const reduced = useReducedMotion();
   const trapRef = useFocusTrap<HTMLDivElement>(open);
+  const dragControls = useDragControls();
 
   useEffect(() => {
     if (!open) return;
@@ -55,12 +61,22 @@ export function Sheet({ open, onClose, children, label }: SheetProps) {
             exit={reduced ? { opacity: 0 } : { y: '100%' }}
             transition={spring}
             drag={reduced ? false : 'y'}
+            dragListener={false}
+            dragControls={dragControls}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0.02, bottom: 0.6 }}
             onDragEnd={onDragEnd}
           >
-            <div className="sheet__handle" aria-hidden />
-            <div style={{ touchAction: 'pan-y' }}>{children}</div>
+            <div
+              className="sheet__griparea"
+              aria-hidden
+              onPointerDown={(e) => {
+                if (!reduced) dragControls.start(e);
+              }}
+            >
+              <div className="sheet__handle" />
+            </div>
+            {children}
           </motion.div>
         </>
       )}
