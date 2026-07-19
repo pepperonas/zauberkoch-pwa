@@ -28,7 +28,7 @@ import { cuisineAllowsMeal } from '../lib/mealCompat';
 import { api } from '../lib/api';
 import type { GenerateParams, Me, Modus, Preferences, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
-import { errorIn, fastSpatial, reducedFade, shuffleWiggle, slowSpatial, staggerIn } from '../motion/tokens';
+import { errorIn, fastSpatial, heroEnter, reducedFade, shuffleWiggle, slowSpatial, staggerIn } from '../motion/tokens';
 import { useApp } from '../state/app';
 import { useLocalStorageState } from '../state/useLocalStorageState';
 import {
@@ -411,7 +411,15 @@ export function GeneratePage() {
   if (gen.phase === 'limit') {
     return (
       <div className="limitbox">
-        <div className="limitbox__emoji" aria-hidden><Icon name="snooze" size={52} /></div>
+        <motion.div
+          className="limitbox__emoji"
+          aria-hidden
+          initial={reduced ? { opacity: 0 } : heroEnter.initial}
+          animate={reduced ? { opacity: 1 } : heroEnter.animate}
+          transition={reduced ? reducedFade : slowSpatial}
+        >
+          <Icon name="snooze" size={52} />
+        </motion.div>
         <h2>{t('stream.limitReached')}</h2>
         <p className="muted" style={{ marginTop: 'var(--space-3)' }}>{gen.error?.message}</p>
         <div style={{ marginTop: 'var(--space-6)' }}>
