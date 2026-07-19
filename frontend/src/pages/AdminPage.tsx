@@ -121,21 +121,42 @@ export function AdminPage() {
     return () => ro.disconnect();
   }, []);
 
-  // Highlight the section currently in view.
+  // Highlight the section currently in view. Deterministic scroll-spy (NOT an
+  // IntersectionObserver band): the active section is the LAST one whose top
+  // sits above the anchor line, with a page-end override for the final tab.
+  // The old IO rootMargin band skipped sections shorter than the band
+  // ("Nutzer") and could never activate the last tab when the page bottom was
+  // reached before its top entered the band — with real-world (short) data the
+  // pill simply stopped following clicks ("tab bar doesn't work").
   useEffect(() => {
     if (!me?.is_admin) return;
-    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter((e): e is HTMLElement => e != null);
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const top = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (top) setActive(top.target.id);
-      },
-      { rootMargin: `-${navTop + 56}px 0px -55% 0px`, threshold: 0 },
-    );
-    els.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const els = SECTIONS.map((s) => document.getElementById(s.id)).filter((e): e is HTMLElement => e != null);
+      if (els.length === 0) return;
+      // At (or within a couple px of) the page end, the last section wins —
+      // it may be too short to ever cross the anchor line.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+        setActive(els[els.length - 1].id);
+        return;
+      }
+      const line = navTop + 64;
+      let current = els[0].id;
+      for (const el of els) if (el.getBoundingClientRect().top <= line) current = el.id;
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
   }, [me?.is_admin, navTop, stats.data]);
 
   if (meLoading) return null;
