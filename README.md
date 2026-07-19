@@ -97,7 +97,7 @@ Google-OAuth-Einrichtung: [`docs/GOOGLE-OAUTH.md`](docs/GOOGLE-OAUTH.md) · Depl
 cd backend && pytest             # 127 Tests: Auth, Rate-Limits, Cache, SSE-Parser, KI-Orchestrierung, Prompts, Share/OG …
 cd backend && pytest --cov=app   # mit Coverage-Report (Stand 2026-07-19: 95 % Statements)
 cd frontend && npm test          # 78 Tests: Mengen-Skalierung, Einheiten, i18n, SSE-Client, Theme-Toggle, Stores
-cd frontend && npm test -- --coverage   # Logik-Schicht (lib/state/i18n) gemessen; UI-Flächen deckt der E2E-Smoke ab
+cd frontend && npm test -- --coverage   # Stand 2026-07-19: 20 % projektweit — bewusst: Units decken die Logik-Schicht (lib/state/i18n, je ~55–60 %), die React-UI-Flächen deckt der E2E-Smoke ab
 cd frontend && npx playwright test   # E2E-Smoke (lokal)
 ```
 

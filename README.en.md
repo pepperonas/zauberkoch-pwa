@@ -42,7 +42,7 @@ Pick a cuisine, flavors and constraints — the app streams a cookbook-quality r
 
 ## Tests
 
-205 automated tests (127 backend pytest — 95 % statement coverage as of 2026-07-19 — plus 78 frontend Vitest) run on every push via [GitHub Actions](.github/workflows/ci.yml); a local Playwright smoke covers the E2E flow. No test ever calls the real Anthropic API.
+205 automated tests (127 backend pytest — 95 % statement coverage as of 2026-07-19 — plus 78 frontend Vitest; unit coverage deliberately targets the logic layer at ~55–60 %, project-wide 20 % since the React UI is E2E territory) run on every push via [GitHub Actions](.github/workflows/ci.yml); a local Playwright smoke covers the E2E flow. No test ever calls the real Anthropic API.
 
 ## Stack
 
