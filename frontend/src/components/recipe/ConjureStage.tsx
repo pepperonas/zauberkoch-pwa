@@ -24,10 +24,15 @@ interface Props {
   lastEvent: GenEvent;
 }
 
+/* Full-scene edge length in px — keep in sync with .conjure__scene(box) in
+   conjure.css. The compact banner morphs the scene down to COMPACT_SIZE. */
+const SCENE_SIZE = 320;
+const COMPACT_SIZE = 72;
+
 /* Deterministic spark-burst directions (transform-only). */
 const BURST = Array.from({ length: 6 }, (_, i) => {
   const angle = (i / 6) * Math.PI * 2 + 0.4;
-  return { x: Math.cos(angle) * 46, y: Math.sin(angle) * 34 - 14 };
+  return { x: Math.cos(angle) * 56, y: Math.sin(angle) * 42 - 16 };
 });
 
 function phaseText(lastEvent: GenEvent, data: RecipeViewData): string {
@@ -81,13 +86,13 @@ export function ConjureStage({ mode, data, lastEvent }: Props) {
       <motion.div layout={!reduced} className="conjure__scenebox" transition={spring}>
         <motion.div
           className="conjure__scene"
-          animate={{ scale: compact ? 0.273 : 1 }}
+          animate={{ scale: compact ? COMPACT_SIZE / SCENE_SIZE : 1 }}
           transition={spring}
         >
           {!reduced && (
             <>
-              <Orbit emojis={orbitEmojis.slice(0, 4)} radius={103} duration={17} />
-              <Orbit emojis={orbitEmojis.slice(4)} radius={70} duration={11} reverse />
+              <Orbit emojis={orbitEmojis.slice(0, 4)} radius={126} duration={17} />
+              <Orbit emojis={orbitEmojis.slice(4)} radius={86} duration={11} reverse />
             </>
           )}
           <motion.div
@@ -181,7 +186,7 @@ function ZutatDrop({ zutaten, active }: { zutaten: Zutat[]; active: boolean }) {
         key={`drop-${index}`}
         className="conjure__drop"
         aria-hidden
-        initial={{ y: -92, opacity: 0, scale: 1.15, rotate: -25 }}
+        initial={{ y: -112, opacity: 0, scale: 1.15, rotate: -25 }}
         animate={{ y: -4, opacity: [0, 1, 1, 0], scale: 0.45, rotate: 20 }}
         transition={{ duration: 0.7, ease: 'easeIn' }}
       >
