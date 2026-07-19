@@ -15,7 +15,8 @@
 @media (max-width: 480px) { .hero__motif { width: 128px; height: 128px; } }
 @media (max-width: 360px) { .hero__motif { width: 108px; height: 108px; } }
 .hero__kueche { font: var(--type-label); color: var(--c-primary); text-transform: uppercase; letter-spacing: 0.08em; }
-.hero__title { margin: var(--space-2) 0; }
+/* emphasized type: the recipe title is THE hero text of the app */
+.hero__title { margin: var(--space-2) 0; font: var(--type-display-md-em); letter-spacing: var(--track-em); }
 .hero__teaser { color: var(--c-on-surface-variant); max-width: 46ch; }
 .hero__stats { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
 .stat {

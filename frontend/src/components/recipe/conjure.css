@@ -115,7 +115,8 @@
   min-width: 0;
 }
 .conjure__text {
-  font: var(--type-title-lg);
+  font: var(--type-title-lg-em); /* emphasized: this line carries the magic moment */
+  letter-spacing: var(--track-em);
   color: var(--c-on-surface);
   margin: 0;
 }
