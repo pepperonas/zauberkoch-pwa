@@ -312,7 +312,10 @@ function RecipeRow({
   // this row is the source while a transition to/from its recipe runs, and the
   // staggered entrance is suppressed during any route morph on this page.
   const isSource = useViewTransitionState(`/rezept/${item.id}`);
-  const morphing = isSource || useViewTransitionState(location.pathname);
+  // Separate const — `isSource || useHook()` would skip the hook call when
+  // isSource is true (conditional hook = React #300 mid-morph).
+  const listTransitioning = useViewTransitionState(location.pathname);
+  const morphing = isSource || listTransitioning;
   const queryOpts = { queryKey: ['recipes', item.id], queryFn: () => api.recipe(item.id) };
   const openRecipe = async () => {
     await queryClient.ensureQueryData(queryOpts); // hero must render synchronously

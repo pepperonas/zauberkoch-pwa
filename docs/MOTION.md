@@ -32,7 +32,7 @@
 
 ## Signatur-Momente (wo was lebt)
 
-- **Karte→Detail-Morph** (inkl. Browser-Back): VT-Namen `zk-shared-motif/title` — `RecipeCard`/`RecipeView`, CSS `styles/base.css`
+- **Karte→Detail-Morph** (inkl. Browser-Back): VT-Namen `zk-shared-motif/title` — Quellen: `RecipeCard`, Wochenplan-Zeilen (`PlanEntryRow`, Duplikat-Guard: nur die erste Zeile je Rezept trägt die Namen) und Einkauf-Nach-Gericht-Zeilen (Öffnen-Button); Ziel `RecipeView`, CSS `styles/base.css`
 - **Conjure-Stage** (KI-Loader, 320px Kessel/Shaker): `components/recipe/ConjureStage.tsx`
 - **Hero-Moment** bei Fertigstellung (Settle-Pop + Glow-Sweep + Haptik + `SparkBurst`): `GeneratePage`
 - **Favorit-Reward**: `FavoriteButton.tsx` · **Digit-Roll**: `NumberTicker.tsx` · **Count-up**: `recipe/CountUp.tsx`
