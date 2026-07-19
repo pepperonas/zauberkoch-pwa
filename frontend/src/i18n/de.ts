@@ -16,6 +16,7 @@ export const de = {
     login: 'Mit Google anmelden',
     devLogin: 'Dev-Login (lokal)',
     logout: 'Abmelden',
+    loggingOut: 'Du wirst abgemeldet …',
     loginRequired: 'Bitte melde dich an, um Rezepte zu zaubern.',
     notAllowed: 'Dein Konto ist noch nicht freigeschaltet. Melde dich beim Betreiber, um Zugang zu erhalten.',
     loginFailed: 'Anmeldung fehlgeschlagen. Bitte versuche es erneut.',

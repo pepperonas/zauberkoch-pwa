@@ -16,9 +16,11 @@ import '../pages/wizard.css';
 interface Props {
   open: boolean;
   onClose: () => void;
+  /** Delegates logout to the shell (CRT power-off flow); falls back to a plain logout. */
+  onLogout?: () => void;
 }
 
-export function ProfileSheet({ open, onClose }: Props) {
+export function ProfileSheet({ open, onClose, onLogout }: Props) {
   const { me, refreshMe } = useApp();
   const { show } = useSnackbar();
   const [prefs, setPrefs] = useState<Preferences | null>(null);
@@ -59,6 +61,11 @@ export function ProfileSheet({ open, onClose }: Props) {
 
   // On narrow screens the header logout is hidden — this is the fallback.
   const logout = async () => {
+    if (onLogout) {
+      onClose();
+      onLogout(); // shell plays the CRT power-off and logs out after it
+      return;
+    }
     await api.logout();
     refreshMe();
     onClose();

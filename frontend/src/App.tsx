@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   createBrowserRouter,
@@ -9,6 +9,7 @@ import {
   useLocation,
 } from 'react-router-dom';
 
+import { CrtOff } from './components/CrtOff';
 import { Icon, type IconName } from './components/icons';
 import { ProfileSheet } from './components/ProfileSheet';
 import { IconButton } from './components/ui';
@@ -82,12 +83,38 @@ function Shell() {
   const { me, theme, toggleTheme, refreshMe } = useApp();
   const location = useLocation();
   const online = useOnline();
+  const reduced = useReducedMotion();
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const handleLogout = async () => {
-    await api.logout();
-    refreshMe();
+  // Logout runs behind a CRT power-off overlay: 'anim' plays the tube
+  // shutdown, 'done' holds full black while the session actually ends, and
+  // once `me` is gone (landing page mounted underneath) the overlay exits
+  // with a short reveal fade. Reduced motion skips the theatrics entirely.
+  const [crtPhase, setCrtPhase] = useState<'idle' | 'anim' | 'done'>('idle');
+
+  const handleLogout = () => {
+    if (reduced) {
+      void api.logout().finally(refreshMe);
+      return;
+    }
+    setCrtPhase((p) => (p === 'idle' ? 'anim' : p));
   };
+
+  // The actual logout fires only after the tube is dark (task: no redirect
+  // mid-animation). finally: even a failed call refreshes /me — and the
+  // timeout below guarantees the overlay can never trap the user on black.
+  useEffect(() => {
+    if (crtPhase !== 'done') return;
+    void api.logout().finally(refreshMe);
+    const failsafe = window.setTimeout(() => setCrtPhase('idle'), 2500);
+    return () => window.clearTimeout(failsafe);
+    // deps: crtPhase only — refreshMe changes identity when `me` flips, and
+    // re-running here would fire a second logout call.
+  }, [crtPhase]);
+
+  useEffect(() => {
+    if (crtPhase === 'done' && !me) setCrtPhase('idle'); // landing is there — reveal
+  }, [crtPhase, me]);
 
   // Warm the route chunks on idle so navigating never hits a blank Suspense
   // fallback (the flash between an instant DOM swap and the entering animation).
@@ -138,7 +165,7 @@ function Shell() {
                   <Icon name="user" size={24} />
                 )}
               </IconButton>
-              <IconButton className="shell__logout" label={t('auth.logout')} onClick={() => void handleLogout()}>
+              <IconButton className="shell__logout" label={t('auth.logout')} onClick={handleLogout}>
                 <Icon name="power" size={24} />
               </IconButton>
             </>
@@ -188,7 +215,7 @@ function Shell() {
         </div>
       )}
 
-      {me && <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} />}
+      {me && <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} onLogout={handleLogout} />}
       {me && (
         <Suspense fallback={null}>
           <GenerationPill />
@@ -231,6 +258,11 @@ function Shell() {
           </AnimatePresence>
         </nav>
       )}
+
+      {/* CRT power-off overlay: exit = reveal fade onto the landing page */}
+      <AnimatePresence>
+        {crtPhase !== 'idle' && <CrtOff onDone={() => setCrtPhase('done')} />}
+      </AnimatePresence>
 
       {/* react-router restores scroll on POP, resets on PUSH (history.state keyed). */}
       <ScrollRestoration />
