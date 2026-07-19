@@ -81,3 +81,9 @@ export const errorIn = {
  * fired on press alongside the action (never delaying it).
  */
 export const shuffleWiggle = { rotate: [0, -14, 12, -7, 0], scale: [1, 1.15, 1] } as const;
+
+/**
+ * Number count-up reveal (nutrition values). Effects-class: NO overshoot —
+ * a kcal figure must never run past its value and come back.
+ */
+export const countUp: Transition = { type: 'spring', visualDuration: 0.7, bounce: 0 };

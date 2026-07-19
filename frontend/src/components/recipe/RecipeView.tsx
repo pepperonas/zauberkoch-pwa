@@ -13,6 +13,7 @@ import { useViewTransitionState } from 'react-router-dom';
 
 import { SHARED_MOTIF, SHARED_TITLE } from '../../state/viewTransition';
 import { Icon } from '../icons';
+import { CountUp } from './CountUp';
 import { NumberTicker } from './NumberTicker';
 import { motifForRecipe, RecipeMotif } from './RecipeMotif';
 import './recipe.css';
@@ -208,25 +209,25 @@ export function RecipeView({ data, mode, streaming = false, actions, onPortionen
           <div className="nutri" style={{ marginTop: 'var(--space-3)' }}>
             {data.naehrwerte.kalorien_kcal != null && (
               <div className="nutri__cell">
-                <div className="nutri__value">{data.naehrwerte.kalorien_kcal}</div>
+                <div className="nutri__value"><CountUp value={data.naehrwerte.kalorien_kcal} /></div>
                 <div className="nutri__label">{t('recipe.calories')}</div>
               </div>
             )}
             {data.naehrwerte.eiweiss_g != null && (
               <div className="nutri__cell">
-                <div className="nutri__value">{data.naehrwerte.eiweiss_g} g</div>
+                <div className="nutri__value"><CountUp value={data.naehrwerte.eiweiss_g} decimals={1} /> g</div>
                 <div className="nutri__label">{t('recipe.protein')}</div>
               </div>
             )}
             {data.naehrwerte.fett_g != null && (
               <div className="nutri__cell">
-                <div className="nutri__value">{data.naehrwerte.fett_g} g</div>
+                <div className="nutri__value"><CountUp value={data.naehrwerte.fett_g} decimals={1} /> g</div>
                 <div className="nutri__label">{t('recipe.fat')}</div>
               </div>
             )}
             {data.naehrwerte.kohlenhydrate_g != null && (
               <div className="nutri__cell">
-                <div className="nutri__value">{data.naehrwerte.kohlenhydrate_g} g</div>
+                <div className="nutri__value"><CountUp value={data.naehrwerte.kohlenhydrate_g} decimals={1} /> g</div>
                 <div className="nutri__label">{t('recipe.carbs')}</div>
               </div>
             )}
