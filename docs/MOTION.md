@@ -27,6 +27,7 @@
 | `rewardPop` / `dismissDip` / `pressStar` | keyframes | Favorit-Reward-Familie |
 | `errorIn` | variants | Fehler-Entrance: sanfter, abklingender Shake |
 | `shuffleWiggle` | keyframes | „Überrasch mich"-Geschenk-Wiggle (Hover/Press) |
+| `--shape-press` + `--effects-ease/duration` (tokens.css) | CSS | Press-Shape-Morph Pille→Rechteck auf filled/tonal Buttons (dokumentierte border-radius-Ausnahme, reduced-motion aus) |
 
 **`src/motion/springs.ts`** (älterer Satz, weiter gültig): `spring`/`springBouncy`/`springSnappy`/`springSoft`, `riseIn`/`popIn`, `pressScale`, `stagger(i)`.
 
