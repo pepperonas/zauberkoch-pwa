@@ -28,7 +28,7 @@ import { cuisineAllowsMeal } from '../lib/mealCompat';
 import { api } from '../lib/api';
 import type { GenerateParams, Me, Modus, Preferences, Schwierigkeit } from '../lib/types';
 import { spring, springSnappy } from '../motion/springs';
-import { errorIn, fastSpatial, reducedFade, slowSpatial, staggerIn } from '../motion/tokens';
+import { errorIn, fastSpatial, reducedFade, shuffleWiggle, slowSpatial, staggerIn } from '../motion/tokens';
 import { useApp } from '../state/app';
 import { useLocalStorageState } from '../state/useLocalStorageState';
 import {
@@ -679,7 +679,18 @@ export function GeneratePage() {
       <div className="wiz__surprise">
         <Tooltip text={t('tips.surprise')}>
           <Button variant="outlined" onClick={() => generate({ ueberrasch_mich: true, kueche: '', kueche_freitext: '', gericht_typ: '', drink_typ: '' })}>
-            <Icon name="gift" size={18} /> {t('wizard.surpriseMe')}
+            {/* Playful shuffle: full wiggle on hover, quick tilt while pressed
+                (the click swaps to the conjure stage instantly, so a post-click
+                animation would never be seen). */}
+            <motion.span
+              style={{ display: 'inline-flex' }}
+              whileHover={reduced ? undefined : shuffleWiggle}
+              whileTap={reduced ? undefined : { rotate: 12, scale: 1.18 }}
+              transition={fastSpatial}
+            >
+              <Icon name="gift" size={18} />
+            </motion.span>{' '}
+            {t('wizard.surpriseMe')}
           </Button>
         </Tooltip>
       </div>
