@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Icon } from '../components/icons';
 import { RecipeCard } from '../components/recipe/RecipeCard';
 import { Chip } from '../components/ui';
+import { StateNote } from '../components/ui/StateNote';
 import { strings, t } from '../i18n';
 import { api } from '../lib/api';
 
@@ -53,9 +54,9 @@ export function HistoryPage() {
           ))}
         </div>
         {recipes.isLoading ? (
-          <p className="muted">{t('common.loading')}</p>
+          <StateNote>{t('common.loading')}</StateNote>
         ) : items.length === 0 ? (
-          <p className="muted">{t('history.empty')}</p>
+          <StateNote icon="history">{t('history.empty')}</StateNote>
         ) : (
           items.map((item, i) => <RecipeCard key={item.id} item={item} index={i} />)
         )}

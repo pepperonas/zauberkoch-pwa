@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Icon } from '../components/icons';
 import { motifForRecipe, RecipeMotif } from '../components/recipe/RecipeMotif';
 import { Button, IconButton, Segmented } from '../components/ui';
+import { StateNote } from '../components/ui/StateNote';
 import { t } from '../i18n';
 import { api } from '../lib/api';
 import { formatZutatMenge } from '../lib/units';
@@ -200,9 +201,9 @@ export function ShoppingPage() {
         />
 
         {list.isLoading ? (
-          <p className="muted">{t('common.loading')}</p>
+          <StateNote>{t('common.loading')}</StateNote>
         ) : order.length === 0 ? (
-          <p className="muted">{t('shopping.empty')}</p>
+          <StateNote icon="cart">{t('shopping.empty')}</StateNote>
         ) : (
           <Reorder.Group axis="y" values={order} onReorder={setOrder} as="div" style={{ listStyle: 'none' }}>
             <AnimatePresence>
