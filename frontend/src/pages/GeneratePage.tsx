@@ -50,6 +50,13 @@ export function GeneratePage() {
 
   // Wizard state
   const [step, setStep] = useState(0);
+  // Slide direction: forward slides in from the right, back from the left —
+  // mirrored offsets keep the steps spatially consistent.
+  const [stepDir, setStepDir] = useState(1);
+  const goStep = (next: number) => {
+    setStepDir(next > step ? 1 : -1);
+    setStep(next);
+  };
   const [kueche, setKueche] = useState('');
   const [kuecheFrei, setKuecheFrei] = useState('');
   const [gerichtTyp, setGerichtTyp] = useState('');
@@ -459,12 +466,21 @@ export function GeneratePage() {
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
+      {/* custom carries the direction through AnimatePresence so the EXITING
+          step also slides the right way (its own props are stale by then).
+          reduced → dir 0 = flat fade. */}
+      <AnimatePresence mode="wait" custom={reduced ? 0 : stepDir}>
         <motion.div
           key={step}
-          initial={reduced ? undefined : { opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={reduced ? undefined : { opacity: 0, x: -40 }}
+          custom={reduced ? 0 : stepDir}
+          variants={{
+            enter: (d: number) => ({ opacity: 0, x: 40 * d }),
+            center: { opacity: 1, x: 0 },
+            exit: (d: number) => ({ opacity: 0, x: -40 * d }),
+          }}
+          initial="enter"
+          animate="center"
+          exit="exit"
           transition={springSnappy}
         >
           {step === 0 && mode === 'cocktail' && (
@@ -671,12 +687,12 @@ export function GeneratePage() {
 
       <div className="wiz__nav">
         {step > 0 ? (
-          <Button variant="text" onClick={() => setStep(step - 1)}>← {t('wizard.back')}</Button>
+          <Button variant="text" onClick={() => goStep(step - 1)}>← {t('wizard.back')}</Button>
         ) : (
           <span />
         )}
         {step < 2 ? (
-          <Button onClick={() => setStep(step + 1)}>{t('wizard.next')} →</Button>
+          <Button onClick={() => goStep(step + 1)}>{t('wizard.next')} →</Button>
         ) : (
           <Tooltip text={t('tips.generate')}>
             <Button big onClick={() => generate()}><Icon name="wand" size={20} /> {t('wizard.generate')}</Button>
