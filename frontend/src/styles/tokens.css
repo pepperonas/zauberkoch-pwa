@@ -42,6 +42,11 @@
   --shape-lg: 24px;
   --shape-xl: 28px;
   --shape-full: 999px;
+  --shape-press: 18px; /* press-morph target: pill buttons squish to this radius (M3E shape morph) */
+
+  /* Effects-class timing for CSS-only transitions (shape morph) — mirrors motion/tokens.ts effectsDefault */
+  --effects-ease: cubic-bezier(0.34, 0.8, 0.34, 1);
+  --effects-duration: 200ms;
 
   /* ---------- Spacing ---------- */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;

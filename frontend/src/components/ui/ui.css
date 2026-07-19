@@ -17,6 +17,21 @@
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn--filled { background: var(--c-primary); color: var(--c-on-primary); box-shadow: var(--elev-1); }
 .btn--tonal { background: var(--c-secondary-container); color: var(--c-on-secondary-container); }
+
+/* M3E shape morph: filled/tonal pills squish into a rounded rect while
+   pressed — shape as feedback on the action buttons. Documented exception to
+   the transform/opacity rule (pure paint on a small area, effects timing);
+   disabled under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn--filled,
+  .btn--tonal {
+    transition: border-radius var(--effects-duration) var(--effects-ease);
+  }
+  .btn--filled:active,
+  .btn--tonal:active {
+    border-radius: var(--shape-press);
+  }
+}
 .btn--outlined { background: transparent; color: var(--c-primary); box-shadow: inset 0 0 0 1.5px var(--c-outline-variant); }
 .btn--text { background: transparent; color: var(--c-primary); padding: 0 var(--space-4); }
 .btn--danger { background: var(--c-error-container); color: var(--c-on-error-container); }
