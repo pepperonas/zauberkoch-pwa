@@ -38,13 +38,14 @@ Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch s
 - 📷 **Kühlschrank-Scan** — Foto hochladen, die Vision-KI erkennt die Zutaten und füllt den Kühlschrank-Schritt
 - 🔁 **Zutaten-Ersatz** — fehlt eine Zutat, liefert ein Mini-KI-Call 2–3 realistische Alternativen mit Mengen-Hinweis
 - 📱 **Koch-Modus** — Vollbild, ein Schritt pro Screen, Swipe-Navigation, integrierte Timer, Wake Lock, **Sprachsteuerung** („weiter" / „zurück" / „beenden", Web Speech API)
-- 📅 **Wochenplaner** — Rezepte auf Wochentage legen, „Woche → Einkaufsliste" aggregiert alles in einem Schritt
+- 📅 **Wochenplaner** — Rezepte auf Wochentage legen, „Woche → Einkaufsliste" aggregiert alles in einem Schritt; jeder Plan-Eintrag öffnet sein Rezept per Container-Transform
 - 🔢 **Portionen-Stepper** mit live skalierenden Mengen und rollenden Ziffern
 - 🛒 **Einkaufsliste** — Zutaten mehrerer Rezepte werden aggregiert (Einheiten normalisiert: kg→g, cl→ml), Drag-Reorder, Teilen, überall Undo
 - ⭐ **Favoriten & Verlauf** mit Suche und Filtern
 - 🔗 **Teilen** — unlisted Links mit server-seitig generierten OG-Thumbnails (Pillow, 1200×630); geteilte Rezepte können in die eigene Sammlung übernommen werden
 - 🎨 **Material 3 Expressive, handgebaut** — Design-Tokens als CSS Custom Properties, echte Spring-Physik (Motion), Theme-Wechsel als Circular Reveal (View Transitions API), `prefers-reduced-motion` überall
-- 🎞️ **Shared-Element-Navigation** — beim Öffnen eines Rezepts wandern Grafik und Titel per **Material Container Transform** (native View Transitions API) von der Listenkarte in die Detailansicht; Tabs faden through, Zurück morpht zurück — **auch der Browser-Back-Button auf Mobile** (react-router Data-Router-View-Transitions), alles GPU-composited (nur `transform`/`opacity`)
+- 🎞️ **Shared-Element-Navigation** — Grafik und Titel wandern per **Material Container Transform** (native View Transitions API) in die Detailansicht — aus der Rezeptliste, dem Wochenplaner und der Einkaufsliste; Tabs faden through, Zurück morpht zurück — **auch der Browser-Back-Button auf Mobile** (react-router Data-Router-View-Transitions), alles GPU-composited (nur `transform`/`opacity`)
+- 📺 **CRT-Abschalt-Logout** — beim Abmelden kollabiert der Screen wie ein alter Röhrenfernseher (Scanline → Punkt → Ausglühen), theme-bewusst und `prefers-reduced-motion`-fest
 - 💬 **Erklärende Hover-Tooltips** an den Aktions-Buttons (Desktop, `prefers-reduced-motion`-fest)
 - 🛡️ **Admin-Panel** — Nutzungs-/Kosten-Dashboard (Generierungen, Tokens, Cache-Quote, Feedback pro Prompt-Version) + Allowlist-Verwaltung, per `ZK_ADMIN_EMAILS` freigeschaltet
 - 📲 **PWA** — installierbar, Favoriten offline lesbar, unaufdringlicher Offline-Indikator statt Fehlerseiten
