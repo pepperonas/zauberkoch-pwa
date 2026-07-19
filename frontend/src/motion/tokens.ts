@@ -71,10 +71,11 @@ export const pressStar = { scale: 0.8 } as const;
  * without being harsh (M3 error state: "sanftes Schütteln", never a jolt).
  * Spatial keyframes only; pair with `fastSpatial` (reduced: flat fade).
  */
+/* not `as const`: motion's keyframe props need mutable arrays */
 export const errorIn = {
   initial: { opacity: 0, scale: 0.98 },
   animate: { opacity: 1, scale: 1, x: [0, -8, 7, -4, 0] },
-} as const;
+};
 
 /**
  * Playful shuffle wiggle for the "surprise me" gift icon — one focal effect,
