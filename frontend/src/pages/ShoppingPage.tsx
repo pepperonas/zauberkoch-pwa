@@ -4,6 +4,7 @@
 
 import { AnimatePresence, motion, useReducedMotion, Reorder, useDragControls } from 'motion/react';
 import { Fragment, useEffect, useState } from 'react';
+import { useLocation, useNavigate, useViewTransitionState } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Icon } from '../components/icons';
@@ -16,6 +17,7 @@ import { formatZutatMenge } from '../lib/units';
 import type { RecipeListItem, ShoppingItem } from '../lib/types';
 import { riseIn, spring, springBouncy, stagger } from '../motion/springs';
 import { useLocalStorageState } from '../state/useLocalStorageState';
+import { SHARED_MOTIF, SHARED_TITLE } from '../state/viewTransition';
 import { useShoppingUndo } from '../state/useShoppingUndo';
 
 function itemLabel(item: ShoppingItem): string {
@@ -297,37 +299,67 @@ function RecipeRow({
   reduced: boolean;
 }) {
   const { withUndo } = useShoppingUndo();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
   const detail = useQuery({
     queryKey: ['recipes', 'detail', item.id],
     queryFn: () => api.recipe(item.id),
     enabled: open,
   });
 
+  // Shared-element morph to the recipe detail (same pattern as RecipeCard):
+  // this row is the source while a transition to/from its recipe runs, and the
+  // staggered entrance is suppressed during any route morph on this page.
+  const isSource = useViewTransitionState(`/rezept/${item.id}`);
+  const morphing = isSource || useViewTransitionState(location.pathname);
+  const queryOpts = { queryKey: ['recipes', item.id], queryFn: () => api.recipe(item.id) };
+  const openRecipe = async () => {
+    await queryClient.ensureQueryData(queryOpts); // hero must render synchronously
+    navigate(`/rezept/${item.id}`, { viewTransition: true });
+  };
+
   return (
     <motion.div
       className="card card--outlined"
-      {...(reduced ? {} : riseIn)}
+      {...(reduced || morphing ? {} : riseIn)}
       transition={stagger(Math.min(index, 8))}
     >
-      <button
-        className="row row--between"
-        onClick={onToggle}
-        aria-expanded={open}
-        style={{ width: '100%', textAlign: 'left', minHeight: 'var(--touch-target)' }}
-      >
-        <span className="row" style={{ minWidth: 0 }}>
-          <RecipeMotif motif={motifForRecipe(item)} seed={item.titel} size={44} />
-          <span style={{ minWidth: 0 }}>
-            <span style={{ display: 'block', font: 'var(--type-title)' }}>{item.titel}</span>
-            <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
-              {item.mode === 'cocktail' ? <><Icon name="cocktail" size={12} />{' '}</> : null}{item.kueche}
+      <div className="row" style={{ width: '100%' }}>
+        <button
+          className="row row--between"
+          onClick={onToggle}
+          aria-expanded={open}
+          style={{ flex: 1, minWidth: 0, textAlign: 'left', minHeight: 'var(--touch-target)' }}
+        >
+          <span className="row" style={{ minWidth: 0 }}>
+            <RecipeMotif
+              motif={motifForRecipe(item)}
+              seed={item.titel}
+              size={44}
+              style={isSource ? { viewTransitionName: SHARED_MOTIF } : undefined}
+            />
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: 'block', font: 'var(--type-title)', viewTransitionName: isSource ? SHARED_TITLE : undefined }}>
+                {item.titel}
+              </span>
+              <span className="muted" style={{ font: 'var(--type-label-sm)' }}>
+                {item.mode === 'cocktail' ? <><Icon name="cocktail" size={12} />{' '}</> : null}{item.kueche}
+              </span>
             </span>
           </span>
-        </span>
-        <motion.span aria-hidden animate={{ rotate: open ? 180 : 0 }} transition={spring} className="muted">
-          ▾
-        </motion.span>
-      </button>
+          <motion.span aria-hidden animate={{ rotate: open ? 180 : 0 }} transition={spring} className="muted">
+            ▾
+          </motion.span>
+        </button>
+        <IconButton
+          label={t('common.openRecipe')}
+          onPointerDown={() => void queryClient.prefetchQuery(queryOpts)}
+          onClick={() => void openRecipe()}
+        >
+          <Icon name="plate" size={20} />
+        </IconButton>
+      </div>
 
       <AnimatePresence initial={false}>
         {open && (
