@@ -26,15 +26,23 @@ Pick a cuisine, flavors and constraints — the app streams a cookbook-quality r
 - **Two modes** — cooking & cocktails (incl. mocktails, cl measurements, shaken/stirred/built), with an animated color-scheme morph (saffron ↔ violet)
 - **Adapt on demand** — tweak any recipe via chips or free text ("spicier", "no oven", "meal-prep")
 - **Preference profile** — diet, no-go ingredients and default servings merged into every generation
-- **Cook mode** — fullscreen, one step per screen, swipe navigation, built-in timers (chime + notification), wake lock
+- **Try without signing up** — generate one recipe right on the landing page, no account needed (fair-use limited)
+- **Fridge scan** — upload a photo, the vision model recognizes your ingredients and fills the fridge step
+- **Ingredient substitution** — missing something? A small AI call suggests 2–3 realistic alternatives with quantity hints
+- **Weekly planner** — drop recipes onto weekdays, "week → shopping list" aggregates everything in one step
+- **Cook mode** — fullscreen, one step per screen, swipe navigation, built-in timers (chime + notification), wake lock, **voice control** (Web Speech API)
 - **Lighthouse 99/100/100/100** measured against production
 - **Shopping list** with unit normalization and aggregation, drag reorder, undo everywhere
 - **Sharing** — unlisted links with server-rendered OG thumbnails (Pillow, 1200×630); shared recipes can be adopted into your own collection
 - **Handmade Material 3 Expressive** — design tokens as CSS custom properties, real spring physics (Motion), circular-reveal theme switch (View Transitions API), `prefers-reduced-motion` throughout
-- **Shared-element navigation** — opening a recipe morphs the dish graphic and title from the list card into the detail view via **Material Container Transform** (native View Transitions API); tabs fade through, back reverses the morph, all GPU-composited (`transform`/`opacity` only)
+- **Shared-element navigation** — opening a recipe morphs the dish graphic and title from the list card into the detail view via **Material Container Transform** (native View Transitions API); tabs fade through, back reverses the morph — **including the browser back button on mobile** (react-router data-router view transitions), all GPU-composited (`transform`/`opacity` only)
 - **Explanatory hover tooltips** on the action buttons (desktop, `prefers-reduced-motion`-safe)
 - **Admin panel** — usage/cost dashboard (generations, tokens, cache rate, feedback per prompt version) + allowlist management, gated via `ZK_ADMIN_EMAILS`
-- **PWA** — installable, favorites readable offline
+- **PWA** — installable, favorites readable offline, unobtrusive offline indicator instead of error pages
+
+## Tests
+
+205 automated tests (127 backend pytest — 95 % statement coverage as of 2026-07-19 — plus 78 frontend Vitest) run on every push via [GitHub Actions](.github/workflows/ci.yml); a local Playwright smoke covers the E2E flow. No test ever calls the real Anthropic API.
 
 ## Stack
 

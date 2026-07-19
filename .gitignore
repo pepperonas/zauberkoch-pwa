@@ -5,6 +5,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# Coverage-Reports (lokal messen, nie committen)
+backend/.coverage
+frontend/coverage/
+
 # Node / Build
 node_modules/
 frontend/dist/

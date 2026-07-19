@@ -33,5 +33,12 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    coverage: {
+      // Honest project-wide numbers: measure ALL source files, not just the
+      // ones a test happens to import. UI pages/features are E2E territory —
+      // unit coverage focuses on lib/state/i18n logic.
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.*', 'src/vite-env.d.ts'],
+    },
   },
 });

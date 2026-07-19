@@ -33,17 +33,21 @@ Küche wählen, Geschmack wählen, Rahmenbedingungen setzen — der Zauberkoch s
 - 👤 **Präferenz-Profil** — Ernährungsform, No-Go-Zutaten und Standard-Personenzahl fließen automatisch in jede Generierung
 - 👍 **Feedback pro Rezept** (mit Grund-Chips) — fließt in die Prompt-Iteration; 📝 persönliche Koch-Notizen + „Gekocht"-Zähler
 - 🍳/🍸 **Zwei Modi** — Kochen & Cocktails (inkl. Mocktails, cl-Angaben, shaken/stirred/built), mit animiertem Farbschema-Morph (Safran ↔ Violett)
-- 🧙 **3-Schritt-Wizard**, komplett überspringbar: Länderküche, Geschmacks-Chips, Constraints (Diät, Zeit, Schwierigkeit, „Was hab ich im Kühlschrank"), „Überrasch mich"
-- 📱 **Koch-Modus** — Vollbild, ein Schritt pro Screen, Swipe-Navigation, integrierte Timer, Wake Lock
+- 🧙 **3-Schritt-Wizard**, komplett überspringbar: Gericht-Art, Länderküche (personalisierbare Chips), Geschmacks-Chips, Constraints (Diät, Zeit, Schwierigkeit, „Was hab ich im Kühlschrank"), „Überrasch mich"
+- ✨ **Probier-Zauber** — ein Rezept direkt auf der Landing-Page generieren, ganz ohne Anmeldung (fair-use-limitiert)
+- 📷 **Kühlschrank-Scan** — Foto hochladen, die Vision-KI erkennt die Zutaten und füllt den Kühlschrank-Schritt
+- 🔁 **Zutaten-Ersatz** — fehlt eine Zutat, liefert ein Mini-KI-Call 2–3 realistische Alternativen mit Mengen-Hinweis
+- 📱 **Koch-Modus** — Vollbild, ein Schritt pro Screen, Swipe-Navigation, integrierte Timer, Wake Lock, **Sprachsteuerung** („weiter" / „zurück" / „beenden", Web Speech API)
+- 📅 **Wochenplaner** — Rezepte auf Wochentage legen, „Woche → Einkaufsliste" aggregiert alles in einem Schritt
 - 🔢 **Portionen-Stepper** mit live skalierenden Mengen und rollenden Ziffern
 - 🛒 **Einkaufsliste** — Zutaten mehrerer Rezepte werden aggregiert (Einheiten normalisiert: kg→g, cl→ml), Drag-Reorder, Teilen, überall Undo
 - ⭐ **Favoriten & Verlauf** mit Suche und Filtern
 - 🔗 **Teilen** — unlisted Links mit server-seitig generierten OG-Thumbnails (Pillow, 1200×630); geteilte Rezepte können in die eigene Sammlung übernommen werden
 - 🎨 **Material 3 Expressive, handgebaut** — Design-Tokens als CSS Custom Properties, echte Spring-Physik (Motion), Theme-Wechsel als Circular Reveal (View Transitions API), `prefers-reduced-motion` überall
-- 🎞️ **Shared-Element-Navigation** — beim Öffnen eines Rezepts wandern Grafik und Titel per **Material Container Transform** (native View Transitions API) von der Listenkarte in die Detailansicht; Tabs faden through, Zurück morpht zurück, alles GPU-composited (nur `transform`/`opacity`)
+- 🎞️ **Shared-Element-Navigation** — beim Öffnen eines Rezepts wandern Grafik und Titel per **Material Container Transform** (native View Transitions API) von der Listenkarte in die Detailansicht; Tabs faden through, Zurück morpht zurück — **auch der Browser-Back-Button auf Mobile** (react-router Data-Router-View-Transitions), alles GPU-composited (nur `transform`/`opacity`)
 - 💬 **Erklärende Hover-Tooltips** an den Aktions-Buttons (Desktop, `prefers-reduced-motion`-fest)
 - 🛡️ **Admin-Panel** — Nutzungs-/Kosten-Dashboard (Generierungen, Tokens, Cache-Quote, Feedback pro Prompt-Version) + Allowlist-Verwaltung, per `ZK_ADMIN_EMAILS` freigeschaltet
-- 📲 **PWA** — installierbar, Favoriten offline lesbar
+- 📲 **PWA** — installierbar, Favoriten offline lesbar, unaufdringlicher Offline-Indikator statt Fehlerseiten
 - 🔐 Google OAuth (PKCE, server-seitig), httpOnly-Sessions, CSRF-Schutz, Tageslimits pro User + global
 - 🚀 **Lighthouse 99 / 100 / 100 / 100** (Performance / Accessibility / Best Practices / SEO, gemessen gegen Prod)
 
@@ -90,12 +94,14 @@ Google-OAuth-Einrichtung: [`docs/GOOGLE-OAUTH.md`](docs/GOOGLE-OAUTH.md) · Depl
 ## Tests
 
 ```bash
-cd backend && pytest             # Auth, Rate-Limits, Cache, SSE-Parser, Prompts, Share/OG …
-cd frontend && npm test          # Mengen-Skalierung, Einheiten, i18n, Share-Text
+cd backend && pytest             # 127 Tests: Auth, Rate-Limits, Cache, SSE-Parser, KI-Orchestrierung, Prompts, Share/OG …
+cd backend && pytest --cov=app   # mit Coverage-Report (Stand 2026-07-19: 95 % Statements)
+cd frontend && npm test          # 78 Tests: Mengen-Skalierung, Einheiten, i18n, SSE-Client, Theme-Toggle, Stores
+cd frontend && npm test -- --coverage   # Logik-Schicht (lib/state/i18n) gemessen; UI-Flächen deckt der E2E-Smoke ab
 cd frontend && npx playwright test   # E2E-Smoke (lokal)
 ```
 
-Alle Suiten laufen bei jedem Push als [GitHub Action](.github/workflows/ci.yml).
+Alle Suiten laufen bei jedem Push als [GitHub Action](.github/workflows/ci.yml). Kein Test ruft die echte Anthropic-API auf.
 
 ## Mitmachen
 

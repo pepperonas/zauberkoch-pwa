@@ -50,6 +50,7 @@ source .venv/bin/activate
 uvicorn app.main:app --reload --port 8742     # Dev-Server
 alembic upgrade head                          # Migrationen
 pytest                                        # Tests — Pflicht vor Deploy
+pytest --cov=app                              # Coverage-Report (pytest-cov)
 python -m scripts.allowlist add <email>       # Allowlist verwalten
 python -m scripts.stats [tage]                # Usage/Kosten/Cache-Quote/Feedback-Report
 python -m scripts.smoke_ai [cocktail]         # 1 echte Generierung (Prompt/Parser-Smoke, kostet Tokens)
