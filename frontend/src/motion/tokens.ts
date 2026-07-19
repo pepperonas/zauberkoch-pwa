@@ -80,7 +80,8 @@ export const errorIn = {
  * Playful shuffle wiggle for the "surprise me" gift icon — one focal effect,
  * fired on press alongside the action (never delaying it).
  */
-export const shuffleWiggle = { rotate: [0, -14, 12, -7, 0], scale: [1, 1.15, 1] } as const;
+/* not `as const`: whileHover needs mutable keyframe arrays */
+export const shuffleWiggle = { rotate: [0, -14, 12, -7, 0], scale: [1, 1.15, 1] };
 
 /**
  * Number count-up reveal (nutrition values). Effects-class: NO overshoot —
