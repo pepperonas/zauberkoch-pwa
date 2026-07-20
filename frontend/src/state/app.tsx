@@ -84,7 +84,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           Math.max(x, window.innerWidth - x),
           Math.max(y, window.innerHeight - y),
         );
-        const duration = 900;
+        // Mobile: shorter reveal (celox.io fix, verified on-device). The WAAPI
+        // timeline keeps advancing while the compositor rasterizes the new-theme
+        // snapshot — dropped first frames make a 900ms run read as "stalls,
+        // then jumps ahead" on phone GPUs (S24 Ultra). 520ms keeps the wipe
+        // readable and shrinks the visible catch-up to almost nothing.
+        const smallOrCoarse = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+        const duration = smallOrCoarse ? 520 : 900;
         root.classList.add('zk-theme-vt');
 
         const vt = doc.startViewTransition(() => {
