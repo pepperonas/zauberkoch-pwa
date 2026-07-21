@@ -239,3 +239,10 @@
   .nav__item { min-width: 56px; font-size: 0.68rem; }
   .nav { padding: 5px; gap: 2px; }
 }
+
+/* Theme-toggle glyph: both icons stacked, CSS picks by data-theme (no React
+   state -> no re-render during the reveal; see toggleTheme). */
+.themeicon { display: grid; place-items: center; }
+.themeicon > * { grid-area: 1 / 1; }
+:root[data-theme='dark'] .themeicon__moon,
+:root:not([data-theme='dark']) .themeicon__sun { display: none; }

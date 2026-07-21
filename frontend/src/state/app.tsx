@@ -1,7 +1,6 @@
 /** App-level state: theme, mode (kochen/cocktail), current user. */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
-import { flushSync } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalStorageState } from './useLocalStorageState';
 
@@ -79,44 +78,84 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (doc.startViewTransition && origin && !reduced) {
         const x = origin.x;
         const y = origin.y;
-        // Exact end radius: farthest viewport corner from the origin (px).
-        const endRadius = Math.hypot(
-          Math.max(x, window.innerWidth - x),
-          Math.max(y, window.innerHeight - y),
-        );
-        // Mobile: shorter reveal (celox.io fix, verified on-device). The WAAPI
-        // timeline keeps advancing while the compositor rasterizes the new-theme
-        // snapshot — dropped first frames make a 900ms run read as "stalls,
-        // then jumps ahead" on phone GPUs (S24 Ultra). 520ms keeps the wipe
-        // readable and shrinks the visible catch-up to almost nothing.
-        const smallOrCoarse = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
-        const duration = smallOrCoarse ? 520 : 900;
+        // End radius: farthest viewport corner from the origin, plus 8% slack —
+        // if the URL bar RETRACTS mid-reveal the viewport grows, and a radius
+        // measured against the smaller one would leave an unrevealed sliver.
+        // The overshoot happens off-screen, so it costs nothing visually.
+        const endRadius =
+          Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y)) * 1.08;
+        // Same duration everywhere: the mobile stutter was never about length
+        // (see the dvh freeze + start delay below). A LONGER timeline is in
+        // fact more forgiving of a hiccup, and matching desktop is the point.
+        const duration = 900;
+
+        // MOBILE STUTTER FIX (measured 2026-07-21): Chrome toggles the URL bar
+        // at view-transition start on phones. `::view-transition-new(root)` is
+        // LIVE content, so a viewport change re-lays-out and re-rasters that
+        // full-screen layer (DPR 3!) — painted frames collapsed 52 -> 13 in the
+        // harness, which reads exactly as "smooth, stalls, then races to the
+        // end" because the WAAPI timeline keeps running through the dropped
+        // frames. Two defenses:
+        // (1) freeze every 100dvh-driven height to a px value for the duration
+        //     (base.css `html.zk-theme-vt`), so the URL-bar toggle can't change
+        //     layout inside the live layer;
+        // (2) start the reveal two frames late (delay + fill:backwards, so the
+        //     pre-state is held) — the URL-bar toggle and React's commit land
+        //     BEFORE the animation instead of inside it.
+        root.style.setProperty('--zk-vt-vh', `${window.innerHeight}px`);
+        const REVEAL_DELAY = 32;
+
+        // Inverse circle as an interpolatable path(): oversized outer rect
+        // (covers the snapshot box even when it includes the URL-bar area) with
+        // a circular hole built from two relative arcs. Identical command
+        // structure at both ends, so Chrome interpolates it smoothly.
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const holeAt = (r: number) =>
+          `path(evenodd, "M${-w},${-h} H${2 * w} V${2 * h} H${-w} Z ` +
+          `M${x - r},${y} a${r},${r} 0 1,0 ${2 * r},0 a${r},${r} 0 1,0 ${-2 * r},0 Z")`;
         root.classList.add('zk-theme-vt');
 
+        // NO React work inside the transition (2026-07-21): flipping the
+        // attribute is enough — every color is a CSS custom property, and the
+        // toggle glyph is CSS-driven too (see App.tsx). Re-rendering here used
+        // to commit the WHOLE tree (every useApp consumer, incl. the off-route
+        // prewarmed detail page), whose passive effects + framer layout
+        // measurement then landed INSIDE the reveal window — "smooth, then
+        // stalls". React state is synced once the animation is over.
+        let next: Theme = 'light';
         const vt = doc.startViewTransition(() => {
-          // Attribute must flip synchronously inside the VT callback; the
-          // theme effect re-sets it later (idempotent).
-          const next: Theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
           root.setAttribute('data-theme', next);
-          flushSync(() => setTheme(next));
         });
 
         vt.ready
           .then(() =>
             root.animate(
-              {
-                clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`],
-              },
+              // Punch a GROWING HOLE into the OLD snapshot (which sits on top)
+              // instead of clipping the new one open. Visually identical — the
+              // new theme underneath is revealed by an expanding circle — but
+              // the animated clip now runs on a STATIC bitmap instead of the
+              // live-rendered root, which is what collapsed to ~6fps whenever
+              // the viewport changed mid-reveal. evenodd + an oversized outer
+              // rect: the rect covers the snapshot box, the circle cuts it out.
+              { clipPath: [holeAt(0.01), holeAt(endRadius)] },
               {
                 duration,
+                delay: REVEAL_DELAY,
+                fill: 'backwards', // hold the closed state during the delay
                 easing: 'cubic-bezier(0.22, 0.08, 0, 1)',
-                pseudoElement: '::view-transition-new(root)',
+                pseudoElement: '::view-transition-old(root)',
               },
             ).finished,
           )
           .catch(() => {});
 
-        vt.finished.finally(() => root.classList.remove('zk-theme-vt'));
+        vt.finished.finally(() => {
+          root.classList.remove('zk-theme-vt');
+          root.style.removeProperty('--zk-vt-vh');
+          setTheme(next); // sync React + localStorage now that nothing animates
+        });
         return;
       }
       withColorMorph(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')));

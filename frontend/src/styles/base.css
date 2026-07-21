@@ -66,8 +66,12 @@ html.zk-theme-vt::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
-html.zk-theme-vt::view-transition-new(root) { z-index: 2; }
-html.zk-theme-vt::view-transition-old(root) { z-index: 1; }
+/* OLD on top: the reveal punches a growing hole into the old (STATIC) snapshot
+   so the new theme underneath shows through. Clipping the frozen bitmap keeps
+   frame production alive when the viewport changes mid-reveal — clipping the
+   LIVE new layer collapsed to ~6fps in the harness (2026-07-21). */
+html.zk-theme-vt::view-transition-old(root) { z-index: 2; }
+html.zk-theme-vt::view-transition-new(root) { z-index: 1; }
 
 /* During the reveal, drop the header's backdrop blur: recomputing a blur every
    frame behind the animated clip is the main jank source on mobile GPUs. (Route
@@ -75,6 +79,19 @@ html.zk-theme-vt::view-transition-old(root) { z-index: 1; }
 html.zk-theme-vt .shell__header {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* MOBILE STUTTER FIX (measured 2026-07-21): Chrome toggles the URL bar at
+   view-transition start on phones, which changes 100dvh. Since
+   ::view-transition-new(root) is LIVE content, that re-lays-out and re-rasters
+   the whole full-screen layer mid-reveal — painted frames collapsed 52 -> 13
+   in the harness (reads as "stalls, then races to the end"). Freeze every
+   dvh-driven height to the px value captured in toggleTheme() so the URL-bar
+   toggle cannot touch layout while the reveal runs. */
+html.zk-theme-vt body,
+html.zk-theme-vt .shell,
+html.zk-theme-vt .page-tx__spacer {
+  min-height: var(--zk-vt-vh, 100dvh);
 }
 
 /* Route view transitions (Material Container Transform). The non-shared page

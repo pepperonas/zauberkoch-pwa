@@ -80,7 +80,7 @@ const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
  * <ScrollRestoration/>. The sticky header's blur is captured in the snapshot.
  */
 function Shell() {
-  const { me, meLoading, theme, toggleTheme, refreshMe } = useApp();
+  const { me, meLoading, toggleTheme, refreshMe } = useApp();
   const location = useLocation();
   const online = useOnline();
   const reduced = useReducedMotion();
@@ -162,7 +162,14 @@ function Shell() {
               toggleTheme({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
             }}
           >
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={24} />
+            {/* Both glyphs are rendered; CSS picks one from :root[data-theme].
+                That keeps the toggle's own appearance off React state, so the
+                theme switch needs NO re-render while the reveal animates
+                (see toggleTheme — React work is deferred past the transition). */}
+            <span className="themeicon" aria-hidden>
+              <Icon name="moon" size={24} className="themeicon__moon" />
+              <Icon name="sun" size={24} className="themeicon__sun" />
+            </span>
           </IconButton>
           {me?.is_admin && (
             <NavLink to="/admin" viewTransition className={`iconbtn ${location.pathname.startsWith('/admin') ? 'iconbtn--active' : ''}`} aria-label={t('admin.open')} title={t('admin.open')}>
