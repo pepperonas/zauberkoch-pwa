@@ -78,21 +78,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (doc.startViewTransition && origin && !reduced) {
         const x = origin.x;
         const y = origin.y;
-        // PARAMETERS ARE A 1:1 PORT OF celox.io/v2 (Layout.astro), which is the
-        // reference the reveal is supposed to feel like on a real S24 Ultra:
-        // radius 0 -> exact farthest-corner hypot (no slack), MD3 emphasized
-        // easing, 520ms on small/coarse and 900ms on desktop. Do not "improve"
-        // these numbers in isolation — a linear radius and a button-sized start
-        // were tried here and judged worse than the reference. The CSS side
-        // (default crossfade off, new on top, backdrop-filter dropped) already
-        // matches celox one for one.
-        const startRadius = 0;
+        // The pseudo-elements live in the SNAPSHOT VIEWPORT, which on mobile
+        // overlays the browser UI (per spec) and is therefore taller than
+        // innerHeight — allow for that, else the last strip is never covered by
+        // the circle and snaps when the transition ends.
+        const uiSlack = matchMedia('(pointer: coarse)').matches ? 140 : 0;
         const endRadius = Math.hypot(
           Math.max(x, window.innerWidth - x),
-          Math.max(y, window.innerHeight - y),
+          Math.max(y + uiSlack, window.innerHeight + uiSlack - y),
         );
-        const smallOrCoarse = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
-        const duration = smallOrCoarse ? 520 : 900;
+        const duration = 600;
 
         // Freeze every 100dvh-driven height to a px value for the duration
         // (base.css `html.zk-theme-vt`): on phones Chrome toggles the URL bar
@@ -125,12 +120,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         vt.ready
           .then(() =>
             root.animate(
-              { clipPath: [`circle(${startRadius}px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
-              {
-                duration,
-                easing: 'cubic-bezier(0.22, 0.08, 0, 1)',
-                pseudoElement: '::view-transition-new(root)',
-              },
+              // LINEAR radius — the reveal must progress at an even rate.
+              // Measured 2026-07-21: this animation is COMPOSITOR-driven (it
+              // kept painting 30 frames through a 300ms main-thread block), so
+              // any unevenness can only come from the curve itself. celox's
+              // `cubic-bezier(.22,.08,0,1)` swings the radius speed roughly
+              // tenfold (slope 0.36 -> 3.6): 15% of the radius in the first 10%
+              // of the time, 53% by 20%, done by 80% — that is what reads as
+              // "irregular". A constant radius still feels like a soft
+              // acceleration because the covered AREA grows with r².
+              { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
+              { duration, easing: 'linear', pseudoElement: '::view-transition-new(root)' },
             ).finished,
           )
           .catch(() => {});
