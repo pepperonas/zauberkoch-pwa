@@ -1,7 +1,10 @@
-/* CRT power-off overlay (logout).
+/* CRT power-off / power-on overlay (logout / login).
    Theme-aware: the tube "goes dark" into the CURRENT theme background
    (light mode dims to the light surface, dark mode to near-black), and the
-   scanline/dot use the on-surface color so they always contrast. */
+   scanline/dot use the on-surface color so they always contrast.
+   The picture collapse/stretch itself runs on View-Transition snapshots of
+   the real page (rules at the bottom); this overlay carries the screen, the
+   scanline and the dot. */
 
 .crt {
   --crt-screen: var(--c-surface);
@@ -21,26 +24,14 @@
   white-space: nowrap;
 }
 
+/* the dark tube */
 .crt__dim {
   position: absolute;
   inset: 0;
   background: var(--crt-screen);
 }
 
-.crt__beam {
-  position: absolute;
-  inset: 0;
-  will-change: transform;
-  /* brighter core so the collapsed line reads as the hot scanline center */
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--crt-phosphor) 90%, transparent),
-    var(--crt-phosphor) 45%,
-    var(--crt-phosphor) 55%,
-    color-mix(in srgb, var(--crt-phosphor) 90%, transparent)
-  );
-}
-
+/* phosphor bloom around the scanline */
 .crt__lineglow {
   position: absolute;
   left: 0;
@@ -53,28 +44,7 @@
   will-change: transform, opacity;
 }
 
-/* power-ON: the dark tube as two panels that retract outward from the
-   scanline (picture grows from the center line, like a tube warming up).
-   0.4% overlap past center hides any sub-pixel seam — the glowing line sits
-   on top of it anyway. */
-.crt__panel {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 50.4%;
-  background: var(--crt-screen);
-  will-change: transform;
-}
-.crt__panel--top {
-  top: 0;
-  transform-origin: top;
-}
-.crt__panel--bottom {
-  bottom: 0;
-  transform-origin: bottom;
-}
-
-/* hot core of the power-on scanline (the blurred lineglow sits behind it) */
+/* hot core of the scanline */
 .crt__line {
   position: absolute;
   left: 0;
@@ -99,4 +69,28 @@
     0 0 18px 6px color-mix(in srgb, var(--crt-phosphor) 95%, transparent),
     0 0 64px 26px color-mix(in srgb, var(--crt-phosphor) 50%, transparent);
   will-change: transform, opacity;
+}
+
+/* ---- View-Transition plumbing for the picture collapse/stretch ----
+   JS (CrtOff/CrtOn) drives the snapshot transform via WAAPI; these rules
+   kill the default crossfade, pin the transform origin to screen center and
+   set the stacking: OFF = the collapsing app above the dark screen,
+   ON = the growing app above screen+line. Header/nav lose their held VT
+   names so the WHOLE page lives in the one root snapshot. */
+html.zk-crt-vt-off::view-transition-old(root),
+html.zk-crt-vt-off::view-transition-new(root),
+html.zk-crt-vt-on::view-transition-old(root),
+html.zk-crt-vt-on::view-transition-new(root) {
+  animation: none;
+  transform-origin: 50% 50%;
+}
+html.zk-crt-vt-off::view-transition-old(root) { z-index: 2; }
+html.zk-crt-vt-off::view-transition-new(root) { z-index: 1; }
+html.zk-crt-vt-on::view-transition-new(root) { z-index: 2; }
+html.zk-crt-vt-on::view-transition-old(root) { z-index: 1; }
+html.zk-crt-vt-off .nav,
+html.zk-crt-vt-off .shell__header,
+html.zk-crt-vt-on .nav,
+html.zk-crt-vt-on .shell__header {
+  view-transition-name: none;
 }

@@ -1,55 +1,127 @@
-/** CRT power-off overlay — the logout signature moment.
+/** CRT power-off / power-on — the login/logout signature moments.
  *
- * Three phases like an old tube TV shutting down:
- *   1. collapse-y: the (dimming) picture collapses vertically into a hot
- *      white line at screen center, with a subtle brightness flicker
- *   2. collapse-x: the line runs together horizontally into a single dot
- *   3. afterglow: the dot blooms briefly, then burns out to black
+ * 1:1 tube behaviour via View-Transition snapshots of the REAL page:
+ *
+ * OFF — the actual picture (full-page snapshot incl. header/nav) collapses
+ * vertically into a white-hot scanline (brightness ramps up as the beam
+ * compresses), the line runs together into a dot, the dot blooms and burns
+ * out on the dark tube (theme surface). The caller holds the dark screen
+ * until logout actually completed, then exit-fades onto the landing page.
+ *
+ * ON — after the OAuth round-trip the dark tube holds while the session
+ * resolves, the dot blooms in, stretches into the scanline, then the real
+ * app snapshot stretches OUT of the line (vertical expansion with a bloom
+ * flash that settles) — not an overlay imitation, the actual picture.
  *
  * Deliberate deviations from the spring rule (documented like the ambient
- * loops): this imitates cathode hardware, so it uses a hard cubic ease-in
- * for the collapses and ease-out for the afterglow — a spring overshoot
- * would break the illusion. Transform/opacity only (GPU-composited).
- *
- * The caller keeps the overlay mounted until logout has ACTUALLY completed
- * (after the dot dies it holds the theme background — light mode dims to the
- * light surface, dark mode to near-black) and unmounts it via
- * AnimatePresence for a short reveal fade. prefers-reduced-motion is handled
- * by the caller: it skips rendering this entirely and logs out directly.
+ * loops): this imitates cathode hardware — hard cubic ease-in for collapse,
+ * ease-out for arrival; springs would break the illusion. Snapshot transforms
+ * are GPU-composited; the brightness ramp runs only for ~300ms on a static
+ * snapshot. Browsers without startViewTransition skip the picture
+ * collapse/stretch and keep the line/dot choreography. prefers-reduced-motion
+ * is handled by the callers (no overlay, direct login/logout).
  */
 
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 import { t } from '../i18n';
 import './crt.css';
 
-const COLLAPSE_Y_S = 0.22;
-const COLLAPSE_X_S = 0.18;
-const AFTERGLOW_S = 0.24;
-/** Forced completion even if rAF stalls (hidden tab) — never trap the user. */
-const SAFETY_MS = 2000;
+type VT = { ready: Promise<void>; finished: Promise<void> };
+type VTDocument = Document & { startViewTransition?: (cb: () => void) => VT };
 
-/** Hard cathode collapse: slow start, violent finish. */
+/* Hard cathode collapse: slow start, violent finish. */
 const COLLAPSE_EASE = [0.55, 0, 0.85, 0.35] as const;
-/** Residual line/dot thickness while collapsing (scale factors). */
-const LINE_Y = 0.006;
+/* Arrival: fast start, soft landing. */
+const OPEN_EASE_CSS = 'cubic-bezier(0.15, 0.65, 0.45, 1)';
+
+/* OFF timings */
+const COLLAPSE_MS = 340; // picture -> line (incl. the pre-collapse flicker beat)
+const LINEX_S = 0.16; // line -> dot
+const AFTERGLOW_S = 0.28; // dot bloom + phosphor fade
+/* ON timings */
+const ON_DOT_S = 0.17;
+const ON_LINE_S = 0.17;
+const OPEN_MS = 320; // line -> full picture
+
+/* Residual X scale for the "line becomes a dot" collapse. */
 const DOT_X = 0.004;
 
-type Phase = 'collapse-y' | 'collapse-x' | 'afterglow';
+/** Forced completion even if rAF stalls (hidden tab) — never trap the user. */
+const SAFETY_MS = 2000;
+const ON_SAFETY_MS = 4000;
 
-interface Props {
+/* ============================== power-OFF ============================== */
+
+type OffPhase = 'pre' | 'linehold' | 'linex' | 'dot';
+
+interface OffProps {
   /** Fired once the tube is dark (or by the safety timeout). */
   onDone: () => void;
 }
 
-export function CrtOff({ onDone }: Props) {
-  const [phase, setPhase] = useState<Phase>('collapse-y');
+export function CrtOff({ onDone }: OffProps) {
+  const [phase, setPhase] = useState<OffPhase>('pre');
 
   useEffect(() => {
     const id = window.setTimeout(onDone, SAFETY_MS);
     return () => window.clearTimeout(id);
   }, [onDone]);
+
+  // Phase A — collapse the real page into the scanline: a view transition
+  // snapshots the app (old) and this overlay's lit line (new); WAAPI squishes
+  // the old snapshot with a brightness ramp (beam energy compressing). The
+  // 'pre' render is empty so the old snapshot is the untouched app.
+  useEffect(() => {
+    const doc = document as VTDocument;
+    const root = document.documentElement;
+    if (!doc.startViewTransition) {
+      // No VT support: skip the picture collapse, open on the lit line.
+      setPhase('linehold');
+      const id = window.setTimeout(() => setPhase('linex'), 160);
+      return () => window.clearTimeout(id);
+    }
+    root.classList.add('zk-crt-vt-off');
+    const vt = doc.startViewTransition(() => flushSync(() => setPhase('linehold')));
+    vt.ready
+      .then(() =>
+        root.animate(
+          // Beat of flicker, then the vertical collapse with slight horizontal
+          // bowing. The brightness whiteout is deliberately BACK-loaded (only
+          // the last ~30%): the picture must stay recognizable while it
+          // squishes — that's the 1:1 tube look — and only white out as the
+          // beam fully compresses. Per-segment easings keep the collapse
+          // violent without racing the whiteout.
+          [
+            { transform: 'scaleY(1) scaleX(1)', filter: 'brightness(1)' },
+            { transform: 'scaleY(1) scaleX(1)', filter: 'brightness(0.8)', offset: 0.08 },
+            {
+              transform: 'scaleY(1) scaleX(1)',
+              filter: 'brightness(1)',
+              offset: 0.16,
+              easing: 'cubic-bezier(0.55, 0, 0.8, 0.4)',
+            },
+            {
+              transform: 'scaleY(0.4) scaleX(1.015)',
+              filter: 'brightness(1.35)',
+              offset: 0.68,
+              easing: 'cubic-bezier(0.4, 0, 0.7, 0.3)',
+            },
+            { transform: `scaleY(${DOT_X}) scaleX(1.03)`, filter: 'brightness(3)' },
+          ],
+          { duration: COLLAPSE_MS, pseudoElement: '::view-transition-old(root)' },
+        ).finished,
+      )
+      .catch(() => {});
+    vt.finished.finally(() => {
+      root.classList.remove('zk-crt-vt-off');
+      setPhase('linex');
+    });
+    return () => root.classList.remove('zk-crt-vt-off');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <motion.div
@@ -60,68 +132,42 @@ export function CrtOff({ onDone }: Props) {
     >
       <span className="crt__sr">{t('auth.loggingOut')}</span>
 
-      {/* the rest of the screen dims to black while the picture collapses */}
-      <motion.div
-        className="crt__dim"
-        aria-hidden
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: COLLAPSE_Y_S, ease: 'easeIn' }}
-      />
+      {phase !== 'pre' && (
+        <>
+          <div className="crt__dim" aria-hidden />
 
-      {/* the "picture": a white field collapsing to a line, then to a dot */}
-      <motion.div
-        className="crt__beam"
-        aria-hidden
-        initial={{ scaleY: 1, scaleX: 1, opacity: 1 }}
-        animate={
-          phase === 'collapse-y'
-            ? { scaleY: LINE_Y, opacity: [1, 0.88, 1, 0.94, 1] } // flicker on the way down
-            : { scaleY: LINE_Y, scaleX: DOT_X, opacity: phase === 'afterglow' ? 0 : 1 }
-        }
-        transition={
-          phase === 'collapse-y'
-            ? { duration: COLLAPSE_Y_S, ease: COLLAPSE_EASE }
-            : phase === 'collapse-x'
-              ? { duration: COLLAPSE_X_S, ease: COLLAPSE_EASE }
-              : { duration: 0.05 }
-        }
-        onAnimationComplete={() =>
-          setPhase((p) => (p === 'collapse-y' ? 'collapse-x' : p === 'collapse-x' ? 'afterglow' : p))
-        }
-      />
+          {(phase === 'linehold' || phase === 'linex') && (
+            <>
+              <motion.div
+                className="crt__lineglow"
+                aria-hidden
+                initial={{ scaleX: 1, opacity: 1 }}
+                animate={phase === 'linex' ? { scaleX: DOT_X, opacity: [1, 0.7, 0] } : { scaleX: 1 }}
+                transition={{ duration: LINEX_S, ease: COLLAPSE_EASE }}
+              />
+              <motion.div
+                className="crt__line"
+                aria-hidden
+                initial={{ scaleX: 1 }}
+                animate={phase === 'linex' ? { scaleX: DOT_X } : { scaleX: 1 }}
+                transition={{ duration: LINEX_S, ease: COLLAPSE_EASE }}
+                onAnimationComplete={() => phase === 'linex' && setPhase('dot')}
+              />
+            </>
+          )}
 
-      {/* phosphor bloom around the line, collapsing with it */}
-      <motion.div
-        className="crt__lineglow"
-        aria-hidden
-        initial={{ opacity: 0, scaleX: 1 }}
-        animate={
-          phase === 'collapse-y'
-            ? { opacity: 0.9 }
-            : phase === 'collapse-x'
-              ? // fade WHILE collapsing — a blurred 26px element squeezed to a
-                // few px reads as a vertical smear, not a dot, if left visible
-                { opacity: [0.9, 0.5, 0], scaleX: DOT_X }
-              : { opacity: 0, scaleX: DOT_X }
-        }
-        transition={
-          phase === 'collapse-x'
-            ? { duration: COLLAPSE_X_S, ease: COLLAPSE_EASE }
-            : { duration: phase === 'collapse-y' ? COLLAPSE_Y_S : 0.08, ease: 'easeIn' }
-        }
-      />
-
-      {/* the dying dot: quick bloom, then burn out */}
-      {phase === 'afterglow' && (
-        <motion.div
-          className="crt__dot"
-          aria-hidden
-          initial={{ scale: 0.6, opacity: 1 }}
-          animate={{ scale: [0.6, 1.6, 0.9], opacity: [1, 1, 0] }}
-          transition={{ duration: AFTERGLOW_S, times: [0, 0.35, 1], ease: 'easeOut' }}
-          onAnimationComplete={onDone}
-        />
+          {/* the dying dot: quick bloom, then the phosphor burns out */}
+          {phase === 'dot' && (
+            <motion.div
+              className="crt__dot"
+              aria-hidden
+              initial={{ scale: 0.9, opacity: 1 }}
+              animate={{ scale: [0.9, 1.6, 0.7], opacity: [1, 1, 0] }}
+              transition={{ duration: AFTERGLOW_S, times: [0, 0.3, 1], ease: 'easeOut' }}
+              onAnimationComplete={onDone}
+            />
+          )}
+        </>
       )}
     </motion.div>
   );
@@ -129,23 +175,7 @@ export function CrtOff({ onDone }: Props) {
 
 /* ============================== power-ON ============================== */
 
-/** CRT power-ON reveal — the logout sequence in reverse, played after a
- * successful login (OAuth round-trip): the dark tube (current theme surface)
- * holds while the session resolves, then the dot blooms in, stretches into a
- * scanline, and the picture opens vertically from the line — two theme-colored
- * panels retract outward, revealing the real app underneath. Same deliberate
- * hardware easings as CrtOff (ease-out here: arrival, not collapse); the
- * caller skips rendering entirely under prefers-reduced-motion. */
-
-const ON_DOT_S = 0.18;
-const ON_LINE_S = 0.18;
-const ON_OPEN_S = 0.26;
-/** Reverse of COLLAPSE_EASE: fast start, soft landing. */
-const OPEN_EASE = [0.15, 0.65, 0.45, 1] as const;
-/** Forced completion even if a phase callback never fires. */
-const ON_SAFETY_MS = 4000;
-
-type OnPhase = 'hold' | 'dot' | 'line' | 'open';
+type OnPhase = 'hold' | 'dot' | 'line' | 'opening';
 
 interface OnProps {
   /** False while the session is still resolving — the tube stays dark. */
@@ -165,26 +195,50 @@ export function CrtOn({ ready, onDone }: OnProps) {
     return () => window.clearTimeout(id);
   }, [onDone]);
 
-  const opening = phase === 'open';
+  // Phase C — the picture stretches out of the line: the view transition
+  // snapshots screen+line (old) and, after this overlay unmounts its content,
+  // the real app (new); WAAPI expands the new snapshot vertically with a
+  // bloom flash that settles. z-order (crt.css) keeps the growing picture
+  // above the dark screen.
+  const startOpen = () => {
+    const doc = document as VTDocument;
+    const root = document.documentElement;
+    if (!doc.startViewTransition) {
+      onDone(); // degraded: the screen simply lifts off the finished line
+      return;
+    }
+    root.classList.add('zk-crt-vt-on');
+    const vt = doc.startViewTransition(() => flushSync(() => setPhase('opening')));
+    vt.ready
+      .then(() =>
+        root.animate(
+          {
+            transform: [
+              `scaleY(${DOT_X}) scaleX(1.03)`,
+              'scaleY(1.015) scaleX(1)',
+              'scaleY(1) scaleX(1)',
+            ],
+            filter: ['brightness(3)', 'brightness(1.05)', 'brightness(1)'],
+            offset: [0, 0.8, 1],
+          },
+          { duration: OPEN_MS, easing: OPEN_EASE_CSS, pseudoElement: '::view-transition-new(root)' },
+        ).finished,
+      )
+      .catch(() => {});
+    vt.finished.finally(() => {
+      root.classList.remove('zk-crt-vt-on');
+      onDone();
+    });
+  };
+
+  if (phase === 'opening') return null; // the view transition owns the reveal
 
   return (
     <div className="crt" role="status" aria-live="polite">
       <span className="crt__sr">{t('auth.loggingIn')}</span>
 
-      {/* dark tube: two theme-surface panels that retract outward on open */}
-      <motion.div
-        className="crt__panel crt__panel--top"
-        aria-hidden
-        animate={{ scaleY: opening ? 0 : 1 }}
-        transition={{ duration: ON_OPEN_S, ease: OPEN_EASE }}
-        onAnimationComplete={() => opening && onDone()}
-      />
-      <motion.div
-        className="crt__panel crt__panel--bottom"
-        aria-hidden
-        animate={{ scaleY: opening ? 0 : 1 }}
-        transition={{ duration: ON_OPEN_S, ease: OPEN_EASE }}
-      />
+      {/* dark tube (theme surface) — holds while /me resolves */}
+      <div className="crt__dim" aria-hidden />
 
       {/* waking dot: blooms in, then hands over to the line */}
       {phase === 'dot' && (
@@ -198,31 +252,23 @@ export function CrtOn({ ready, onDone }: OnProps) {
         />
       )}
 
-      {/* scanline stretching out of the dot, glow fading as the picture opens */}
-      {(phase === 'line' || opening) && (
+      {/* scanline stretching out of the dot */}
+      {phase === 'line' && (
         <>
           <motion.div
             className="crt__lineglow"
             aria-hidden
-            initial={{ scaleX: 0.004, opacity: 1 }}
-            animate={opening ? { scaleX: 1, opacity: 0 } : { scaleX: 1, opacity: 1 }}
-            transition={
-              opening
-                ? { duration: ON_OPEN_S, ease: 'easeOut' }
-                : { duration: ON_LINE_S, ease: OPEN_EASE }
-            }
+            initial={{ scaleX: DOT_X, opacity: 1 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: ON_LINE_S, ease: 'easeOut' }}
           />
           <motion.div
             className="crt__line"
             aria-hidden
-            initial={{ scaleX: 0.004 }}
-            animate={{ scaleX: 1, opacity: opening ? 0 : 1 }}
-            transition={
-              opening
-                ? { duration: ON_OPEN_S, ease: 'easeOut' }
-                : { duration: ON_LINE_S, ease: OPEN_EASE }
-            }
-            onAnimationComplete={() => phase === 'line' && setPhase('open')}
+            initial={{ scaleX: DOT_X }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: ON_LINE_S, ease: 'easeOut' }}
+            onAnimationComplete={startOpen}
           />
         </>
       )}
