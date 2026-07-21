@@ -78,16 +78,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (doc.startViewTransition && origin && !reduced) {
         const x = origin.x;
         const y = origin.y;
-        // End radius: farthest viewport corner from the origin, plus 8% slack —
-        // if the URL bar RETRACTS mid-reveal the viewport grows, and a radius
-        // measured against the smaller one would leave an unrevealed sliver.
-        // The overshoot happens off-screen, so it costs nothing visually.
-        const endRadius =
-          Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y)) * 1.08;
-        // Same duration everywhere: the mobile stutter was never about length
-        // (see the dvh freeze + start delay below). A LONGER timeline is in
-        // fact more forgiving of a hiccup, and matching desktop is the point.
-        const duration = 900;
+        // The pseudo-elements live in the SNAPSHOT VIEWPORT, which on mobile
+        // overlays the browser UI (per spec) and is therefore TALLER than
+        // innerHeight — allow for that, else the last strip never gets covered
+        // by the circle and snaps when the transition ends.
+        const uiSlack = matchMedia('(pointer: coarse)').matches ? 140 : 0;
+        const endRadius = Math.hypot(
+          Math.max(x, window.innerWidth - x),
+          Math.max(y + uiSlack, window.innerHeight + uiSlack - y),
+        );
+
+        // PACING (2026-07-21): a LINEAR radius, not an eased one. The reveal's
+        // perceived speed is driven by the covered AREA, which grows with r² —
+        // so a constant radius speed already reads as a smooth acceleration.
+        // The previous MD3 curve `cubic-bezier(.22,.08,0,1)` eased the radius
+        // ON TOP of that: slope 0.36 at the start rising to ~3.6 (13% of the
+        // radius in the first 10% of the time, then 13%->67% in the next 18%).
+        // That tenfold speed swing is exactly the reported "crawls, then races".
+        // 600ms: the circle now reaches the far corner right at the end instead
+        // of finishing at ~65% and running on invisibly.
+        const duration = 600;
 
         // MOBILE STUTTER FIX (measured 2026-07-21): Chrome toggles the URL bar
         // at view-transition start on phones. `::view-transition-new(root)` is
@@ -129,11 +139,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .then(() =>
             root.animate(
               { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
-              {
-                duration,
-                easing: 'cubic-bezier(0.22, 0.08, 0, 1)',
-                pseudoElement: '::view-transition-new(root)',
-              },
+              { duration, easing: 'linear', pseudoElement: '::view-transition-new(root)' },
             ).finished,
           )
           .catch(() => {});
