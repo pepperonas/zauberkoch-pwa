@@ -9,7 +9,7 @@ import {
   useLocation,
 } from 'react-router-dom';
 
-import { CrtOff } from './components/CrtOff';
+import { CrtOff, CrtOn } from './components/CrtOff';
 import { Icon, type IconName } from './components/icons';
 import { ProfileSheet } from './components/ProfileSheet';
 import { IconButton } from './components/ui';
@@ -80,7 +80,7 @@ const NAV_ITEMS: { to: string; icon: IconName; label: string }[] = [
  * <ScrollRestoration/>. The sticky header's blur is captured in the snapshot.
  */
 function Shell() {
-  const { me, theme, toggleTheme, refreshMe } = useApp();
+  const { me, meLoading, theme, toggleTheme, refreshMe } = useApp();
   const location = useLocation();
   const online = useOnline();
   const reduced = useReducedMotion();
@@ -91,6 +91,19 @@ function Shell() {
   // once `me` is gone (landing page mounted underneath) the overlay exits
   // with a short reveal fade. Reduced motion skips the theatrics entirely.
   const [crtPhase, setCrtPhase] = useState<'idle' | 'anim' | 'done'>('idle');
+
+  // CRT power-ON after a successful login: LandingPage arms a sessionStorage
+  // flag before the OAuth full-page redirect; we read it once on boot (and
+  // clear it immediately so a reload never replays). The overlay holds the
+  // dark tube while /me resolves, then opens onto the app. Login failed or
+  // reduced motion → drop it without theatrics.
+  const [crtOn, setCrtOn] = useState(() => sessionStorage.getItem('zk-crt-on') === '1');
+  useEffect(() => {
+    sessionStorage.removeItem('zk-crt-on');
+  }, []);
+  useEffect(() => {
+    if (crtOn && (reduced || (!meLoading && !me))) setCrtOn(false);
+  }, [crtOn, reduced, meLoading, me]);
 
   const handleLogout = () => {
     if (reduced) {
@@ -263,6 +276,9 @@ function Shell() {
       <AnimatePresence>
         {crtPhase !== 'idle' && <CrtOff onDone={() => setCrtPhase('done')} />}
       </AnimatePresence>
+
+      {/* CRT power-on after login: ends fully transparent, no exit fade needed */}
+      {crtOn && !reduced && <CrtOn ready={!meLoading && !!me} onDone={() => setCrtOn(false)} />}
 
       {/* react-router restores scroll on POP, resets on PUSH (history.state keyed). */}
       <ScrollRestoration />

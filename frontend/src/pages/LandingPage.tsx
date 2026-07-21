@@ -55,6 +55,9 @@ export function LandingPage() {
   const loginError = new URLSearchParams(location.search).get('login_error');
 
   const login = () => {
+    // Arm the CRT power-ON reveal for after the OAuth round-trip (full page
+    // navigation — sessionStorage survives it; Shell reads + clears the flag).
+    sessionStorage.setItem('zk-crt-on', '1');
     window.location.href = '/api/v1/auth/login';
   };
 
@@ -75,7 +78,13 @@ export function LandingPage() {
               {t('auth.login')}
             </Button>
             {import.meta.env.DEV && (
-              <Button variant="text" onClick={() => (window.location.href = '/api/v1/auth/dev-login')}>
+              <Button
+                variant="text"
+                onClick={() => {
+                  sessionStorage.setItem('zk-crt-on', '1');
+                  window.location.href = '/api/v1/auth/dev-login';
+                }}
+              >
                 <Icon name="tools" size={18} /> {t('auth.devLogin')}
               </Button>
             )}

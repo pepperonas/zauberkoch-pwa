@@ -17,6 +17,7 @@ export const de = {
     devLogin: 'Dev-Login (lokal)',
     logout: 'Abmelden',
     loggingOut: 'Du wirst abgemeldet …',
+    loggingIn: 'Du wirst angemeldet …',
     loginRequired: 'Bitte melde dich an, um Rezepte zu zaubern.',
     notAllowed: 'Dein Konto ist noch nicht freigeschaltet. Melde dich beim Betreiber, um Zugang zu erhalten.',
     loginFailed: 'Anmeldung fehlgeschlagen. Bitte versuche es erneut.',

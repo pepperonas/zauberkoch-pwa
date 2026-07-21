@@ -126,3 +126,106 @@ export function CrtOff({ onDone }: Props) {
     </motion.div>
   );
 }
+
+/* ============================== power-ON ============================== */
+
+/** CRT power-ON reveal — the logout sequence in reverse, played after a
+ * successful login (OAuth round-trip): the dark tube (current theme surface)
+ * holds while the session resolves, then the dot blooms in, stretches into a
+ * scanline, and the picture opens vertically from the line — two theme-colored
+ * panels retract outward, revealing the real app underneath. Same deliberate
+ * hardware easings as CrtOff (ease-out here: arrival, not collapse); the
+ * caller skips rendering entirely under prefers-reduced-motion. */
+
+const ON_DOT_S = 0.18;
+const ON_LINE_S = 0.18;
+const ON_OPEN_S = 0.26;
+/** Reverse of COLLAPSE_EASE: fast start, soft landing. */
+const OPEN_EASE = [0.15, 0.65, 0.45, 1] as const;
+/** Forced completion even if a phase callback never fires. */
+const ON_SAFETY_MS = 4000;
+
+type OnPhase = 'hold' | 'dot' | 'line' | 'open';
+
+interface OnProps {
+  /** False while the session is still resolving — the tube stays dark. */
+  ready: boolean;
+  onDone: () => void;
+}
+
+export function CrtOn({ ready, onDone }: OnProps) {
+  const [phase, setPhase] = useState<OnPhase>('hold');
+
+  useEffect(() => {
+    if (ready) setPhase((p) => (p === 'hold' ? 'dot' : p));
+  }, [ready]);
+
+  useEffect(() => {
+    const id = window.setTimeout(onDone, ON_SAFETY_MS);
+    return () => window.clearTimeout(id);
+  }, [onDone]);
+
+  const opening = phase === 'open';
+
+  return (
+    <div className="crt" role="status" aria-live="polite">
+      <span className="crt__sr">{t('auth.loggingIn')}</span>
+
+      {/* dark tube: two theme-surface panels that retract outward on open */}
+      <motion.div
+        className="crt__panel crt__panel--top"
+        aria-hidden
+        animate={{ scaleY: opening ? 0 : 1 }}
+        transition={{ duration: ON_OPEN_S, ease: OPEN_EASE }}
+        onAnimationComplete={() => opening && onDone()}
+      />
+      <motion.div
+        className="crt__panel crt__panel--bottom"
+        aria-hidden
+        animate={{ scaleY: opening ? 0 : 1 }}
+        transition={{ duration: ON_OPEN_S, ease: OPEN_EASE }}
+      />
+
+      {/* waking dot: blooms in, then hands over to the line */}
+      {phase === 'dot' && (
+        <motion.div
+          className="crt__dot"
+          aria-hidden
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: [0, 1.5, 1], opacity: [0, 1, 1] }}
+          transition={{ duration: ON_DOT_S, times: [0, 0.6, 1], ease: 'easeOut' }}
+          onAnimationComplete={() => setPhase('line')}
+        />
+      )}
+
+      {/* scanline stretching out of the dot, glow fading as the picture opens */}
+      {(phase === 'line' || opening) && (
+        <>
+          <motion.div
+            className="crt__lineglow"
+            aria-hidden
+            initial={{ scaleX: 0.004, opacity: 1 }}
+            animate={opening ? { scaleX: 1, opacity: 0 } : { scaleX: 1, opacity: 1 }}
+            transition={
+              opening
+                ? { duration: ON_OPEN_S, ease: 'easeOut' }
+                : { duration: ON_LINE_S, ease: OPEN_EASE }
+            }
+          />
+          <motion.div
+            className="crt__line"
+            aria-hidden
+            initial={{ scaleX: 0.004 }}
+            animate={{ scaleX: 1, opacity: opening ? 0 : 1 }}
+            transition={
+              opening
+                ? { duration: ON_OPEN_S, ease: 'easeOut' }
+                : { duration: ON_LINE_S, ease: OPEN_EASE }
+            }
+            onAnimationComplete={() => phase === 'line' && setPhase('open')}
+          />
+        </>
+      )}
+    </div>
+  );
+}

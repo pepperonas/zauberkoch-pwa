@@ -53,6 +53,39 @@
   will-change: transform, opacity;
 }
 
+/* power-ON: the dark tube as two panels that retract outward from the
+   scanline (picture grows from the center line, like a tube warming up).
+   0.4% overlap past center hides any sub-pixel seam — the glowing line sits
+   on top of it anyway. */
+.crt__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50.4%;
+  background: var(--crt-screen);
+  will-change: transform;
+}
+.crt__panel--top {
+  top: 0;
+  transform-origin: top;
+}
+.crt__panel--bottom {
+  bottom: 0;
+  transform-origin: bottom;
+}
+
+/* hot core of the power-on scanline (the blurred lineglow sits behind it) */
+.crt__line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  translate: 0 -50%;
+  background: var(--crt-phosphor);
+  will-change: transform, opacity;
+}
+
 .crt__dot {
   position: absolute;
   left: 50%;
