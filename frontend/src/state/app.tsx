@@ -11,7 +11,7 @@ type Theme = 'light' | 'dark';
 
 interface AppState {
   theme: Theme;
-  toggleTheme: (origin?: { x: number; y: number }) => void;
+  toggleTheme: (origin?: { x: number; y: number; r?: number }) => void;
   mode: Modus;
   setMode: (mode: Modus) => void;
   me: Me | null;
@@ -61,7 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   const toggleTheme = useCallback(
-    (origin?: { x: number; y: number }) => {
+    (origin?: { x: number; y: number; r?: number }) => {
       type ViewTransition = { ready: Promise<void>; finished: Promise<void> };
       const doc = document as Document & { startViewTransition?: (cb: () => void) => ViewTransition };
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -82,6 +82,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // overlays the browser UI (per spec) and is therefore TALLER than
         // innerHeight — allow for that, else the last strip never gets covered
         // by the circle and snaps when the transition ends.
+        const startRadius = origin.r ?? 0;
         const uiSlack = matchMedia('(pointer: coarse)').matches ? 140 : 0;
         const endRadius = Math.hypot(
           Math.max(x, window.innerWidth - x),
@@ -99,19 +100,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // of finishing at ~65% and running on invisibly.
         const duration = 600;
 
-        // MOBILE STUTTER FIX (measured 2026-07-21): Chrome toggles the URL bar
-        // at view-transition start on phones. `::view-transition-new(root)` is
-        // LIVE content, so a viewport change re-lays-out and re-rasters that
-        // full-screen layer (DPR 3!) — painted frames collapsed 52 -> 13 in the
-        // harness, which reads exactly as "smooth, stalls, then races to the
-        // end" because the WAAPI timeline keeps running through the dropped
-        // frames. Two defenses:
-        // (1) freeze every 100dvh-driven height to a px value for the duration
-        //     (base.css `html.zk-theme-vt`), so the URL-bar toggle can't change
-        //     layout inside the live layer;
-        // (2) start the reveal two frames late (delay + fill:backwards, so the
-        //     pre-state is held) — the URL-bar toggle and React's commit land
-        //     BEFORE the animation instead of inside it.
+        // Freeze every 100dvh-driven height to a px value for the duration
+        // (base.css `html.zk-theme-vt`): on phones Chrome toggles the URL bar
+        // at view-transition start, and since `::view-transition-new(root)` is
+        // LIVE content, a dvh change would re-lay-out and re-raster the whole
+        // full-screen layer mid-reveal.
         root.style.setProperty('--zk-vt-vh', `${window.innerHeight}px`);
         root.classList.add('zk-theme-vt');
 
@@ -138,7 +131,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         vt.ready
           .then(() =>
             root.animate(
-              { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
+              // Starts at the BUTTON's radius, not 0: the first painted frame
+              // already shows a disc the size of the toggle, so the reveal
+              // reads as the button opening up — and the two or three frames
+              // the browser needs to hand over the snapshots stop being a
+              // visible dead beat.
+              { clipPath: [`circle(${startRadius}px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
               { duration, easing: 'linear', pseudoElement: '::view-transition-new(root)' },
             ).finished,
           )

@@ -241,8 +241,19 @@
 }
 
 /* Theme-toggle glyph: both icons stacked, CSS picks by data-theme (no React
-   state -> no re-render during the reveal; see toggleTheme). */
+   state -> no re-render during the reveal; see toggleTheme). The swap itself
+   animates — the outgoing glyph rotates away and the incoming one settles in,
+   which plays inside the revealed circle since it starts at this button.
+   transform/opacity only; the global reduced-motion guard flattens it. */
 .themeicon { display: grid; place-items: center; }
-.themeicon > * { grid-area: 1 / 1; }
+.themeicon > * {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--effects-duration) var(--effects-ease),
+    transform 320ms var(--effects-ease);
+}
 :root[data-theme='dark'] .themeicon__moon,
-:root:not([data-theme='dark']) .themeicon__sun { display: none; }
+:root:not([data-theme='dark']) .themeicon__sun {
+  opacity: 0;
+  transform: rotate(-70deg) scale(0.5);
+}

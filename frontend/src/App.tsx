@@ -159,7 +159,13 @@ function Shell() {
             label={t('common.themeToggle')}
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
-              toggleTheme({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+              // r = the button's own radius: the reveal starts at that size, so
+              // it looks like the button itself opens up (see toggleTheme).
+              toggleTheme({
+                x: r.left + r.width / 2,
+                y: r.top + r.height / 2,
+                r: Math.min(r.width, r.height) / 2,
+              });
             }}
           >
             {/* Both glyphs are rendered; CSS picks one from :root[data-theme].
