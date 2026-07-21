@@ -66,12 +66,13 @@ html.zk-theme-vt::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
-/* OLD on top: the reveal punches a growing hole into the old (STATIC) snapshot
-   so the new theme underneath shows through. Clipping the frozen bitmap keeps
-   frame production alive when the viewport changes mid-reveal — clipping the
-   LIVE new layer collapsed to ~6fps in the harness (2026-07-21). */
-html.zk-theme-vt::view-transition-old(root) { z-index: 2; }
-html.zk-theme-vt::view-transition-new(root) { z-index: 1; }
+/* NEW on top, clipped open by the circle in toggleTheme(). Do NOT invert this
+   (hole in the OLD snapshot): Chrome SKIPS a view transition when the viewport
+   changes (mobile URL-bar toggle), and with old-on-top the skip removes the
+   covering layer mid-wipe — on a real S24 the reveal appeared to stop halfway.
+   New-on-top degrades gracefully: a skip just completes the reveal. */
+html.zk-theme-vt::view-transition-new(root) { z-index: 2; }
+html.zk-theme-vt::view-transition-old(root) { z-index: 1; }
 
 /* During the reveal, drop the header's backdrop blur: recomputing a blur every
    frame behind the animated clip is the main jank source on mobile GPUs. (Route

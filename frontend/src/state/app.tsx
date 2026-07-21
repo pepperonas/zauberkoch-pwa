@@ -103,17 +103,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         //     pre-state is held) — the URL-bar toggle and React's commit land
         //     BEFORE the animation instead of inside it.
         root.style.setProperty('--zk-vt-vh', `${window.innerHeight}px`);
-        const REVEAL_DELAY = 32;
-
-        // Inverse circle as an interpolatable path(): oversized outer rect
-        // (covers the snapshot box even when it includes the URL-bar area) with
-        // a circular hole built from two relative arcs. Identical command
-        // structure at both ends, so Chrome interpolates it smoothly.
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        const holeAt = (r: number) =>
-          `path(evenodd, "M${-w},${-h} H${2 * w} V${2 * h} H${-w} Z ` +
-          `M${x - r},${y} a${r},${r} 0 1,0 ${2 * r},0 a${r},${r} 0 1,0 ${-2 * r},0 Z")`;
         root.classList.add('zk-theme-vt');
 
         // NO React work inside the transition (2026-07-21): flipping the
@@ -129,23 +118,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
           root.setAttribute('data-theme', next);
         });
 
+        // Clip the NEW snapshot open (new sits on top). Tried the inverse —
+        // a growing hole in the frozen OLD snapshot, hoping a static bitmap
+        // would survive a mid-reveal viewport change: on a real S24 the reveal
+        // then stopped halfway, because Chrome SKIPS a view transition when the
+        // viewport changes, and with old-on-top the skip yanks the covering
+        // layer away instead of finishing the wipe. Reverted 2026-07-21 —
+        // new-on-top degrades gracefully (the reveal simply completes).
         vt.ready
           .then(() =>
             root.animate(
-              // Punch a GROWING HOLE into the OLD snapshot (which sits on top)
-              // instead of clipping the new one open. Visually identical — the
-              // new theme underneath is revealed by an expanding circle — but
-              // the animated clip now runs on a STATIC bitmap instead of the
-              // live-rendered root, which is what collapsed to ~6fps whenever
-              // the viewport changed mid-reveal. evenodd + an oversized outer
-              // rect: the rect covers the snapshot box, the circle cuts it out.
-              { clipPath: [holeAt(0.01), holeAt(endRadius)] },
+              { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
               {
                 duration,
-                delay: REVEAL_DELAY,
-                fill: 'backwards', // hold the closed state during the delay
                 easing: 'cubic-bezier(0.22, 0.08, 0, 1)',
-                pseudoElement: '::view-transition-old(root)',
+                pseudoElement: '::view-transition-new(root)',
               },
             ).finished,
           )
