@@ -11,7 +11,7 @@ type Theme = 'light' | 'dark';
 
 interface AppState {
   theme: Theme;
-  toggleTheme: (origin?: { x: number; y: number; r?: number }) => void;
+  toggleTheme: (origin?: { x: number; y: number }) => void;
   mode: Modus;
   setMode: (mode: Modus) => void;
   me: Me | null;
@@ -61,7 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   const toggleTheme = useCallback(
-    (origin?: { x: number; y: number; r?: number }) => {
+    (origin?: { x: number; y: number }) => {
       type ViewTransition = { ready: Promise<void>; finished: Promise<void> };
       const doc = document as Document & { startViewTransition?: (cb: () => void) => ViewTransition };
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -78,27 +78,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (doc.startViewTransition && origin && !reduced) {
         const x = origin.x;
         const y = origin.y;
-        // The pseudo-elements live in the SNAPSHOT VIEWPORT, which on mobile
-        // overlays the browser UI (per spec) and is therefore TALLER than
-        // innerHeight — allow for that, else the last strip never gets covered
-        // by the circle and snaps when the transition ends.
-        const startRadius = origin.r ?? 0;
-        const uiSlack = matchMedia('(pointer: coarse)').matches ? 140 : 0;
+        // PARAMETERS ARE A 1:1 PORT OF celox.io/v2 (Layout.astro), which is the
+        // reference the reveal is supposed to feel like on a real S24 Ultra:
+        // radius 0 -> exact farthest-corner hypot (no slack), MD3 emphasized
+        // easing, 520ms on small/coarse and 900ms on desktop. Do not "improve"
+        // these numbers in isolation — a linear radius and a button-sized start
+        // were tried here and judged worse than the reference. The CSS side
+        // (default crossfade off, new on top, backdrop-filter dropped) already
+        // matches celox one for one.
+        const startRadius = 0;
         const endRadius = Math.hypot(
           Math.max(x, window.innerWidth - x),
-          Math.max(y + uiSlack, window.innerHeight + uiSlack - y),
+          Math.max(y, window.innerHeight - y),
         );
-
-        // PACING (2026-07-21): a LINEAR radius, not an eased one. The reveal's
-        // perceived speed is driven by the covered AREA, which grows with r² —
-        // so a constant radius speed already reads as a smooth acceleration.
-        // The previous MD3 curve `cubic-bezier(.22,.08,0,1)` eased the radius
-        // ON TOP of that: slope 0.36 at the start rising to ~3.6 (13% of the
-        // radius in the first 10% of the time, then 13%->67% in the next 18%).
-        // That tenfold speed swing is exactly the reported "crawls, then races".
-        // 600ms: the circle now reaches the far corner right at the end instead
-        // of finishing at ~65% and running on invisibly.
-        const duration = 600;
+        const smallOrCoarse = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+        const duration = smallOrCoarse ? 520 : 900;
 
         // Freeze every 100dvh-driven height to a px value for the duration
         // (base.css `html.zk-theme-vt`): on phones Chrome toggles the URL bar
@@ -131,13 +125,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         vt.ready
           .then(() =>
             root.animate(
-              // Starts at the BUTTON's radius, not 0: the first painted frame
-              // already shows a disc the size of the toggle, so the reveal
-              // reads as the button opening up — and the two or three frames
-              // the browser needs to hand over the snapshots stop being a
-              // visible dead beat.
               { clipPath: [`circle(${startRadius}px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`] },
-              { duration, easing: 'linear', pseudoElement: '::view-transition-new(root)' },
+              {
+                duration,
+                easing: 'cubic-bezier(0.22, 0.08, 0, 1)',
+                pseudoElement: '::view-transition-new(root)',
+              },
             ).finished,
           )
           .catch(() => {});
