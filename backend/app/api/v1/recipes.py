@@ -17,10 +17,12 @@ from app.db import get_db
 from app.models import Favorite, Generation, Recipe, User, utcnow
 from app.schemas.recipe import GenerateParams
 from app.api.v1.me import load_preferences
+from app.prompts import recipe_v5
 from app.services import ai, aggregation, cache, ratelimit
 from app.services.limits import get_limits
 from app.services.ratelimit_ip import check_ip_limit
 from app.services.json_stream import replay_events
+from app.services.titles import is_duplicate, title_key
 
 logger = logging.getLogger("zauberkoch.recipes")
 router = APIRouter(prefix="/recipes")
@@ -132,49 +134,47 @@ async def generate(
 
     h = cache.params_hash(params)
     current_version = ai.prompt_version()
-    params_json = json.dumps(params.cache_relevant(), ensure_ascii=False, sort_keys=True)
 
-    def _known_titles() -> list[str]:
-        """Titles the user already received for these params (newest first)."""
-        return list(
-            db.execute(
-                select(Recipe.titel)
-                .where(
-                    Recipe.user_id == user.id,
-                    Recipe.params_json == params_json,
-                    Recipe.deleted_at.is_(None),
-                )
-                .order_by(Recipe.id.desc())
-                .limit(5)
-            ).scalars()
-        )
+    # The user's recent dishes IN THIS MODE — the avoid basis. Scoped by mode,
+    # NOT by exact params_json: the model's pull toward famous dishes ignores
+    # our parameter nuances, so "sour, fresh" and "citrusy, refreshing" both
+    # returned the same Daiquiri. Mode scope + recency cap catches that while
+    # staying bounded and relevant (title_key dedups wording/order variants).
+    known_titles = list(
+        db.execute(
+            select(Recipe.titel)
+            .where(
+                Recipe.user_id == user.id,
+                Recipe.mode == params.modus,
+                Recipe.deleted_at.is_(None),
+            )
+            .order_by(Recipe.id.desc())
+            .limit(recipe_v5.MAX_AVOID_TITLES)
+        ).scalars()
+    )
+    known_keys = {k for t in known_titles if (k := title_key(t))}
 
     cached = None if params.regenerate else cache.get_cached(db, h, current_version)
 
     if cached is not None:
-        # A cached recipe the user has already received is a repeat, not a
-        # convenience — generate a fresh variation instead. Exception: only
-        # the personen count changed -> pure scaling, served from cache. The
-        # cache still serves first-time requests (other users, error retry).
-        titel = json.loads(cached.recipe_json).get("titel", "")
-        seen = db.execute(
-            select(Recipe).where(
-                Recipe.user_id == user.id,
-                Recipe.params_json == params_json,
-                Recipe.prompt_version == cached.prompt_version,
-                Recipe.titel == titel,
-                Recipe.deleted_at.is_(None),  # a deleted recipe re-serves from cache (free)
-            )
-        ).scalars().first()
-        if seen is not None and json.loads(seen.recipe_json).get("portionen") == params.personen:
+        # A cached recipe whose DISH the user already has is a repeat, not a
+        # convenience — generate a fresh variation instead. Matched by
+        # title_key across the mode history (so a re-worded cache entry counts
+        # too), except when only the personen count differs -> pure scaling,
+        # still served from cache. The cache keeps serving genuine first-time
+        # requests (other users, error retry, a dish new to this user).
+        c_recipe = json.loads(cached.recipe_json)
+        is_rescale = c_recipe.get("portionen") != params.personen
+        if is_duplicate(c_recipe.get("titel", ""), known_keys) and not is_rescale:
             cached = None
             params = params.model_copy(update={"regenerate": True})  # -> variation hint
 
-    if params.regenerate:
-        # Steer the variation away from everything already received (v4 prompt)
-        titles = _known_titles()
-        if titles:
-            params = params.model_copy(update={"vermeiden_titel": titles})
+    # Always steer generation away from the user's recent dishes (v5 prompt):
+    # this is what stops near-duplicate PARAM sets from yielding the same dish,
+    # not just explicit re-rolls. Empty for a user with no history -> the cache
+    # still serves first-timers for free.
+    if cached is None and known_titles:
+        params = params.model_copy(update={"vermeiden_titel": known_titles})
 
     if cached is None:
         # Real generation: consume the daily budget up front (cache hits are free)

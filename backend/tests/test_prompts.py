@@ -54,26 +54,31 @@ def test_user_prompt_variation_hint_only_on_regenerate():
     assert "ANDERE Variante" in recipe_v2.build_user_prompt(GenerateParams(modus="kochen", regenerate=True))
 
 
-def test_v4_variation_lists_already_received_titles():
-    from app.prompts import recipe_v4
+def test_v5_avoid_list_attached_on_every_generation():
+    from app.prompts import recipe_v3, recipe_v5
     from app.services import ai
 
-    assert ai.prompt_version() == recipe_v4.PROMPT_VERSION == "v4"
+    assert ai.prompt_version() == recipe_v5.PROMPT_VERSION == "v5"
     # system block unchanged vs v3 -> Anthropic prompt cache keeps hitting
-    from app.prompts import recipe_v3
+    assert recipe_v5.SYSTEM_PROMPT == recipe_v3.SYSTEM_PROMPT
 
-    assert recipe_v4.SYSTEM_PROMPT == recipe_v3.SYSTEM_PROMPT
-
-    params = GenerateParams(modus="kochen", regenerate=True, vermeiden_titel=["Pasta al Limone", "Risotto"])
-    prompt = recipe_v4.build_user_prompt(params)
-    assert "Bereits erhalten" in prompt
-    assert "„Pasta al Limone“" in prompt and "„Risotto“" in prompt
-
-    # never rendered without regenerate, and absent when list is empty
-    assert "Bereits erhalten" not in recipe_v4.build_user_prompt(
-        GenerateParams(modus="kochen", vermeiden_titel=["Pasta al Limone"])
+    # the avoid list renders even WITHOUT regenerate (the v4->v5 fix): a
+    # near-duplicate param set must be steered away from earlier dishes too
+    prompt = recipe_v5.build_user_prompt(
+        GenerateParams(modus="cocktail", vermeiden_titel=["Daiquiri", "Mojito"])
     )
-    assert "Bereits erhalten" not in recipe_v4.build_user_prompt(GenerateParams(modus="kochen", regenerate=True))
+    assert "SCHON" in prompt
+    assert "„Daiquiri“" in prompt and "„Mojito“" in prompt
+
+    # absent when the list is empty
+    assert "SCHON" not in recipe_v5.build_user_prompt(GenerateParams(modus="kochen"))
+
+    # capped so the prompt can't balloon (belt-and-suspenders: the schema caps
+    # at 40 too). model_construct bypasses validation to exercise the slice.
+    long = GenerateParams.model_construct(modus="kochen", vermeiden_titel=[f"Rezept {i}" for i in range(80)])
+    rendered = recipe_v5.build_user_prompt(long)
+    assert "„Rezept 0“" in rendered
+    assert "„Rezept 79“" not in rendered  # beyond MAX_AVOID_TITLES
 
 
 def test_vermeiden_titel_and_personen_do_not_change_cache_key():

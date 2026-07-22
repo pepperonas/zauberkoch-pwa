@@ -17,7 +17,7 @@ from collections.abc import AsyncGenerator
 from anthropic import AsyncAnthropic
 
 from app.core.config import get_settings
-from app.prompts.recipe_v4 import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
+from app.prompts.recipe_v5 import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
 from app.schemas.recipe import GenerateParams, recipe_llm_schema
 from app.services.json_stream import Event, RecipeStreamParser
 

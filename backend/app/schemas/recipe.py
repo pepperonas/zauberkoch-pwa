@@ -104,7 +104,9 @@ class GenerateParams(BaseModel):
     # Titles the user already received for these params — SERVER-injected on
     # variations (client-sent values are discarded); steers re-rolls away
     # from near-duplicates.
-    vermeiden_titel: list[str] = Field(default=[], max_length=10)
+    # Server-injected avoid list (client values are discarded). Bounded so a
+    # heavy user's prompt can't balloon; keep in sync with recipe_v5.MAX_AVOID_TITLES.
+    vermeiden_titel: list[str] = Field(default=[], max_length=40)
 
     def cache_relevant(self) -> dict:
         """Normalized params for the cache key. Excluded: regenerate +
