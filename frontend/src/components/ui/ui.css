@@ -146,27 +146,6 @@
   padding: var(--space-6);
   box-shadow: var(--elev-3);
 }
-
-/* CRT phosphor scanline for the Dialog's TV power-on/off (Dialog.tsx).
-   A bright on-surface line at the panel's centre, matching its width, that
-   flashes as the panel passes through the line phase. Theme-aware. */
-.dialog__scanline {
-  position: fixed;
-  z-index: 52; /* above the dialog panel (51) during the flash */
-  left: 50%;
-  top: 50%;
-  width: min(92vw, 420px);
-  height: 3px;
-  translate: -50% -50%;
-  transform-origin: 50% 50%;
-  background: var(--c-on-surface);
-  border-radius: 2px;
-  box-shadow:
-    0 0 10px 2px color-mix(in srgb, var(--c-on-surface) 85%, transparent),
-    0 0 30px 9px color-mix(in srgb, var(--c-on-surface) 45%, transparent);
-  pointer-events: none;
-  will-change: transform, opacity;
-}
 .sheet {
   position: fixed;
   z-index: 51;
