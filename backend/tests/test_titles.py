@@ -40,6 +40,18 @@ def test_empty_and_filler_only_titles():
     assert title_key("Der Cocktail") == title_key("Cocktail der")
 
 
+def test_real_world_cocktail_and_dish_titles():
+    # '&' / punctuation split away, so the spelled variants collapse together
+    assert title_key("Gin & Tonic") == title_key("Gin Tonic") == title_key("gin-tonic")
+    # apostrophes / stray tokens don't derail identity
+    assert title_key("Dark 'n' Stormy") == title_key("Dark n Stormy")
+    # numbers are part of identity (a real distinguisher)
+    assert title_key("7-Up-Bowle") != title_key("Up-Bowle")
+    # English filler ('the', 'with', 'and') is dropped too
+    assert title_key("Fish and Chips") == title_key("Chips Fish")
+    assert title_key("Pancakes with Berries") == title_key("Berries Pancakes")
+
+
 def test_is_duplicate_semantics():
     known = {title_key("Daiquiri"), title_key("Mojito")}
     assert is_duplicate("Der klassische Daiquiri", known)

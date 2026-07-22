@@ -125,6 +125,24 @@ def test_cached_dish_regenerates_when_title_reworded(client, db_session, monkeyp
     assert events["meta"]["titel"] == "Mojito"  # regenerated to a different dish
 
 
+def test_deleted_recipe_leaves_the_avoid_basis(client, db_session, monkeypatch, scripted_ai):
+    """A soft-deleted dish must drop out of the avoid list, so the user can get
+    it again (re-served free from cache — the documented cost behavior)."""
+    auth = _login(client, db_session, monkeypatch, "alice@example.com", "sub-a")
+    scripted_ai["titles"] = ["Daiquiri"]
+    first = _gen(client, auth, geschmack=["sauer"])
+    recipe_id = first["saved"]["recipe_id"]
+
+    client.delete(f"/api/v1/recipes/{recipe_id}", headers=auth)
+
+    # same params again: the deleted Daiquiri is neither avoided nor a repeat,
+    # so it comes back straight from cache without a new live generation
+    events = _gen(client, auth, geschmack=["sauer"])
+    assert events["saved"]["cached"] is True
+    assert events["meta"]["titel"] == "Daiquiri"
+    assert len(scripted_ai["calls"]) == 1  # no second live call
+
+
 def test_first_time_user_still_served_from_cache(client, db_session, monkeypatch, scripted_ai):
     """Cost guard intact: a dish new to the user is served free from cache."""
     bob = _login(client, db_session, monkeypatch, "bob@example.com", "sub-bob")
